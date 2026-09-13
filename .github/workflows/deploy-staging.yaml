@@ -342,7 +342,7 @@ jobs:
                   --clientSecret ${{ secrets.MS_APP_SECRET }}
 
             - name: Publish to Microsoft Store (staging)
-              run: msstore publish "$env:APP_PATH" -id "9P1N2HMSH40L"
+              run: msstore publish "$env:APP_PATH" -id "9PPMD9ZHJJ56"
 
     deploy-cloud:
         runs-on: ubuntu-latest
