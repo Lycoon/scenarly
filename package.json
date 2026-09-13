@@ -41,6 +41,7 @@
         "android:init": "tauri android init && npm run android:icons",
         "icons": "tsx scripts/generate-icons.ts && npm run android:icons",
         "android:icons": "tsx scripts/generate-android-icons.ts",
+        "apple:icons": "tsx scripts/generate-apple-icons.ts",
         "android:dev": "tauri android dev",
         "debug:android": "tsx scripts/run-android.ts",
         "build:android": "npm run tauri android build -- --aab --target aarch64 --target armv7 --target x86_64",
