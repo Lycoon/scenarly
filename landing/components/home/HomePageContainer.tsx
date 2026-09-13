@@ -85,7 +85,13 @@ export default function HomePageContainer() {
 
                     {/* Layer 1.2: Branding (Logo) */}
                     <div className={styles.heroHeader}>
-                        <Image src="/_site/images/scenarly_full.png" alt="Scenarly Logo" width={400} height={80} className={styles.heroLogo} />
+                        <Image
+                            src="/_site/images/scenarly.png"
+                            alt="Scenarly Logo"
+                            width={400}
+                            height={80}
+                            className={styles.heroLogo}
+                        />
                     </div>
 
                     {/* Layer 1.3: Platform CTAs */}
@@ -270,7 +276,13 @@ export default function HomePageContainer() {
                                     sessions. Your environment should inspire, not distract.
                                 </p>
                             </div>
-                            <Image src="/_site/images/previews/themes.png" alt="Themes Preview" width={1280} height={720} className={styles.bentoImage} />
+                            <Image
+                                src="/_site/images/previews/themes.png"
+                                alt="Themes Preview"
+                                width={1280}
+                                height={720}
+                                className={styles.bentoImage}
+                            />
                         </div>
 
                         {/* Scene Navigation */}
@@ -304,8 +316,8 @@ export default function HomePageContainer() {
                                 </div>
                                 <p className={styles.pillarText}>
                                     Rename a character across your entire script in one click. Assign traits and
-                                    descriptions to build rich character profiles. Highlight any character&apos;s lines to
-                                    stay locked in their voice.
+                                    descriptions to build rich character profiles. Highlight any character&apos;s lines
+                                    to stay locked in their voice.
                                 </p>
                             </div>
                             <Image
@@ -396,8 +408,8 @@ export default function HomePageContainer() {
                                 </div>
                                 <p className={styles.pillarText}>
                                     Invite up to 5 collaborators and write the same screenplay simultaneously in real
-                                    time. See each other&apos;s cursors, edits, and comments as they happen. No merging, no
-                                    conflicts — just seamless creative flow.
+                                    time. See each other&apos;s cursors, edits, and comments as they happen. No merging,
+                                    no conflicts — just seamless creative flow.
                                 </p>
                             </div>
                             <Image
