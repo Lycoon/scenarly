@@ -1,7 +1,7 @@
 /**
  * The cloud half of {@link SavesProvider}: an adapter over the existing REST
  * calls, which proxy to the `ProjectRoom` DurableObject. Nothing here decides
- * anything — the server owns authorization, Pro gating on manual saves, and the
+ * anything — the server owns authorization, Cloud-plan gating on manual saves, and the
  * restore that closes every collaborator's socket.
  */
 

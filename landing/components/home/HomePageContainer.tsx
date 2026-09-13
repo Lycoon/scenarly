@@ -89,7 +89,7 @@ export default function HomePageContainer() {
                             src="/_site/images/scenarly.png"
                             alt="Scenarly Logo"
                             width={400}
-                            height={80}
+                            height={110}
                             className={styles.heroLogo}
                         />
                     </div>
@@ -379,7 +379,7 @@ export default function HomePageContainer() {
                                 <div className={styles.bentoHeader}>
                                     <Cloud size={24} style={{ color: "var(--secondary-text)" }} />
                                     <h3 className={styles.pillarTitle}>Cloud Sync</h3>
-                                    <span className={styles.proBadge}>Pro</span>
+                                    <span className={styles.cloudBadge}>Cloud</span>
                                 </div>
                                 <p className={styles.pillarText}>
                                     Never hit Save again — your words are synced to the cloud continuously. Switch
@@ -404,7 +404,7 @@ export default function HomePageContainer() {
                                 <div className={styles.bentoHeader}>
                                     <MessagesSquare size={24} style={{ color: "var(--secondary-text)" }} />
                                     <h3 className={styles.pillarTitle}>Real-time Collaboration</h3>
-                                    <span className={styles.proBadge}>Pro</span>
+                                    <span className={styles.cloudBadge}>Cloud</span>
                                 </div>
                                 <p className={styles.pillarText}>
                                     Invite up to 5 collaborators and write the same screenplay simultaneously in real
@@ -435,7 +435,7 @@ export default function HomePageContainer() {
                             <p className={styles.faqAnswer}>
                                 Scenarly is free to use for most of its features. No project limitation, no forced
                                 watermark on PDF generation. Only advanced features such as real-time collaboration and
-                                report generation are part of our Pro plan, which is available for a reasonable monthly
+                                report generation are part of our Cloud plan, which is available for a reasonable monthly
                                 fee.
                             </p>
                         </details>

@@ -24,7 +24,7 @@ interface SavesPanelProps {
     projectId: string;
     isOpen: boolean;
     onClose: () => void;
-    isPro: boolean;
+    hasCloudPlan: boolean;
     /** The navbar button that toggles this panel — see useDismissOnOutsidePress. */
     triggerRef?: RefObject<HTMLElement | null>;
 }
@@ -32,15 +32,15 @@ interface SavesPanelProps {
 /**
  * Which history this project has, once we've looked.
  *
- * Resolved from the project's storage target rather than from the `isPro` /
+ * Resolved from the project's storage target rather than from the `hasCloudPlan` /
  * membership props the navbar already holds: those describe the *user*, and the
  * question here is where the versions are kept. A local-only project's history
  * lives on this device, costs nothing to keep, and is free; a cloud project's
- * lives in R2 and stays behind the Pro gate.
+ * lives in R2 and stays behind the Cloud gate.
  */
 type SavesMode = "loading" | "cloud" | "local";
 
-const SavesPanel = ({ projectId, isOpen, onClose, isPro, triggerRef }: SavesPanelProps) => {
+const SavesPanel = ({ projectId, isOpen, onClose, hasCloudPlan, triggerRef }: SavesPanelProps) => {
     const t = useTranslations("saves");
     const { openDashboard } = useContext(DashboardContext);
     const { user } = useCookieUser();
@@ -194,7 +194,7 @@ const SavesPanel = ({ projectId, isOpen, onClose, isPro, triggerRef }: SavesPane
 
     if (!isOpen) return null;
 
-    if (mode === "cloud" && !isPro) {
+    if (mode === "cloud" && !hasCloudPlan) {
         return (
             <div className={styles.container} ref={panelRef}>
                 <div className={styles.header}>
@@ -203,11 +203,11 @@ const SavesPanel = ({ projectId, isOpen, onClose, isPro, triggerRef }: SavesPane
                         <X size={16} />
                     </button>
                 </div>
-                <div className={styles.pro_gate}>
+                <div className={styles.cloud_gate}>
                     <Lock size={20} />
-                    <p className={styles.pro_gate_title}>{t("proRequired")}</p>
-                    <p className={styles.pro_gate_desc}>{t("proRequiredDesc")}</p>
-                    <button className={styles.pro_gate_btn} onClick={handleUpgrade}>
+                    <p className={styles.cloud_gate_title}>{t("cloudRequired")}</p>
+                    <p className={styles.cloud_gate_desc}>{t("cloudRequiredDesc")}</p>
+                    <button className={styles.cloud_gate_btn} onClick={handleUpgrade}>
                         {isSignedIn ? t("upgradeBtn") : t("signInAndUpgrade")}
                     </button>
                 </div>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
     useCookieUser,
     useIsPhone,
-    useIsPro,
+    useHasCloudPlan,
     useProjectMemberships,
     ExtendedProjectMembershipPayload,
 } from "@src/lib/utils/hooks";
@@ -35,7 +35,7 @@ interface ProjectPageContainerProps {
 const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContainerProps) => {
     const { user } = useCookieUser();
     const isPhone = useIsPhone();
-    const { isPro } = useIsPro();
+    const { hasCloudPlan } = useHasCloudPlan();
     const { projects, isLoading, mutate } = useProjectMemberships();
     const { goToProject } = useAppNavigation();
     const importAccept = useImportAccept();
@@ -88,7 +88,7 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
 
         try {
             // This now correctly preserves all project data (title page, board, etc.)
-            const result = await importFileAsProject(file, user, undefined, isPro);
+            const result = await importFileAsProject(file, user, undefined, hasCloudPlan);
 
             if (result.success && result.projectId) {
                 // Refresh the project list

@@ -224,13 +224,13 @@
     color: #eab308;
 }
 
-.proStatus {
+.cloudStatus {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.proBadge {
+.cloudBadge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -246,7 +246,7 @@
     width: fit-content;
 }
 
-.proExpiry {
+.cloudExpiry {
     font-size: 0.8rem;
     color: var(--secondary-text);
     margin: 0;

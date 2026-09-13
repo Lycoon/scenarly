@@ -150,7 +150,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3rem;
+    gap: clamp(2rem, 0.5rem + 3vw, 3rem); /* 3rem from ~1300px down to 2rem at ≤800px */
     min-height: 100vh;
     padding-top: 0;
     padding-bottom: 0;
@@ -190,11 +190,38 @@
     z-index: 2;
 }
 
+/* Soft dark halo behind the wordmark so it stays legible where the preview's
+   white script text runs underneath it. The tint and the backdrop blur share
+   the same radial mask, so both feather out with no visible edge. z-index -1
+   keeps it under the logo but inside .heroHeader's stacking context, i.e.
+   still above the preview image and the marquee. */
+.heroHeader::before {
+    content: "";
+    position: absolute;
+    inset: -55% -22%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(
+        ellipse closest-side,
+        rgba(15, 15, 15, 0.9) 0%,
+        rgba(15, 15, 15, 0.7) 45%,
+        rgba(15, 15, 15, 0.35) 75%,
+        transparent 100%
+    );
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    mask-image: radial-gradient(ellipse closest-side, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse closest-side, black 40%, transparent 100%);
+}
+
+/* Fluid width instead of per-breakpoint sizes, so the logo never snaps: the
+   line runs through 836px at a 1440px viewport (the desktop look) and 293px at
+   390px (phone), capped at the desktop size on wider screens. */
 .heroLogo {
-    height: 230px;
-    width: auto;
+    width: clamp(220px, 91px + 51.7vw, 836px);
+    height: auto;
     object-fit: contain;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 28px rgba(0, 0, 0, 0.8));
 }
 
 .catchphrase {
@@ -367,13 +394,22 @@
 }
 
 @media (max-width: 640px) {
+    /* Stacked CTAs share one fixed column width. The row (not the buttons)
+       carries the width so the menu-wrapped buttons and the plain link end up
+       the same size — a percentage on the button alone resolves against the
+       content-sized .ctaMenu wrapper and shrinks with its icon count. */
+    .heroContent {
+        width: 100%;
+    }
     .ctaRow {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
+        width: 100%;
+        max-width: 280px;
     }
-
+    .ctaMenu,
     .ctaPlatform {
-        width: 240px;
+        width: 100%;
     }
 }
 
@@ -398,8 +434,18 @@
 
 /* Responsive Logic */
 @media (max-width: 768px) {
+    /* Stripes are the hero's backdrop: on narrow screens spread them over the
+       full viewport height and width rather than a band that sits entirely
+       behind the preview image. The desktop scale(0.8) is dropped — the skew
+       offset at phone widths is negligible, and the scale only wasted 20% of
+       an already narrow screen. */
     .marqueeContainer {
-        gap: 5vh;
+        gap: 12vh;
+        transform: skewY(-5deg);
+    }
+    .stripe {
+        mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
     }
     .stripeText {
         font-size: 1.75rem;
@@ -411,9 +457,6 @@
     .heroHeadline {
         font-size: 2.5rem;
     }
-    .heroLogo {
-        height: 140px;
-    }
     .catchphrase {
         font-size: 1rem;
     }
@@ -424,9 +467,6 @@
         height: 280px;
     }
 
-    .hero {
-        gap: 2rem;
-    }
     .heroContent {
         gap: 1.5rem;
     }
@@ -498,27 +538,11 @@
 }
 
 @media (max-width: 480px) {
-    .heroLogo {
-        height: 110px;
-    }
-    .ctaPlatform {
-        width: 100%;
-        max-width: 280px;
-    }
     .sectionTitle {
         font-size: 1.5rem;
     }
     .pillarTitle {
         font-size: 1.1rem;
-    }
-    .marqueeContainer {
-        gap: 3vh;
-    }
-    .stripeText {
-        font-size: 1.1rem;
-    }
-    .cursor {
-        height: 1.1rem;
     }
 }
 
@@ -641,7 +665,7 @@
     line-height: 1.6;
 }
 
-.proBadge {
+.cloudBadge {
     display: inline-flex;
     align-items: center;
     padding: 2px 8px;

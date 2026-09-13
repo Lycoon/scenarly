@@ -40,11 +40,11 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
 
     // A subscription still renewing is money at stake: deleting the account
     // cancels it on the spot, so the dialog has to say so before they confirm.
-    const isPro = !!user?.isProUntil && new Date(user.isProUntil) > new Date();
-    const hasLiveSubscription = isPro && !user?.isSubscriptionCancelled;
-    const proExpiryDate = user?.isProUntil
+    const hasCloudPlan = !!user?.cloudPlanUntil && new Date(user.cloudPlanUntil) > new Date();
+    const hasLiveSubscription = hasCloudPlan && !user?.isSubscriptionCancelled;
+    const cloudExpiryDate = user?.cloudPlanUntil
         ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(
-              new Date(user.isProUntil),
+              new Date(user.cloudPlanUntil),
           )
         : "";
 
@@ -265,7 +265,7 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
                             {hasLiveSubscription && (
                                 <div className={styles.subscriptionWarning}>
                                     <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
-                                    <span>{t("deleteSubscriptionWarning", { date: proExpiryDate })}</span>
+                                    <span>{t("deleteSubscriptionWarning", { date: cloudExpiryDate })}</span>
                                 </div>
                             )}
                             <label

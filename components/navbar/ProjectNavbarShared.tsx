@@ -20,7 +20,7 @@ import type { Editor } from "@tiptap/react";
 
 import { DashboardContext } from "@src/context/DashboardContext";
 import { ProjectContext } from "@src/context/ProjectContext";
-import { useCookieUser, useIsPro, useIsTouch, useProjectIdFromUrl } from "@src/lib/utils/hooks";
+import { useCookieUser, useHasCloudPlan, useIsTouch, useProjectIdFromUrl } from "@src/lib/utils/hooks";
 import { useFileActions, useFileBindingStatus } from "@src/lib/persistence/use-file-binding";
 import {
     fileNameOf,
@@ -226,7 +226,7 @@ const SaveTargetsBody = ({
     const { connectionStatus, projectTitle } = useContext(ProjectContext);
     const { openDashboard } = useContext(DashboardContext);
     const { user } = useCookieUser();
-    const { isPro } = useIsPro();
+    const { hasCloudPlan } = useHasCloudPlan();
     const { status, isSupported, saveAs, locate, reveal, stopSaving, compact, reclaimable } = useFileActions(
         projectId,
         projectTitle,
@@ -350,7 +350,7 @@ const SaveTargetsBody = ({
                 tone={cloudTone}
             />
 
-            {!hasCloud && (canUploadToCloud || !isPro) && (
+            {!hasCloud && (canUploadToCloud || !hasCloudPlan) && (
                 <div className={navbar.target_actions}>
                     {canUploadToCloud ? (
                         <TargetAction

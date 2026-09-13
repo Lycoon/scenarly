@@ -688,7 +688,7 @@ const useProjectMembership = () => {
         }
     }, [data, isLoading, updateProject]);
 
-    // The cloud copy is gone (e.g. owner lost Pro and the project was demoted server-side,
+    // The cloud copy is gone (e.g. owner lost Cloud and the project was demoted server-side,
     // or it was deleted from another device). Offline-first: if we still have it cached
     // locally, fall back to that copy instead of redirecting away.
     const cloudMissing = error?.status === 404 && isCachedLocally === true;
@@ -813,10 +813,10 @@ const useCachedProjectInfo = (projectId: string | null) => {
     return { title, description, author, isLoading };
 };
 
-const useIsPro = () => {
+const useHasCloudPlan = () => {
     const { user, isLoading } = useUser();
-    const isPro = !!user?.isProUntil && new Date(user.isProUntil) > new Date();
-    return { isPro, isLoading };
+    const hasCloudPlan = !!user?.cloudPlanUntil && new Date(user.cloudPlanUntil) > new Date();
+    return { hasCloudPlan, isLoading };
 };
 
 const useDesktopBridgeAuth = () => {
@@ -879,7 +879,7 @@ export {
     useDataExport,
     useCookieUser,
     useSettings,
-    useIsPro,
+    useHasCloudPlan,
     useProjectMemberships,
     useProjectMembership,
     useProjectInvites,

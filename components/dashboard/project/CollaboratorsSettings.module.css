@@ -242,7 +242,7 @@
     border-color: rgba(251, 191, 36, 0.2);
 }
 
-.proGateBanner {
+.cloudGateBanner {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -255,18 +255,18 @@
     margin-bottom: 8px;
 }
 
-.proGateLink {
+.cloudGateLink {
     margin-left: auto;
     color: var(--primary-text);
     font-weight: 600;
     text-decoration: none;
 }
 
-.proGateLink:hover {
+.cloudGateLink:hover {
     text-decoration: underline;
 }
 
-.proHint {
+.cloudHint {
     font-size: 0.78rem;
     color: var(--secondary-text);
     padding: 8px 0;

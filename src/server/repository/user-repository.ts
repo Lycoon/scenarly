@@ -16,7 +16,7 @@ export interface UserUpdate {
     emailVerified?: Date | null;
     username?: string;
     color?: string;
-    isProUntil?: Date | null;
+    cloudPlanUntil?: Date | null;
     isSubscriptionCancelled?: boolean;
     stripeCustomerId?: string | null;
     stripeSubscriptionId?: string | null;
@@ -39,7 +39,7 @@ export class UserRepository {
                 settings: userUpdate.settings as Prisma.InputJsonValue,
                 username: userUpdate.username,
                 color: userUpdate.color,
-                isProUntil: userUpdate.isProUntil,
+                cloudPlanUntil: userUpdate.cloudPlanUntil,
                 isSubscriptionCancelled: userUpdate.isSubscriptionCancelled,
                 stripeCustomerId: userUpdate.stripeCustomerId,
                 stripeSubscriptionId: userUpdate.stripeSubscriptionId,
@@ -79,7 +79,7 @@ export class UserRepository {
                 username: true,
                 color: true,
                 role: true,
-                isProUntil: true,
+                cloudPlanUntil: true,
                 isSubscriptionCancelled: true,
             },
         });
@@ -89,9 +89,9 @@ export class UserRepository {
         return prisma.user.count();
     }
 
-    countActivePro(now: Date = new Date()) {
+    countActiveCloudPlan(now: Date = new Date()) {
         return prisma.user.count({
-            where: { isProUntil: { gt: now } },
+            where: { cloudPlanUntil: { gt: now } },
         });
     }
 
@@ -112,7 +112,7 @@ export class UserRepository {
                 email: true,
                 createdAt: true,
                 role: true,
-                isProUntil: true,
+                cloudPlanUntil: true,
             },
         });
     }

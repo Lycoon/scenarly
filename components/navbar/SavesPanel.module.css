@@ -324,7 +324,7 @@
     }
 }
 
-.pro_gate {
+.cloud_gate {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -334,20 +334,20 @@
     text-align: center;
 }
 
-.pro_gate_title {
+.cloud_gate_title {
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--primary-text);
     margin: 0;
 }
 
-.pro_gate_desc {
+.cloud_gate_desc {
     font-size: 0.78rem;
     line-height: 1.4;
     margin: 0;
 }
 
-.pro_gate_btn {
+.cloud_gate_btn {
     margin-top: 8px;
     padding: 6px 18px;
     border: none;
@@ -361,7 +361,7 @@
     transition: background-color 0.15s;
 }
 
-.pro_gate_btn:hover {
+.cloud_gate_btn:hover {
     background-color: var(--tertiary-hover);
     color: var(--primary-text);
 }

@@ -20,7 +20,7 @@
     color: var(--primary-text);
 }
 
-.proBadge {
+.cloudBadge {
     display: inline-flex;
     align-items: center;
     padding: 2px 8px;
@@ -69,7 +69,7 @@
     border-bottom: none;
 }
 
-.perkIconPro {
+.perkIconCloud {
     color: var(--primary-text);
     flex-shrink: 0;
 }

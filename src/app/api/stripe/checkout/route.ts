@@ -18,11 +18,11 @@ async function createCheckoutSession(req: NextRequest, { user }: AuthApiContext)
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
     const session = await stripe.checkout.sessions.create({
         mode: "subscription",
-        line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID!, quantity: 1 }],
+        line_items: [{ price: process.env.STRIPE_CLOUD_PRICE_ID!, quantity: 1 }],
         client_reference_id: user.id,
         ...(stripeCustomerId && { customer: stripeCustomerId }),
-        success_url: `${baseUrl}/projects?pro=success`,
-        cancel_url: `${baseUrl}/projects?pro=cancel`,
+        success_url: `${baseUrl}/projects?cloud=success`,
+        cancel_url: `${baseUrl}/projects?cloud=cancel`,
     });
 
     return Success({ url: session.url });
