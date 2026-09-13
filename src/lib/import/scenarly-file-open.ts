@@ -132,7 +132,7 @@ export async function acceptScenarlyMerge(projectId: string): Promise<string> {
 export async function acceptScenarlyAsNewProject(
     fork: boolean,
     user: CookieUser | null | undefined,
-    isPro: boolean | undefined,
+    hasCloudPlan: boolean | undefined,
 ): Promise<string> {
     const current = pending;
     if (!current) throw new Error("No file is waiting to be opened");
@@ -141,7 +141,7 @@ export async function acceptScenarlyAsNewProject(
         fork,
         title: current.fileName.replace(/\.[^/.]+$/, ""),
         user,
-        isPro,
+        hasCloudPlan,
     });
     await bindIfPossible(projectId, current.path);
 

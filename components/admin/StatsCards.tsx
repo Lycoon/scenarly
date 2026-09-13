@@ -5,7 +5,7 @@ import styles from "./StatsCards.module.css";
 
 type Stats = {
     userCount: number;
-    activeProCount: number;
+    activeCloudPlanCount: number;
     projectCount: number;
 };
 
@@ -17,7 +17,7 @@ export default function StatsCards() {
 
     const cards = [
         { label: "Users", value: data.userCount, hint: "All-time registrations" },
-        { label: "Active Pro", value: data.activeProCount, hint: "isProUntil > now" },
+        { label: "Active Cloud", value: data.activeCloudPlanCount, hint: "cloudPlanUntil > now" },
         { label: "Projects", value: data.projectCount, hint: "All projects" },
     ];
 

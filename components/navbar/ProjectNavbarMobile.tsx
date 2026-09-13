@@ -66,7 +66,7 @@ const ProjectNavbarMobile = () => {
         isSignedIn,
         projectId,
         isInProject,
-        isPro,
+        hasCloudPlan,
         projectTitle,
         onTitleChange,
         onTitleBlur,
@@ -468,7 +468,7 @@ const ProjectNavbarMobile = () => {
                             projectId={projectId}
                             isOpen={activePanel === "saves"}
                             onClose={() => setActivePanel(null)}
-                            isPro={isPro}
+                            hasCloudPlan={hasCloudPlan}
                             triggerRef={savesBtnRef}
                         />
                         <ProductionPanel

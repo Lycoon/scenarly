@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import * as ProjectService from "@src/server/service/project-service";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import { InternalServerError, SuccessCreated, validate } from "@src/lib/utils/api-utils";
-import { requirePro } from "@src/lib/utils/pro-utils";
+import { requireCloudPlan } from "@src/lib/utils/cloud-plan-utils";
 
 import z from "zod";
 
@@ -25,7 +25,7 @@ const BodySchema = z.object({
  * Returns the freshly created membership so the client can hydrate ProjectContext.
  */
 async function uploadProjectToCloud(req: NextRequest, { routeParams, user }: AuthApiContext) {
-    await requirePro(user.id);
+    await requireCloudPlan(user.id);
 
     const { projectId } = validate(QuerySchema, routeParams);
     const body = await req.json();

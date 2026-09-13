@@ -14,7 +14,7 @@ type UserDetailPayload = {
         emailVerified: string | null;
         username: string | null;
         role: UserRole;
-        isProUntil: string | null;
+        cloudPlanUntil: string | null;
         isSubscriptionCancelled: boolean;
         stripeCustomerId: string | null;
         stripeCustomerUrl: string | null;
@@ -44,8 +44,8 @@ function formatDateTime(iso: string | null) {
     });
 }
 
-function isPro(isProUntil: string | null) {
-    return !!isProUntil && new Date(isProUntil) > new Date();
+function hasCloudPlan(cloudPlanUntil: string | null) {
+    return !!cloudPlanUntil && new Date(cloudPlanUntil) > new Date();
 }
 
 type Props = { userId: string };
@@ -124,18 +124,18 @@ export default function UserDetail({ userId }: Props) {
                                 <span className={styles.fieldLabel}>Status</span>
                                 <span
                                     className={`${styles.badge} ${
-                                        isPro(data.user.isProUntil)
-                                            ? styles.badgePro
+                                        hasCloudPlan(data.user.cloudPlanUntil)
+                                            ? styles.badgeCloud
                                             : styles.badgeMuted
                                     }`}
                                 >
-                                    {isPro(data.user.isProUntil) ? "Pro" : "Free"}
+                                    {hasCloudPlan(data.user.cloudPlanUntil) ? "Cloud" : "Free"}
                                 </span>
                             </div>
                             <div className={styles.field}>
-                                <span className={styles.fieldLabel}>Pro until</span>
+                                <span className={styles.fieldLabel}>Cloud until</span>
                                 <span className={styles.fieldValue}>
-                                    {formatDateTime(data.user.isProUntil)}
+                                    {formatDateTime(data.user.cloudPlanUntil)}
                                 </span>
                             </div>
                             <div className={styles.field}>

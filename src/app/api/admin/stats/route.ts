@@ -9,15 +9,15 @@ import { assertAdmin } from "@src/lib/utils/admin-guard";
 async function getStats(req: NextRequest, { user }: AuthApiContext) {
     await assertAdmin(user);
 
-    const [userCount, activeProCount, projectCount] = await Promise.all([
+    const [userCount, activeCloudPlanCount, projectCount] = await Promise.all([
         UserService.countUsers(),
-        UserService.countActiveProUsers(),
+        UserService.countActiveCloudPlanUsers(),
         ProjectService.countProjects(),
     ]);
 
     return Success({
         userCount,
-        activeProCount,
+        activeCloudPlanCount,
         projectCount,
     });
 }

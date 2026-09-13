@@ -55,7 +55,7 @@ export const countUsers = async () => {
     return repository.countAll();
 };
 
-export const countActiveProUsers = async () => {
-    return repository.countActivePro();
+export const countActiveCloudPlanUsers = async () => {
+    return repository.countActiveCloudPlan();
 };
 

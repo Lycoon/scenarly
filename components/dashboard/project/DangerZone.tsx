@@ -106,7 +106,7 @@ const DangerZone = ({ projectId, isLocalOnly, isOpen }: DangerZoneProps) => {
             } else {
                 const data = (await res.json().catch(() => null)) as ApiResponse | null;
                 setTransferError(
-                    res.status === 402 ? t("transferProRequired") : data?.message || t("transferFailed"),
+                    res.status === 402 ? t("transferCloudRequired") : data?.message || t("transferFailed"),
                 );
             }
         } catch {

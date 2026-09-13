@@ -8,7 +8,7 @@ import {
     UserNotFoundError,
     validate,
 } from "@src/lib/utils/api-utils";
-import { requirePro } from "@src/lib/utils/pro-utils";
+import { requireCloudPlan } from "@src/lib/utils/cloud-plan-utils";
 
 import { CreateProjectBodySchema } from "@src/lib/utils/api-bodies";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
@@ -34,7 +34,7 @@ async function getProjects(req: NextRequest, { user }: AuthApiContext) {
  * Creates a new project
  */
 async function createProject(req: NextRequest, { user }: AuthApiContext) {
-    await requirePro(user.id);
+    await requireCloudPlan(user.id);
 
     const body = await req.json();
     const { title, description, author } = validate(CreateProjectBodySchema, body);

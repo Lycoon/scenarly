@@ -154,13 +154,13 @@ async function createRemoteProject(userId: string, title: string, description?: 
 export async function createProjectShell(
     title: string,
     user: CookieUser | null | undefined,
-    isPro?: boolean,
+    hasCloudPlan?: boolean,
 ): Promise<string> {
     let projectId: string | null = null;
 
     if (isTauri()) {
-        // Desktop: offline-first - try cloud to get ID if Pro, always create locally
-        if (user && user.id && isPro) {
+        // Desktop: offline-first - try cloud to get ID if Cloud, always create locally
+        if (user && user.id && hasCloudPlan) {
             try {
                 projectId = await createRemoteProject(user.id, title);
             } catch {
@@ -174,12 +174,12 @@ export async function createProjectShell(
         return (await createCachedProject(title)).id;
     }
 
-    if (user && user.id && isPro) {
-        // Web: create remote project (Pro users only)
+    if (user && user.id && hasCloudPlan) {
+        // Web: create remote project (Cloud users only)
         return createRemoteProject(user.id, title);
     }
 
-    // Web without auth or not Pro: create local-only project (IndexedDB)
+    // Web without auth or not Cloud: create local-only project (IndexedDB)
     return (await createCachedProject(title)).id;
 }
 
@@ -196,7 +196,7 @@ export async function importFileAsProject(
     file: File,
     user: CookieUser | null | undefined,
     title?: string,
-    isPro?: boolean,
+    hasCloudPlan?: boolean,
 ): Promise<ImportResult> {
     try {
         // Parse the file content (kept as a buffer so bundled assets can be
@@ -220,14 +220,14 @@ export async function importFileAsProject(
                 fork: false,
                 title: projectTitle,
                 user,
-                isPro,
+                hasCloudPlan,
             });
             return { success: true, projectId };
         }
 
         const projectData = parseProjectData(file.name, content);
 
-        const projectId = await createProjectShell(projectTitle, user, isPro);
+        const projectId = await createProjectShell(projectTitle, user, hasCloudPlan);
 
         // Create Yjs document with the project content
         await createLocalYjsDocument(projectId, projectData);

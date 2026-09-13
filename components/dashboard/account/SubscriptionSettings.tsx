@@ -12,7 +12,7 @@ import styles from "./SubscriptionSettings.module.css";
 
 const PERKS = ["perkProjects", "perkSaves", "perkCollaborators", "perkAutoSave"] as const;
 
-// Where the macOS App Store build sends users to manage billing. Pro is sold
+// Where the macOS App Store build sends users to manage billing. Cloud is sold
 // exclusively through the website (Stripe), so the App Store app never handles
 // payments itself — this avoids Apple's in-app-purchase fee.
 const WEBSITE_URL = process.env.NEXT_PUBLIC_API_URL || "https://scenarly.com";
@@ -33,7 +33,7 @@ const SubscriptionSettings = () => {
     const [cancelling, setCancelling] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showWelcome, setShowWelcome] = useState(
-        () => typeof window !== "undefined" && sessionStorage.getItem("proWelcome") === "1"
+        () => typeof window !== "undefined" && sessionStorage.getItem("cloudWelcome") === "1"
     );
     const [welcomeLeaving, setWelcomeLeaving] = useState(false);
     // Detect the macOS App Store build after mount so SSR renders the same tree
@@ -41,15 +41,15 @@ const SubscriptionSettings = () => {
     const [isAppleStoreBuild, setIsAppleStoreBuild] = useState(false);
     useEffect(() => { setIsAppleStoreBuild(isMacosTauri()); }, []);
 
-    const isPro = !!user?.isProUntil && new Date(user.isProUntil) > new Date();
+    const hasCloudPlan = !!user?.cloudPlanUntil && new Date(user.cloudPlanUntil) > new Date();
     const isCancelled = !!user?.isSubscriptionCancelled;
-    const expiryDate = user?.isProUntil
-        ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(user.isProUntil))
+    const expiryDate = user?.cloudPlanUntil
+        ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(user.cloudPlanUntil))
         : "";
 
     useEffect(() => {
         if (!showWelcome) return;
-        sessionStorage.removeItem("proWelcome");
+        sessionStorage.removeItem("cloudWelcome");
         const fadeTimer = setTimeout(() => setWelcomeLeaving(true), 4000);
         const hideTimer = setTimeout(() => setShowWelcome(false), 4600);
         return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
@@ -86,17 +86,17 @@ const SubscriptionSettings = () => {
     };
 
     return (
-        <div className={styles.card} data-pro={String(isPro)}>
+        <div className={styles.card} data-cloud={String(hasCloudPlan)}>
             {/* Header */}
             <div className={styles.header}>
                 <span className={styles.planName}>
-                    {isPro ? t("subscription.proTitle") : t("subscription.freeTitle")}
+                    {hasCloudPlan ? t("subscription.cloudTitle") : t("subscription.freeTitle")}
                 </span>
-                {isPro && <span className={styles.proBadge}>{t("subscription.proBadge")}</span>}
+                {hasCloudPlan && <span className={styles.cloudBadge}>{t("subscription.cloudBadge")}</span>}
             </div>
 
             {/* Renewal / end date */}
-            {isPro && (
+            {hasCloudPlan && (
                 <p className={styles.renewDate}>
                     {isCancelled
                         ? t("subscription.endsOn", { date: expiryDate })
@@ -108,12 +108,12 @@ const SubscriptionSettings = () => {
             {/* Perks list */}
             <div className={styles.perksSection}>
                 <p className={styles.perksTitle}>
-                    {isPro ? t("subscription.perksTitle") : t("subscription.upgradeTitle")}
+                    {hasCloudPlan ? t("subscription.perksTitle") : t("subscription.upgradeTitle")}
                 </p>
                 {PERKS.map((perk) => (
                     <div key={perk} className={styles.perkItem}>
-                        {isPro
-                            ? <Check size={14} className={styles.perkIconPro} />
+                        {hasCloudPlan
+                            ? <Check size={14} className={styles.perkIconCloud} />
                             : <Lock size={14} className={styles.perkIconFree} />
                         }
                         {t(`subscription.${perk}` as Parameters<typeof t>[0])}
@@ -126,8 +126,8 @@ const SubscriptionSettings = () => {
                 // App Store build: never bill in-app — direct users to the website.
                 <>
                     <p className={styles.infoText}>
-                        {isPro
-                            ? t("subscription.appleStoreProInfo")
+                        {hasCloudPlan
+                            ? t("subscription.appleStoreCloudInfo")
                             : t("subscription.appleStoreFreeInfo")
                         }
                     </p>
@@ -136,7 +136,7 @@ const SubscriptionSettings = () => {
                         <ExternalLink size={16} />
                     </button>
                 </>
-            ) : isPro ? (
+            ) : hasCloudPlan ? (
                 cancelConfirm ? (
                     <div className={styles.confirmBox}>
                         <p className={styles.confirmText}>
@@ -171,7 +171,7 @@ const SubscriptionSettings = () => {
             {showWelcome && (
                 <div className={`${styles.welcomeBox} ${welcomeLeaving ? styles.welcomeBoxLeaving : ""}`}>
                     <Sparkles size={15} className={styles.welcomeIcon} />
-                    <span>{t("subscription.welcomePro")}</span>
+                    <span>{t("subscription.welcomeCloud")}</span>
                 </div>
             )}
             {error && <p className={styles.errorMessage}>{error}</p>}

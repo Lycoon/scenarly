@@ -37,7 +37,7 @@ model User {
   color               String?
   role                UserRole    @default(USER)
 
-  isProUntil                  DateTime?
+  cloudPlanUntil              DateTime?
   isSubscriptionCancelled     Boolean   @default(false)
   // Stripe is the source of truth for billing; these only link the user to it.
   // The customer id outlives the subscription so a lapsed user re-subscribes

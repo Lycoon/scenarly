@@ -26,8 +26,8 @@ function ProjectsPageContent() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
-        if (!projectId && params.get("pro") === "success") {
-            sessionStorage.setItem("proWelcome", "1");
+        if (!projectId && params.get("cloud") === "success") {
+            sessionStorage.setItem("cloudWelcome", "1");
             goToProjects();
             openDashboard("Subscription");
         }

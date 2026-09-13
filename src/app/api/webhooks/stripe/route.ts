@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
             const subscription = await stripe.subscriptions.retrieve(subscriptionId);
             const periodEnd = subscription.items.data[0]?.current_period_end;
             await UserService.updateUserFromId(userId, {
-                isProUntil: periodEnd ? new Date(periodEnd * 1000) : null,
+                cloudPlanUntil: periodEnd ? new Date(periodEnd * 1000) : null,
                 isSubscriptionCancelled: false,
                 stripeCustomerId: typeof session.customer === "string" ? session.customer : session.customer?.id,
                 stripeSubscriptionId: subscriptionId,
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         if (userId) {
             const periodEnd = subscription.items.data[0]?.current_period_end;
             await UserService.updateUserFromId(userId, {
-                isProUntil: periodEnd ? new Date(periodEnd * 1000) : null,
+                cloudPlanUntil: periodEnd ? new Date(periodEnd * 1000) : null,
                 isSubscriptionCancelled: subscription.cancel_at_period_end,
             });
         }
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         if (userId) {
             // The customer id stays so a later checkout reuses the same Stripe customer.
             await UserService.updateUserFromId(userId, {
-                isProUntil: null,
+                cloudPlanUntil: null,
                 isSubscriptionCancelled: false,
                 stripeSubscriptionId: null,
             });

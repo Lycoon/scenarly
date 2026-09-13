@@ -25,7 +25,7 @@ export interface SavesProvider {
  * cloud history, everything else the device-local one.
  *
  * The question is deliberately `isCloudSyncedProject` and not the membership or
- * Pro flags the panel already has. A cloud project opened offline has no
+ * Cloud-plan flags the panel already has. A cloud project opened offline has no
  * membership to read, and answering "local" there would show the user an empty
  * history for a project whose versions are sitting in R2 — and then write local
  * snapshots beside them that no other device would ever see.

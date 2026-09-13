@@ -12,7 +12,7 @@ type SearchResult = {
     email: string;
     createdAt: string;
     role: UserRole;
-    isProUntil: string | null;
+    cloudPlanUntil: string | null;
 };
 
 type SearchResponse = {
@@ -25,8 +25,8 @@ function formatDate(iso: string) {
     return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-function isPro(isProUntil: string | null) {
-    return !!isProUntil && new Date(isProUntil) > new Date();
+function hasCloudPlan(cloudPlanUntil: string | null) {
+    return !!cloudPlanUntil && new Date(cloudPlanUntil) > new Date();
 }
 
 export default function UserSearch() {
@@ -76,15 +76,15 @@ export default function UserSearch() {
                                 className={`${styles.badge} ${
                                     u.role === UserRole.ADMIN
                                         ? styles.badgeAdmin
-                                        : isPro(u.isProUntil)
-                                          ? styles.badgePro
+                                        : hasCloudPlan(u.cloudPlanUntil)
+                                          ? styles.badgeCloud
                                           : styles.badgeMuted
                                 }`}
                             >
                                 {u.role === UserRole.ADMIN
                                     ? "Admin"
-                                    : isPro(u.isProUntil)
-                                      ? "Pro"
+                                    : hasCloudPlan(u.cloudPlanUntil)
+                                      ? "Cloud"
                                       : "Free"}
                             </span>
                             <span className={styles.date}>{formatDate(u.createdAt)}</span>

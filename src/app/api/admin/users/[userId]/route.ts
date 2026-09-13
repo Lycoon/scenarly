@@ -35,7 +35,7 @@ async function getUserDetail(req: NextRequest, { routeParams, user }: AuthApiCon
             emailVerified: target.emailVerified,
             username: target.username,
             role: target.role,
-            isProUntil: target.isProUntil,
+            cloudPlanUntil: target.cloudPlanUntil,
             isSubscriptionCancelled: target.isSubscriptionCancelled,
             stripeCustomerId,
             stripeCustomerUrl: stripeCustomerId ? `${dashboardBase}/customers/${stripeCustomerId}` : null,
