@@ -7,6 +7,30 @@
     background-color: var(--main-bg);
 }
 
+/*
+ * The editor is mounted but not being shown. Take its subtree out of layout and
+ * paint — the same treatment, and for the same reason, as .panel_hidden in
+ * SplitPanelContainer.module.css: a 120-page screenplay is an enormous
+ * ProseMirror DOM, and while it sits in the layout tree *every* forced reflow
+ * anywhere on screen re-lays it out too.
+ *
+ * .panel_hidden already covers the case where the whole panel is swapped away.
+ * This covers the one it can't see: a panel that is itself visible while its
+ * editor is parked behind an overlay — the index-card grid (SceneCardsPanel),
+ * which reads card rects on every frame of a drag and would otherwise flush a
+ * full-document relayout on each one.
+ *
+ * Layout containment only; the editor keeps its DOM and its state, so coming
+ * back to the script is a relayout rather than a re-initialisation. The
+ * relayout is deliberate: WebKit does not reliably restyle and repaint a subtree
+ * that changed while it was skipped (a view-mode toggle, a setting, an edit),
+ * so DocumentEditorPanel rebuilds the editor's rendering on the way back — see
+ * the parked → visible layout effect there.
+ */
+.parked {
+    content-visibility: hidden;
+}
+
 .container {
     position: relative;
     flex: 1;
@@ -15,6 +39,15 @@
     overflow-x: clip;
     scrollbar-gutter: stable;
     z-index: 0;
+}
+
+/* Zoomed in past 1:1, where the page can be wider than the panel. `clip` above
+ * is right at every other time — it stops a stray decoration from producing a
+ * horizontal scrollbar across a full-width editor — but here the overflow is the
+ * page itself, and it has to be reachable. `auto`, so no bar appears while the
+ * zoomed page still fits. */
+.container.zoom_pan {
+    overflow-x: auto;
 }
 
 .editor_wrapper {
@@ -41,6 +74,82 @@
     min-height: var(--page-height);
     margin: 0 auto;
     box-sizing: border-box;
+}
+
+/* ── Display zoom ──────────────────────────────────────────────────────────────
+ *
+ * Scale the rendered page without touching the document. The scale is the
+ * product of two independent factors (both set by DocumentEditorPanel):
+ *   --editor-fit        phone paged view only: fit the canonical page width to
+ *                       the viewport. Absent (1) everywhere else.
+ *   --editor-user-zoom  the writer's zoom level, 0.5 … 2.
+ *
+ * PURELY VISUAL, and this is the whole point of doing it this way:
+ *  - Pagination is measured off-screen (#pagination-test-div, appended to
+ *    <body>) at the canonical page width, which no selector here matches — so
+ *    page count, numbering and page breaks are identical at every zoom.
+ *  - PDF export pins `transform: none !important` on the editor while it reads
+ *    the DOM (CANONICAL_PINNED_PROPERTIES / withCanonicalLayout in pdf-adapter),
+ *    so an export taken at 170% is byte-identical to one taken at 50%. Any
+ *    future zoom mechanism MUST therefore stay expressed as `transform`: a
+ *    scale carried by anything else (font-size, `zoom`) would not be pinned, and
+ *    would silently deform every export.
+ *
+ * transform, NOT `zoom`: WebKit multiplies computed font sizes by `zoom`
+ * (usedZoom) and then applies its "smart minimum font size"
+ * (minimumLogicalFontSize = 9, StyleFontSizeFunctions.cpp): any absolute
+ * font-size >= 9px whose zoomed result lands below 9px is clamped back up to a
+ * rendered 9px. On a phone (fit ~ 0.48) the 16px screenplay font came out as 9px
+ * rendered — reported as 9 / zoom ~ 18.7px computed — cramming oversized glyphs
+ * into the fixed 16px line boxes and wrapping text differently than the
+ * off-screen pagination measurement. There is NO CSS opt-out (text-size-adjust
+ * and text autosizing are different code paths and do not participate).
+ * transform leaves computed font sizes at their canonical values — layout is
+ * pixel-identical to the measurement pass — and only scales at paint time, so
+ * the clamp never triggers.
+ *
+ * Keyed off the `zoomed` class rather than a neutral scale(1), because an
+ * identity transform is not free: a transformed contenteditable loses its caret
+ * in WebKit, and scale(1) is enough to trigger it. At 100% on a desktop — where
+ * nearly all writing happens — there is no transform on the editor at all.
+ *
+ * Unlike `zoom`, transform doesn't resize the layout box, so the three margins
+ * below restate the box's real footprint (all !important to beat the injected
+ * `.pagination { margin: 0 auto !important }`; this two-class selector then wins
+ * on specificity — same trick as the endless width override further down):
+ *  - left: centres the scaled page while it fits, and pins it to the left edge
+ *    once it doesn't. max() rather than plain centring because a negative
+ *    margin-left would push the overflowing left half out of the scroll range,
+ *    where nothing can ever bring it back.
+ *  - right: reserves (scale − 1) page widths, so the container's scrollWidth
+ *    covers the zoomed-in page and `.zoom_pan` can pan to its right edge.
+ *  - bottom: same correction vertically, against the editor's untransformed
+ *    height (--editor-layout-height, fed by a ResizeObserver in
+ *    DocumentEditorPanel), so the scroll extent matches what is visible. */
+.editor_wrapper.zoomed :global(.ProseMirror) {
+    --editor-zoom: calc(var(--editor-fit, 1) * var(--editor-user-zoom, 1));
+
+    transform: scale(var(--editor-zoom));
+    /* top left, not top center: with the origin in the middle, a page scaled past
+     * the viewport width grows equally in both directions and the left half is
+     * unreachable — a scroll container cannot scroll above zero. */
+    transform-origin: top left;
+    margin-left: max(0px, calc((100% - var(--page-width) * var(--editor-zoom)) / 2)) !important;
+    margin-right: calc((var(--editor-zoom) - 1) * var(--page-width)) !important;
+    margin-bottom: calc((var(--editor-zoom) - 1) * var(--editor-layout-height, 0px)) !important;
+}
+
+/* Zoomed in, the page can be wider than the 1000px column the wrapper is capped
+ * at. Let it use the full width of the panel so it still centres on the screen
+ * rather than in a column narrower than itself. */
+.editor_wrapper.zoomed {
+    max-width: none;
+}
+
+/* Passthrough wrapper around the editor content; carries the context-menu
+ * handler and has no visual styling of its own. */
+.page_shift {
+    display: block;
 }
 
 .editor_shadow {
@@ -111,7 +220,246 @@
     pointer-events: none;
 }
 
+/* Draggable scroll handle (phone). A fixed-size grab handle riding the right
+ * edge — styled like the sidebar edge toggles — that tracks scroll position and
+ * can be grabbed to move the page. Revealed while scrolling (or dragging) and
+ * faded out at rest so it never disrupts writing. Its offset is set inline by
+ * DocumentEditorPanel; keep .scroll_handle's height in sync with HANDLE_HEIGHT. */
+.scroll_track {
+    /* Fixed to the viewport (not absolute inside .editor_panel) so the handle's
+     * position stays put regardless of the mobile navbar. The navbar collapses its
+     * height in the flex column as the reader scrolls (see ProjectNavbar), which
+     * would otherwise move .editor_panel's top edge up and drag an absolutely-
+     * positioned handle with it — a jarring shift right as scrolling begins. The
+     * static --navbar-height offset keeps the handle exactly where it sits while
+     * the navbar is shown, then holds that spot once the navbar is gone (same
+     * viewport-anchoring trick as .sidebar_backdrop in ProjectWorkspace). */
+    position: fixed;
+    /* --navbar-height positions the handle just below the (shown) navbar; the +60
+     * then clears the right sidebar edge toggle (top:8px, up to 44px tall on touch)
+     * plus a small gap. The bottom sits 8px above the safe-area inset, so the
+     * handle's lower end lines up with the MobileFormatToolbar (which floats 8px
+     * above the keyboard) and clears the home indicator instead of dipping into it.
+     * Keep the +60 / bottom base in sync with TRACK_INSET_TOP / TRACK_INSET_BOTTOM
+     * in DocumentEditorPanel (the travel-range fallback; the safe-area part is
+     * measured, not part of the constant). */
+    top: calc(var(--navbar-height) + 60px);
+    bottom: calc(var(--safe-bottom) + 8px);
+    /* Right offset matches .right_sidebar_toggle (ProjectWorkspace) so the handle
+     * lines up horizontally with the sidebar edge toggle. */
+    right: 8px;
+    width: 28px;
+    z-index: 52;
+    pointer-events: none;
+
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity 0.25s ease,
+        visibility 0.25s;
+}
+
+.scroll_track_visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.scroll_handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 16px;
+    /* The project navbar's own colour (ProjectNavbar .container is --main-bg),
+     * the same fill the edge toggles take on the phone — see ProjectWorkspace's
+     * .right_sidebar_toggle phone rule. This rides over the script page, which
+     * fills the width here and is white in every light theme, so a --secondary
+     * fill (white, or a hair off it) blended straight into it. */
+    background-color: var(--main-bg);
+    color: var(--secondary-text);
+    box-shadow: var(--panel-shadow);
+
+    pointer-events: auto;
+    cursor: grab;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    /* Only background animates; the vertical offset is driven live via inline
+     * transform during scroll/drag, so it must not be transitioned. */
+    transition: background-color 0.15s ease;
+}
+
+.scroll_handle:active {
+    cursor: grabbing;
+    background-color: var(--primary-hover);
+}
+
 /* Endless Scroll Mode Overrides */
 .endless_scroll :global(.pagination-page-break) {
     display: none !important;
+}
+
+/* Phone has two view modes, tied to the endless-scroll toggle (default endless
+ * on phone — see ViewContext):
+ *   - Endless: reflow text into the viewport at full size (compact margins), no
+ *     page rectangles, so nothing shifts while writing.
+ *   - Paged: the real desktop page (breaks/headers/footers) scaled to fit with
+ *     transform: scale() — a fixed rectangle, so its boundaries never move while
+ *     writing.
+ * Both are purely visual; pagination is measured off-screen at the canonical page
+ * width, so page count / numbering / PDF export match desktop in either mode. */
+@media (max-width: 767px) {
+    .container {
+        -webkit-overflow-scrolling: touch;
+        /* Hide the native scrollbar on phone: the draggable scroll handle
+         * (.scroll_track) is the touch scroll affordance here, and the two
+         * rendered together look redundant and can visually collide at the right
+         * edge. Drop the reserved gutter too so the page uses the full width. */
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
+        /* The mobile navbar is a fixed overlay pinned to the top (see ProjectNavbar
+         * .container:not(.home_container)), so this scroller fills the full height
+         * *behind* it. Pad the top by one navbar height so the first line clears the
+         * bar at rest, while the content still scrolls up UNDER the bar and is
+         * revealed as it slides away — the Google-Docs reclaim. The pad is constant,
+         * so the scroll viewport never resizes and content tracks the finger 1:1. */
+        padding-top: var(--navbar-height);
+    }
+
+    /* With the timeline strip open it sits between the fixed navbar and this
+     * scroller (the timeline carries its own navbar-height top margin), so the
+     * editor content is no longer behind the bar and needs no top pad to clear
+     * it. Drop the pad so the first line — and the sticky shadow below — sit flush
+     * under the timeline instead of a navbar height too low. */
+    .container.timeline_open {
+        padding-top: 0;
+    }
+
+    .container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .editor_wrapper {
+        max-width: none;
+        /* A fixed tail so the last page doesn't butt against the viewport edge,
+         * plus whatever the on-screen keyboard and the format toolbar riding on it
+         * currently cover (--keyboard-inset, set on the scroll container by
+         * useKeyboardCaretVisibility and inherited here; absent when no keyboard is
+         * up). Without that second term the end of the script has nothing below it
+         * to scroll up: the shell is pinned to the layout viewport, so the keyboard
+         * simply sits over the last lines and they can never be brought into view
+         * while writing them. */
+        padding-bottom: calc(40% + var(--keyboard-inset, 0px));
+    }
+
+    /* ENDLESS mode (default on phone): reflow the screenplay into the viewport at
+     * full size instead of shrinking the page. The editor fills the width and the
+     * wide screenplay margins compress via --display-margin-scale (consumed by
+     * every element padding in scenarly.css), so text wraps to a narrow measure at
+     * real font size. Continuous — inter-page breaks are hidden by the
+     * `.endless_scroll .pagination-page-break { display:none }` rule above — so
+     * there are no page rectangles to shift while writing.
+     *
+     * Purely visual: the offscreen pagination measurement div
+     * (#pagination-test-div, appended to <body>) isn't matched by this selector,
+     * so it keeps --display-margin-scale: 1 and measures at the canonical page
+     * width. Page count, numbering and PDF export are unchanged from desktop.
+     *
+     * width:100% !important overrides the pagination extension's injected
+     * `.pagination { width: var(--page-width) !important }` (this three-class
+     * selector wins on specificity). */
+    .editor_wrapper.endless_scroll :global(.ProseMirror) {
+        width: 100% !important;
+        --display-margin-scale: 0.3;
+    }
+
+    /* Endless shows only the first page's top margin and the last page's bottom
+     * margin (all inter-page breaks are hidden). Collapse the last page's
+     * freespace so the script ends on its margin, not a blank page tail. */
+    .editor_wrapper.endless_scroll :global(.pagination-last-page) {
+        content-visibility: visible !important;
+        contain-intrinsic-size: auto !important;
+    }
+
+    .editor_wrapper.endless_scroll :global(.pagination-last-page > .pagination-spacer),
+    .editor_wrapper.endless_scroll :global(.pagination-last-page > .pagination-overlay) {
+        height: var(--page-margin-bottom) !important;
+    }
+
+    /* Scale the first-page header / last-page footer inset by
+     * --display-margin-scale so those fit the viewport like the content does. */
+    .editor_wrapper.endless_scroll :global(.pagination-header-area),
+    .editor_wrapper.endless_scroll :global(.pagination-footer-area) {
+        padding-left: calc(var(--page-margin-left) * var(--display-margin-scale)) !important;
+        padding-right: calc(var(--page-margin-right) * var(--display-margin-scale)) !important;
+    }
+
+    /* PAGED mode (endless off): render exactly like desktop — real fixed-size
+     * pages, page breaks, headers, footers — and scale the whole page down to fit
+     * the viewport. Because the page is a fixed rectangle, its boundaries never
+     * move while writing, so there are no layout shifts — the tradeoff being
+     * smaller text than endless mode's reflow.
+     *
+     * The scaling itself is not phone-specific and lives with the rest of the
+     * zoom machinery (`.editor_wrapper.zoomed` near the top of this file). All
+     * that is particular to phone is the fit-to-width factor it multiplies in:
+     * --editor-fit, measured by DocumentEditorPanel. */
+
+    .editor_shadow {
+        max-width: none;
+        /* Park the shadow at the navbar's bottom edge, then ride it up as the bar
+         * hides. The scroller's navbar-height top pad (see .container above) is the
+         * sticky baseline, so a STATIC top:0 already sits right under the shown bar.
+         *
+         * The follow-the-bar motion is a transform, NOT an animated `top`: iOS
+         * WebKit doesn't re-run a sticky element's top-constraint when a custom
+         * property changes mid-scroll, so a --chrome-hide-driven `top` stayed frozen
+         * at its initial value and the shadow hung a navbar height too low the
+         * moment you scrolled and the bar slid away. transform is a compositor
+         * property that re-reads --chrome-hide every frame — the exact mechanism the
+         * navbar uses for its own slide (see ProjectNavbar .container) — so the
+         * shadow now tracks the bar 1:1 up to the very top. */
+        top: 0;
+        transform: translateY(calc(var(--navbar-height) * var(--chrome-hide, 0) * -1));
+        will-change: transform;
+    }
+
+    /* Timeline open: the scroller's top pad is dropped (see .timeline_open above),
+     * so top:0 already parks the shadow flush under the timeline. The bar sits
+     * above the timeline, not this scroller, so there's nothing to ride — hold the
+     * shadow still (no chrome-hide transform). */
+    .container.timeline_open .editor_shadow {
+        top: 0;
+        transform: none;
+    }
+
+    /* The read-only pill hangs off the bar's bottom edge (hence the bottom-only
+     * rounding), so it has to travel with the bar rather than stay pinned to the
+     * top of the scroller while the bar slides out from above it. Same transform
+     * mechanism — and the same reason for not driving the sticky `top` — as
+     * .editor_shadow above.
+     *
+     * It travels a navbar height PLUS its own (the 100%), because it starts below
+     * the bar: at --chrome-hide 1 the bar's bottom edge is at y=0, so a bar-height
+     * slide alone would leave the pill sitting at the top of the screen — and,
+     * being invisible by then, silently eating taps in that strip. Fading in
+     * lockstep matches how the bar's own pill clusters go (see ProjectNavbar
+     * .mobile_left) and keeps the few px of overlap with the sliding bar unseen. */
+    .viewOnlyBanner {
+        transform: translateY(calc(var(--chrome-hide, 0) * -1 * (var(--navbar-height) + 100%)));
+        opacity: calc(1 - var(--chrome-hide, 0));
+        will-change: transform;
+    }
+
+    /* Timeline open: the bar sits above the timeline strip, not this scroller, so
+     * the pill has nothing to ride — hold it still (mirrors the shadow). */
+    .container.timeline_open .viewOnlyBanner {
+        transform: none;
+        opacity: 1;
+    }
 }

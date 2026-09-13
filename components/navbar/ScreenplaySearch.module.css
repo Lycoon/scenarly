@@ -77,6 +77,52 @@
     z-index: 1;
 }
 
+/* Phone: the search opens as a panel below the navbar with the input at the
+ * top, instead of an inline field that would expand into (and crush) the
+ * navbar's format dropdown. Anchored to the right, under the navbar search
+ * button, at the same fixed width as on desktop. */
+@media (max-width: 767px) {
+    .dropdown {
+        position: fixed;
+        top: calc(var(--navbar-height) + 4px);
+        left: auto;
+        right: calc(12px + var(--safe-right));
+        width: 220px;
+        /* Never taller than the gap between the navbar and the top of the
+         * on-screen keyboard (--keyboard-inset, set inline by ScreenplaySearch;
+         * 0 when no keyboard is up). Left unclamped, the filter list runs under
+         * the keyboard and off the screen, and dragging the panel scrolls the
+         * document instead of the panel — which shoves the whole layout above
+         * the top of the screen. Scroll the filters inside the panel instead,
+         * and don't chain that scroll to anything behind it. */
+        max-height: calc(
+            100dvh - var(--navbar-height) - 16px - var(--safe-bottom) - var(--keyboard-inset, 0px)
+        );
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        /* Portaled to <body> (see ScreenplaySearch), so it must out-rank the
+         * navbar (z-index 50) and page content on its own. */
+        z-index: 60;
+    }
+}
+
+.panel_search_input {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background-color: var(--secondary);
+    color: var(--primary-text);
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.panel_search_input::placeholder {
+    color: var(--secondary-text);
+}
+
 .navigation {
     display: flex;
     flex-direction: row;

@@ -5,9 +5,11 @@ import {
     UpdateProjectBody,
     UpdateRoleBody,
     RequestMagicLinkBody,
+    TransferOwnershipBody,
     UpdateUserBody,
 } from "./api-bodies";
 import { apiFetch } from "@src/lib/api-client";
+import type { SaveEntry } from "@src/lib/saves/types";
 
 type RESTMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -49,14 +51,6 @@ export const uploadProjectToCloud = (
 };
 
 /* Saves / Version History */
-
-export interface SaveEntry {
-    key: string;
-    type: "auto" | "manual";
-    name?: string;
-    date: string;
-    size: number;
-}
 
 export const listSaves = async (projectId: string): Promise<SaveEntry[]> => {
     const res = await request(`/api/projects/${projectId}/saves`, "GET");
@@ -106,6 +100,10 @@ export const updateMemberRole = async (projectId: string, userId: string, body: 
     return request(`/api/projects/${projectId}/members/${userId}`, "PATCH", body);
 };
 
+export const transferProjectOwnership = async (projectId: string, userId: string) => {
+    return request(`/api/projects/${projectId}/transfer-ownership`, "POST", { userId } satisfies TransferOwnershipBody);
+};
+
 /* Users */
 
 export const editUserSettings = (body: Partial<UserSettings>) => {
@@ -118,6 +116,14 @@ export const editUserInfo = (body: UpdateUserBody) => {
 
 export const deleteUser = () => {
     return request(`/api/users`, "DELETE");
+};
+
+export const requestDataExport = () => {
+    return request(`/api/users/export`, "POST");
+};
+
+export const downloadDataExport = (id: string) => {
+    return request(`/api/users/export/download?id=${encodeURIComponent(id)}`, "GET");
 };
 
 /* Auth */
@@ -143,22 +149,5 @@ export const createStripeCheckout = async (): Promise<{ url: string } | null> =>
         return data ?? null;
     }
     return null;
-};
-
-export const submitApplePurchase = async (jwsTransaction: string): Promise<boolean> => {
-    const res = await request("/api/apple/purchase", "POST", { jwsTransaction });
-    return res.ok;
-};
-
-export const transferAppleSubscription = async (jwsTransaction: string): Promise<boolean> => {
-    const res = await request("/api/apple/transfer-subscription", "POST", { jwsTransaction });
-    return res.ok;
-};
-
-export const getAppleSubscriptionOwner = async (jwsTransaction: string): Promise<string | null> => {
-    const res = await request("/api/apple/subscription-owner", "POST", { jwsTransaction });
-    if (!res.ok) return null;
-    const { email } = (await res.json()) as { email: string | null };
-    return email ?? null;
 };
 

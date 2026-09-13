@@ -47,6 +47,7 @@
   "exclude": [
     "node_modules",
     "out",
-    "src-tauri/target"
+    "src-tauri/target",
+    "landing"
   ]
 }

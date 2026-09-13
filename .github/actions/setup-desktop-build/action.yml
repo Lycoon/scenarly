@@ -1,14 +1,31 @@
 name: Setup Desktop Build Toolchain
-description: Installs Node.js, Rust with platform-appropriate targets, MSIX bundler on Windows, and runs npm ci.
+description: Installs Node.js, Rust with platform-appropriate targets, MSIX bundler on Windows, the JDK + Android SDK/NDK on Android, and runs npm ci.
 
 inputs:
     platform:
-        description: Target platform ("macos" or "windows").
+        description: Target platform ("macos", "windows", "ios", or "android").
         required: true
 
 runs:
     using: composite
     steps:
+        # macos-latest's default Xcode advances on its own schedule (we've seen
+        # it jump across major versions within days) — pin to a specific
+        # release so builds don't churn every time GitHub rolls the runner
+        # image forward. This isn't a workaround for a specific bug (the Swift
+        # back-deployment link error we hit was caused by our iOS deployment
+        # target being too old for the toolchain to back-deploy Concurrency
+        # to, fixed by raising it — see tauri.ios.conf.json / gen/apple) —
+        # it's purely for reproducibility. Bump deliberately (and re-test) if
+        # a newer Xcode is ever needed, e.g. for an App Store SDK requirement;
+        # check available versions in a failing run's log first — runner
+        # images only keep the last few Xcode releases installed.
+        - name: Select Xcode
+          if: runner.os == 'macOS'
+          uses: maxim-lobanov/setup-xcode@v1
+          with:
+              xcode-version: "26.3.0"
+
         - name: Setup Node.js
           uses: actions/setup-node@v6
           with:
@@ -27,6 +44,21 @@ runs:
           with:
               targets: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
 
+        - name: Setup Rust (iOS)
+          if: inputs.platform == 'ios'
+          uses: dtolnay/rust-toolchain@stable
+          with:
+              targets: aarch64-apple-ios, aarch64-apple-ios-sim, x86_64-apple-ios
+
+        # i686 is deliberately absent: it is 32-bit x86, which no shipping Android
+        # device uses. The three below cover every real phone/tablet (arm64 + the
+        # armv7 tail) plus Chromebooks and emulators (x86_64).
+        - name: Setup Rust (Android)
+          if: inputs.platform == 'android'
+          uses: dtolnay/rust-toolchain@stable
+          with:
+              targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+
         - name: Setup Rust cache
           uses: swatinem/rust-cache@v2
           with:
@@ -36,6 +68,33 @@ runs:
           if: inputs.platform == 'windows'
           shell: bash
           run: cargo install msixbundle-cli
+
+        # AGP 8.11 (Tauri's generated Gradle project) needs JDK 17+; 21 is the
+        # current LTS it is tested against.
+        - name: Setup JDK (Android)
+          if: inputs.platform == 'android'
+          uses: actions/setup-java@v4
+          with:
+              distribution: temurin
+              java-version: "21"
+
+        # The runner image ships an Android SDK, but not necessarily the platform
+        # Tauri's template compiles against (compileSdk/targetSdk 36) nor an NDK
+        # new enough for it. Install both explicitly and pin the NDK for
+        # reproducibility, same reasoning as the Xcode pin above — bump
+        # deliberately, and keep it in step with what the template asks for.
+        - name: Setup Android SDK packages
+          if: inputs.platform == 'android'
+          shell: bash
+          env:
+              ANDROID_NDK_VERSION: "29.0.13846066"
+          run: |
+              set -e
+              SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+              yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+              "$SDKMANAGER" --install "platforms;android-36" "build-tools;36.0.0" "ndk;$ANDROID_NDK_VERSION"
+              # Tauri resolves the NDK through NDK_HOME.
+              echo "NDK_HOME=$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION" >> "$GITHUB_ENV"
 
         - name: Install dependencies
           shell: bash

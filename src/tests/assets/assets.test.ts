@@ -5,20 +5,21 @@ import { importImageFile, importAudioFile, loadAssetObjectUrl } from "@src/lib/a
 import { collectReferencedHashes, gcProjectAssets } from "@src/lib/assets/asset-gc";
 import {
     getStorageProvider,
+    type SnapshotMeta,
     type StoredAsset,
 } from "@src/lib/persistence/storage-provider/storage-provider";
 import { ProjectState } from "@src/lib/project/project-state";
 import { createProjectRepository } from "@src/lib/project/project-repository";
-import { ScriptioAdapter, restoreScriptioAssets } from "@src/lib/adapters/scriptio/scriptio-adapter";
+import { ScenarlyAdapter, restoreScenarlyAssets } from "@src/lib/adapters/scenarly/scenarly-adapter";
 
 const pid = () => `test-${Math.random().toString(36).slice(2)}`;
 
 // The `assets` store is part of the baseline schema. A browser profile carrying
-// a stale `scriptio-local` from before the store existed would lack it (we don't
+// a stale `scenarly-local` from before the store existed would lack it (we don't
 // bump the store version — greenfield assumption), so reset it for a clean run.
 beforeAll(async () => {
     await new Promise<void>((resolve) => {
-        const req = indexedDB.deleteDatabase("scriptio-local");
+        const req = indexedDB.deleteDatabase("scenarly-local");
         req.onsuccess = () => resolve();
         req.onerror = () => resolve();
         req.onblocked = () => resolve();
@@ -183,7 +184,93 @@ describe("asset GC (reconcile from doc)", () => {
     });
 });
 
-describe("scriptio asset bundling", () => {
+describe("asset GC (snapshots keep their assets alive)", () => {
+    /** Record a history entry referencing `hashes`. Bytes are irrelevant here —
+     *  GC reads the recorded index, never the snapshot itself. */
+    async function putSnapshotReferencing(
+        projectId: string,
+        key: string,
+        hashes: string[],
+        extra: Partial<SnapshotMeta> = {},
+    ): Promise<void> {
+        const provider = await getStorageProvider();
+        await provider.putSnapshot(
+            {
+                key,
+                projectId,
+                type: "auto",
+                createdAt: Date.now(),
+                size: 1,
+                contentHash: key,
+                assetHashes: hashes,
+                ...extra,
+            },
+            new Uint8Array([1]).buffer as ArrayBuffer,
+        );
+    }
+
+    /** A doc with one board referencing exactly `hashes`. */
+    function docReferencing(hashes: string[]): ProjectState {
+        const ydoc = new ProjectState();
+        const repo = createProjectRepository(ydoc)!;
+        const board = repo.createBoardDocument("B1");
+        ydoc.boardData(board).set(
+            "cards",
+            JSON.stringify(hashes.map((assetId, i) => ({ id: `c${i}`, type: "image", assetId, ...cardBase }))),
+        );
+        return ydoc;
+    }
+
+    it("keeps an asset the live doc dropped while a snapshot still references it", async () => {
+        const provider = await getStorageProvider();
+        const p = pid();
+
+        await putDummyAsset(p, "A");
+        await putDummyAsset(p, "B");
+        // The version the user could still restore holds a card using A.
+        await putSnapshotReferencing(p, `${p}/auto/1`, ["A", "B"]);
+
+        // A is gone from the live document, but restoring that snapshot without
+        // its image would restore a broken board.
+        const ydoc = docReferencing(["B"]);
+        await gcProjectAssets(p, ydoc);
+        expect((await provider.listAssetHashes(p)).sort()).toEqual(["A", "B"]);
+
+        // Once the snapshot goes, nothing references A and it is collected.
+        await provider.deleteSnapshots([`${p}/auto/1`]);
+        await gcProjectAssets(p, ydoc);
+        expect(await provider.listAssetHashes(p)).toEqual(["B"]);
+
+        await provider.deleteProjectAssets(p);
+        await provider.deleteProjectSnapshots(p);
+        ydoc.destroy();
+    });
+
+    it("deletes nothing at all when a snapshot's references are unreadable", async () => {
+        const provider = await getStorageProvider();
+        const p = pid();
+
+        await putDummyAsset(p, "A");
+        await putDummyAsset(p, "orphan");
+        // A snapshot whose board cards wouldn't parse when it was written: its
+        // reference list is unknown, so no asset can be proven unreferenced.
+        await putSnapshotReferencing(p, `${p}/auto/1`, [], { assetsUnparsed: true });
+
+        const ydoc = docReferencing(["A"]);
+        await gcProjectAssets(p, ydoc);
+        expect((await provider.listAssetHashes(p)).sort()).toEqual(["A", "orphan"]);
+
+        // With that snapshot gone the sweep is trustworthy again.
+        await provider.deleteProjectSnapshots(p);
+        await gcProjectAssets(p, ydoc);
+        expect(await provider.listAssetHashes(p)).toEqual(["A"]);
+
+        await provider.deleteProjectAssets(p);
+        ydoc.destroy();
+    });
+});
+
+describe("scenarly asset bundling", () => {
     it("bundles board image assets into the archive and restores them", async () => {
         const provider = await getStorageProvider();
         const src = pid();
@@ -200,7 +287,7 @@ describe("scriptio asset bundling", () => {
             JSON.stringify([{ id: "c1", type: "image", assetId: hash, ...cardBase }]),
         );
 
-        const adapter = new ScriptioAdapter();
+        const adapter = new ScenarlyAdapter();
         const blob = await adapter.convertTo(ydoc, {
             title: "t",
             author: "a",
@@ -216,7 +303,7 @@ describe("scriptio asset bundling", () => {
         // Assets restore into a *different* project id (the import target).
         const dest = pid();
         expect(await provider.hasAsset(dest, hash)).toBe(false);
-        await restoreScriptioAssets(dest, buffer);
+        await restoreScenarlyAssets(dest, buffer);
 
         const restored = await provider.getAsset(dest, hash);
         expect(restored?.width).toBe(12);
@@ -246,7 +333,7 @@ describe("scriptio asset bundling", () => {
             JSON.stringify([{ id: "c1", type: "audio", assetId: hash, ...cardBase }]),
         );
 
-        const adapter = new ScriptioAdapter();
+        const adapter = new ScenarlyAdapter();
         const blob = await adapter.convertTo(ydoc, {
             title: "t",
             author: "a",
@@ -262,7 +349,7 @@ describe("scriptio asset bundling", () => {
         expect(collectReferencedHashes(ydoc).has(hash)).toBe(true);
 
         const dest = pid();
-        await restoreScriptioAssets(dest, buffer);
+        await restoreScenarlyAssets(dest, buffer);
 
         const restored = await provider.getAsset(dest, hash);
         expect(restored?.mime).toBe("audio/mp4");
@@ -278,7 +365,7 @@ describe("scriptio asset bundling", () => {
         const repo = createProjectRepository(ydoc)!;
         repo.createBoardDocument("B"); // empty board, no image cards
 
-        const adapter = new ScriptioAdapter();
+        const adapter = new ScenarlyAdapter();
         const blob = await adapter.convertTo(ydoc, {
             title: "t",
             author: "a",
@@ -288,7 +375,7 @@ describe("scriptio asset bundling", () => {
         const buffer = await blob.arrayBuffer();
 
         const dest = pid();
-        await restoreScriptioAssets(dest, buffer); // must not throw
+        await restoreScenarlyAssets(dest, buffer); // must not throw
         expect(await (await getStorageProvider()).listAssetHashes(dest)).toEqual([]);
 
         ydoc.destroy();

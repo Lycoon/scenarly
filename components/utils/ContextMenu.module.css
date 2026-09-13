@@ -2,9 +2,15 @@
     display: flex;
     flex-direction: column;
     width: 220px;
+    /* Never taller/wider than the viewport — long menus scroll instead of
+       overflowing off-screen (the JS clamps the top/left to match). */
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
 
     z-index: 1000;
     position: fixed;
+    /* Hidden until the component has measured and placed it (before paint). */
+    visibility: hidden;
     padding-block: 6px;
     /* Horizontal padding so hovered items inset from the menu's left/right edges. */
     padding-inline: 6px;
@@ -51,6 +57,22 @@
     justify-content: center;
     width: 16px;
     flex-shrink: 0;
+}
+
+/* Wrapper around a submenu parent item; anchors the flyout's mouse-leave area. */
+.submenu_wrap {
+    position: relative;
+}
+
+.submenu_chevron {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--secondary-text);
+}
+
+/* Flyout panel — reuses .menu, but capped shorter so long layer lists scroll. */
+.submenu_panel {
+    max-height: min(320px, calc(100vh - 16px));
 }
 
 .menu_separator {

@@ -1,19 +1,20 @@
 "use client";
 
 import useSWR, { useSWRConfig } from "swr";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { CookieUser, UserSettings } from "./types";
+import { RefObject, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { CookieUser, DataExportState, UserSettings } from "./types";
 import { editUserSettings } from "./requests";
 import { readLocalSettings, writeLocalSettings, DEFAULT_LOCAL_SETTINGS } from "./local-settings";
 import { ProjectContext } from "@src/context/ProjectContext";
 import { isPage, Page } from "./enums";
 import { Collaborator, ProjectInvite, ProjectMembershipPayload } from "@src/server/repository/project-repository";
 import { KeyBindingMap, tinykeys } from "tinykeys";
-import { DEFAULT_KEYBINDS, executeKeybindAction, KeybindId } from "./keybinds";
+import { DEFAULT_KEYBINDS, executeKeybindAction, KeybindId, ViewActions } from "./keybinds";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProjectRole } from "../../generated/client/browser";
 import { isTauri } from "@tauri-apps/api/core";
 import { useTranslations } from "next-intl";
+import { keyboardInsetNow, viewportBottomInset } from "@src/lib/editor/visible-band";
 
 interface Position {
     x: number;
@@ -75,6 +76,299 @@ const useDesktop = (): boolean => {
     return isDesktop;
 };
 
+// One MediaQueryList per query, shared by every hook instance. The snapshot
+// getter below runs on each render and matchMedia() allocates a live list object
+// on every call, so cache them rather than churning one per render.
+const mediaQueryLists = new Map<string, MediaQueryList>();
+const getMediaQueryList = (query: string): MediaQueryList => {
+    let mql = mediaQueryLists.get(query);
+    if (!mql) {
+        mql = window.matchMedia(query);
+        mediaQueryLists.set(query, mql);
+    }
+    return mql;
+};
+
+/**
+ * Subscribe to a CSS media query.
+ *
+ * Read through useSyncExternalStore rather than state-plus-effect so a component
+ * mounting *after* hydration gets the real value on its very first render. The
+ * old shape started `false` and only corrected itself in an effect, so on a phone
+ * every fresh mount painted one frame of the desktop branch first — visible as a
+ * flash of the desktop navbar when opening a project (see [ProjectNavbar], which
+ * picks its layout from `useIsPhone`).
+ *
+ * The server snapshot stays `false` so the SSR markup and the client's hydration
+ * render still agree; React re-renders with the client snapshot immediately after
+ * hydrating, which is the one case a mismatch would otherwise throw.
+ */
+const useMediaQuery = (query: string): boolean => {
+    const subscribe = useCallback(
+        (onStoreChange: () => void) => {
+            const mql = getMediaQueryList(query);
+            mql.addEventListener("change", onStoreChange);
+            return () => mql.removeEventListener("change", onStoreChange);
+        },
+        [query],
+    );
+    const getSnapshot = useCallback(() => getMediaQueryList(query).matches, [query]);
+
+    return useSyncExternalStore(subscribe, getSnapshot, () => false);
+};
+
+// Phone breakpoint: below this the editor switches to the single-panel drawer
+// layout. At or above it (iPad, resized desktop windows) the desktop layout is
+// kept. Keep in sync with the @media (max-width: 767px) blocks in the CSS.
+const PHONE_QUERY = "(max-width: 767px)";
+
+// Coarse pointer: the primary input is a finger rather than a mouse — phones AND
+// tablets. Keep in sync with the @media (pointer: coarse) blocks in the CSS.
+const TOUCH_QUERY = "(pointer: coarse)";
+
+// How long the visual viewport must hold still before the keyboard's slide counts
+// as finished (see useKeyboardInset). Comfortably past iOS's ~250ms animation.
+const KEYBOARD_SETTLE_MS = 400;
+
+/**
+ * True on phone-sized viewports (< 768px). Drives the structural mobile forks
+ * that CSS alone can't express — overlay-drawer sidebars, disabled split view,
+ * the burger navbar.
+ *
+ * This is about how much *room* the layout has, not how it is pointed at. An
+ * iPad is not a phone: it gets the desktop split layout. For the input-modality
+ * fork (touch gestures, long-press menus) use `useIsTouch` instead.
+ */
+const useIsPhone = (): boolean => useMediaQuery(PHONE_QUERY);
+
+/**
+ * True when the primary pointer is coarse — a finger. Covers phones *and*
+ * tablets, and is the JS counterpart of the `@media (pointer: coarse)` blocks in
+ * the CSS.
+ *
+ * Drives the interaction forks that a finger needs and a mouse doesn't: touch
+ * drag/pinch gestures, long-press context menus, the on-screen-keyboard toolbar.
+ * These are orthogonal to `useIsPhone` — an iPad shows the desktop layout but
+ * still has to be driven by touch.
+ *
+ * Note this stays true on an iPad with a trackpad attached (iPadOS keeps touch
+ * as the primary pointer), so touch handlers must be added *alongside* the mouse
+ * ones rather than replacing them.
+ */
+const useIsTouch = (): boolean => useMediaQuery(TOUCH_QUERY);
+
+/**
+ * Track a visual-viewport measurement, re-reading it across the whole of any
+ * keyboard slide rather than only at the moments iOS chooses to fire an event:
+ * WebKit stops emitting partway through the animation, so a single reading — or
+ * one taken on a fixed delay — can land mid-flight and stick, leaving consumers
+ * offset by a keyboard that has already gone. Re-reads every frame until the
+ * viewport has been quiet for KEYBOARD_SETTLE_MS.
+ *
+ * `measure` must be a stable module-level function, not an inline closure.
+ */
+const useViewportInset = (enabled: boolean, measure: () => number): number => {
+    const [inset, setInset] = useState(0);
+
+    useEffect(() => {
+        // When disabled the consumer is hidden anyway, so leaving a stale inset is
+        // harmless — just don't subscribe.
+        if (!enabled || typeof window === "undefined" || !window.visualViewport) return;
+        const vv = window.visualViewport;
+        let frame: number | null = null;
+        let settleUntil = 0;
+
+        const read = () => setInset(measure());
+
+        const settle = () => {
+            read();
+            if (performance.now() >= settleUntil) {
+                frame = null;
+                return;
+            }
+            frame = requestAnimationFrame(settle);
+        };
+        const bump = () => {
+            settleUntil = performance.now() + KEYBOARD_SETTLE_MS;
+            if (frame === null) frame = requestAnimationFrame(settle);
+        };
+
+        read();
+        vv.addEventListener("resize", bump);
+        vv.addEventListener("scroll", bump);
+        // Dismissing the keyboard can blur the field without WebKit firing a
+        // viewport event at all, so drive the same settle off focus changes too.
+        window.addEventListener("focusout", bump);
+        return () => {
+            if (frame !== null) cancelAnimationFrame(frame);
+            vv.removeEventListener("resize", bump);
+            vv.removeEventListener("scroll", bump);
+            window.removeEventListener("focusout", bump);
+        };
+    }, [enabled, measure]);
+
+    return inset;
+};
+
+/**
+ * Distance in px the on-screen keyboard covers at the bottom of the layout
+ * viewport. 0 when no keyboard is up — `keyboardInsetNow` floors anything under
+ * KEYBOARD_THRESHOLD, so this is never a small non-zero number, it is 0 or a real
+ * keyboard. Use it to answer *is a keyboard up*; to place something against the
+ * bottom of the usable area, use `useViewportBottomInset` instead.
+ */
+const useKeyboardInset = (enabled: boolean): number => useViewportInset(enabled, keyboardInsetNow);
+
+/**
+ * Distance in px covered at the bottom of the layout viewport by anything at all
+ * — keyboard, iOS shortcuts bar, browser chrome — unfloored, so it can be
+ * followed continuously (see viewportBottomInset).
+ */
+const useViewportBottomInset = (enabled: boolean): number =>
+    useViewportInset(enabled, viewportBottomInset);
+
+/** Movement (px) before a drag is committed to an axis — below this it's a tap. */
+const PAN_AXIS_THRESHOLD = 3;
+
+/**
+ * Nearest ancestor of `target`, up to and including `root`, that can actually
+ * scroll along `axis` — i.e. is a scroll container on that axis *and* has content
+ * overflowing it. Null when the drag has nothing inside the chrome to scroll, in
+ * which case the browser would hand it to the page.
+ */
+const scrollerForAxis = (target: EventTarget | null, root: HTMLElement, axis: "x" | "y"): HTMLElement | null => {
+    let el = target instanceof Element ? target : null;
+    while (el) {
+        if (el instanceof HTMLElement) {
+            const style = getComputedStyle(el);
+            const overflow = axis === "y" ? style.overflowY : style.overflowX;
+            const scrolls =
+                axis === "y" ? el.scrollHeight > el.clientHeight : el.scrollWidth > el.clientWidth;
+            if ((overflow === "auto" || overflow === "scroll") && scrolls) return el;
+        }
+        if (el === root) return null;
+        el = el.parentElement;
+    }
+    return null;
+};
+
+/**
+ * Keep a drag that lands on a piece of fixed chrome from panning the page behind
+ * it, and return the ref to hang on that chrome.
+ *
+ * The app shell is pinned to the viewport (html/body `overflow: clip`), but with
+ * the on-screen keyboard up WKWebView still gives its scroll view room to move —
+ * the keyboard is added as a bottom content inset — so a drag the page has no
+ * inner scroller for pans the whole document instead. Fixed chrome is positioned
+ * against the layout viewport, so that pan carries the navbar and the format bar
+ * clean off the screen, and they only come back when [ProjectWorkspace]'s anchor
+ * guard snaps the document back at the end of the gesture. Both must stay put for
+ * the whole gesture, so the pan has to be refused where it starts.
+ *
+ * Only pans with nowhere to go are refused. The axis is decided from the first
+ * few px of the drag and matched against the scrollers inside the chrome, so the
+ * format bar's sideways scroll and its upward menus keep working while a vertical
+ * drag across those same controls — the gesture that used to take the bar with it
+ * — is swallowed. Their own `overscroll-behavior: contain` covers the rest: once a
+ * scroller is at its end, the leftover must not chain out to the document.
+ *
+ * A native non-passive listener rather than React's `onTouchMove`, which is
+ * registered passively and so cannot preventDefault. Handed back as a *callback*
+ * ref so the listeners follow the node itself: both consumers come and go with the
+ * mode they belong to, and an effect keyed on mount would have run against a null
+ * ref and never re-run when the chrome finally appeared.
+ */
+const usePagePanLock = <T extends HTMLElement>(): ((node: T | null) => void) => {
+    const detachRef = useRef<(() => void) | null>(null);
+
+    return useCallback((node: T | null) => {
+        detachRef.current?.();
+        detachRef.current = null;
+        if (!node) return;
+
+        let start: { x: number; y: number } | null = null;
+        // null while the drag is still too small to have an axis; true once it has
+        // been resolved to one nothing here can absorb, and is refused for the rest
+        // of the gesture (the axis must not flip mid-drag).
+        let block: boolean | null = null;
+
+        const onTouchStart = (e: TouchEvent) => {
+            const touch = e.touches[0];
+            start = e.touches.length === 1 && touch ? { x: touch.clientX, y: touch.clientY } : null;
+            block = null;
+        };
+
+        const onTouchMove = (e: TouchEvent) => {
+            // A second finger means pinch-zoom, which is the browser's to handle.
+            if (!start || e.touches.length > 1) return;
+            const touch = e.touches[0];
+            if (!touch) return;
+
+            if (block === null) {
+                const dx = touch.clientX - start.x;
+                const dy = touch.clientY - start.y;
+                if (Math.abs(dx) < PAN_AXIS_THRESHOLD && Math.abs(dy) < PAN_AXIS_THRESHOLD) return;
+                const axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+                block = !scrollerForAxis(e.target, node, axis);
+            }
+
+            if (block) e.preventDefault();
+        };
+
+        const onTouchEnd = () => {
+            start = null;
+            block = null;
+        };
+
+        node.addEventListener("touchstart", onTouchStart, { passive: true });
+        node.addEventListener("touchmove", onTouchMove, { passive: false });
+        node.addEventListener("touchend", onTouchEnd, { passive: true });
+        node.addEventListener("touchcancel", onTouchEnd, { passive: true });
+        detachRef.current = () => {
+            node.removeEventListener("touchstart", onTouchStart);
+            node.removeEventListener("touchmove", onTouchMove);
+            node.removeEventListener("touchend", onTouchEnd);
+            node.removeEventListener("touchcancel", onTouchEnd);
+        };
+    }, []);
+};
+
+/**
+ * Dismiss an overlay when a press lands outside it, with the control that opened
+ * it counting as *inside*.
+ *
+ * That exception is the whole point of the hook. The listener is on `mousedown`,
+ * which on every platform (and on iOS, in the synthesised burst a tap produces)
+ * runs before the trigger's own `click` — and React flushes the close it causes
+ * synchronously, being a discrete event. So without the exception the press that
+ * was meant to dismiss the panel closes it here first, and the click that follows
+ * reads an already-closed panel and re-opens it: a second tap on the trigger
+ * could never put a panel away. Excluding the trigger leaves the toggle to it,
+ * which is where the open/close decision belongs.
+ *
+ * Dropdown menus are excluded too: they are portaled to <body> for stacking, so
+ * they sit outside the panel in the DOM while plainly belonging to it.
+ */
+const useDismissOnOutsidePress = <P extends HTMLElement, T extends HTMLElement>(
+    isOpen: boolean,
+    onClose: () => void,
+    panelRef: RefObject<P | null>,
+    triggerRef?: RefObject<T | null>,
+) => {
+    useEffect(() => {
+        if (!isOpen) return;
+        const onPress = (e: MouseEvent) => {
+            const target = e.target as Element | null;
+            if (!target) return;
+            if (target.closest?.("[data-dropdown-portal]")) return;
+            if (panelRef.current?.contains(target)) return;
+            if (triggerRef?.current?.contains(target)) return;
+            onClose();
+        };
+        document.addEventListener("mousedown", onPress);
+        return () => document.removeEventListener("mousedown", onPress);
+    }, [isOpen, onClose, panelRef, triggerRef]);
+};
 
 const useProjectIdFromUrl = () => {
     const searchParams = useSearchParams();
@@ -84,6 +378,20 @@ const useProjectIdFromUrl = () => {
 const useUser = () => {
     const { data: user, isLoading, mutate } = useSWR("/api/users");
     return { user, isLoading, mutate };
+};
+
+/**
+ * State of the user's GDPR data export, as the account settings render it.
+ *
+ * The zip is built in the background straight after the request, so poll while
+ * it is being prepared — the panel then flips to "ready" on its own instead of
+ * making the user reload to find out.
+ */
+const useDataExport = () => {
+    const { data, isLoading, mutate } = useSWR<DataExportState>("/api/users/export", {
+        refreshInterval: (latest) => (latest?.status === "PENDING" ? 5000 : 0),
+    });
+    return { dataExport: data, isLoading, mutate };
 };
 
 const useCookieUser = (redirect: boolean = false) => {
@@ -192,6 +500,15 @@ const useSettings = () => {
  */
 export interface ExtendedProjectMembershipPayload extends ProjectMembershipPayload {
     isLocalOnly: boolean;
+    /**
+     * Where this project also writes itself on disk, when it is bound to a file.
+     *
+     * Independent of `isLocalOnly`: a project synced to the cloud can be bound
+     * too, and the two say different things. Only ever set on desktop, and only
+     * from this machine's own bookkeeping — a binding is not something the cloud
+     * knows about or another device inherits.
+     */
+    filePath?: string;
 }
 
 /**
@@ -209,13 +526,13 @@ const useCachedProjects = () => {
             const memberships: ExtendedProjectMembershipPayload[] = projects.map((p) => ({
                 role: ProjectRole.OWNER,
                 isLocalOnly: true,
+                filePath: p.filePath,
                 project: {
                     id: p.id,
                     title: p.title,
                     description: p.description,
                     author: p.author,
                     hasPoster: false,
-                    poster: null,
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt,
                 },
@@ -272,10 +589,27 @@ const useProjectMemberships = () => {
 
     // Merge remote and local projects, sorted by updatedAt
     const projects = useMemo(() => {
-        const remote: ExtendedProjectMembershipPayload[] = (remoteProjects || []).map((p) => ({
-            ...p,
-            isLocalOnly: false,
-        }));
+        // Local edits bump only the cached copy's updatedAt (content lives in the
+        // Yjs doc, not the Project row the API returns), so for a synced project take
+        // whichever "last edited" is newer — otherwise editing a cloud project never
+        // moves its date until the server row itself changes.
+        const localById = new Map(cachedProjects.map((p) => [p.project.id, p]));
+        const remote: ExtendedProjectMembershipPayload[] = (remoteProjects || []).map((p) => {
+            const cached = localById.get(p.project.id);
+            const cachedTime = cached ? new Date(cached.project.updatedAt).getTime() : 0;
+            const remoteTime = new Date(p.project.updatedAt).getTime();
+            return {
+                ...p,
+                isLocalOnly: false,
+                // Carried over from the cached row: a binding is local bookkeeping,
+                // so the API knows nothing about it and would drop it here.
+                filePath: cached?.filePath,
+                project:
+                    cachedTime > remoteTime
+                        ? { ...p.project, updatedAt: cached!.project.updatedAt }
+                        : p.project,
+            };
+        });
 
         // Filter out cached projects that might have been synced (same ID in remote)
         const remoteIds = new Set(remote.map((p) => p.project.id));
@@ -403,9 +737,16 @@ export const useEffectiveKeybinds = (userShortcuts: Record<string, string> | und
     }, [userShortcuts]);
 };
 
+/**
+ * Register the global-scope shortcuts on the window.
+ *
+ * Called from the project shell, once — these actions are the workspace's, not
+ * any one editor's, so they keep working whichever panel is on screen (and
+ * whether or not an editor has focus at all).
+ */
 export const useGlobalKeybinds = (
     userKeybinds: Record<string, string> | undefined,
-    context: { toggleFocusMode: () => void; saveProject: () => void },
+    context: { toggleFocusMode: () => void; saveProject: () => void; view: ViewActions },
 ) => {
     const effectiveKeybinds = useEffectiveKeybinds(userKeybinds);
 
@@ -426,6 +767,7 @@ export const useGlobalKeybinds = (
                     editor: null,
                     toggleFocusMode: context.toggleFocusMode,
                     saveProject: context.saveProject,
+                    view: context.view,
                 });
             };
         });
@@ -534,6 +876,7 @@ const useFormatTimestamp = () => {
 export {
     useDraggable,
     useUser,
+    useDataExport,
     useCookieUser,
     useSettings,
     useIsPro,
@@ -543,6 +886,13 @@ export {
     useProjectCollaborators,
     usePage,
     useDesktop,
+    useMediaQuery,
+    useIsPhone,
+    useIsTouch,
+    useKeyboardInset,
+    useViewportBottomInset,
+    usePagePanLock,
+    useDismissOnOutsidePress,
     useCachedProjects,
     useCachedProjectInfo,
     useProjectIdFromUrl,

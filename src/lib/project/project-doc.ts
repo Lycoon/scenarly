@@ -1,5 +1,5 @@
 /**
- * Worker-safe Y.Doc subclass for Scriptio projects.
+ * Worker-safe Y.Doc subclass for Scenarly projects.
  *
  * This file deliberately avoids React, tiptap, and any prosemirror imports
  * so it can be loaded inside the Cloudflare DurableObject. The browser-only
@@ -18,6 +18,7 @@ import type { CharacterItem } from "../screenplay/characters";
 import type { LocationItem } from "../screenplay/locations";
 import type { PersistentScene } from "../screenplay/scenes";
 import type { PersistentPage } from "../screenplay/page-locking";
+import type { RevisionBaseEntry, RevisionDisplayMode } from "../screenplay/revisions";
 import type { Comment } from "../utils/types";
 
 // -------------------------------- //
@@ -46,7 +47,39 @@ export type ProjectMetadata = {
     id: string;
     title: string;
     author: string;
+    /**
+     * Which original document this content descends from — the identity that
+     * makes a Yjs merge safe.
+     *
+     * Yjs ops are addressed by `(clientID, clock)`, so two docs converge only
+     * when the ops carrying the same content carry the same ids, i.e. when both
+     * were built by *applying updates* that trace back to one creation. Two docs
+     * independently rebuilt from the same JSON read identically and share not a
+     * single op id; merging them duplicates every paragraph. `lineageId` is the
+     * flag that says "these two are replicas", and it is the only thing a merge
+     * is allowed to key on.
+     *
+     * Written once, at doc creation, and never rewritten — it rides inside the
+     * metadata map, so it travels through `Y.encodeStateAsUpdate` into every
+     * `.scenarly` export and back out into every doc rebuilt from one, with no
+     * code copying it by hand. Guarded in `ProjectRepository.ensureLineageId`,
+     * because a Y.Map key is itself mergeable and two different values would
+     * resolve last-writer-wins into a doc whose lineage lies.
+     *
+     * Deliberately NOT `metadata.id`: that names a library slot / cloud room and
+     * legitimately changes on `migrateToCachedProject` (same ops, new id), while
+     * `fillMap` copies it into every doc rebuilt from a readable export (same id,
+     * unrelated ops). Both directions break, so the two ids stay separate.
+     *
+     * The inversion to keep in mind: lineage names *op ancestry*, not content
+     * ancestry. A readable (`document.json`) export carries this key like any
+     * other metadata field, so anything rebuilt through `applyProjectData` must
+     * overwrite it with a fresh one — same text is not the same history.
+     */
+    lineageId: string;
     titlepageInitialized?: boolean;
+    /** Target feature length in minutes, used to size the Timeline extent. */
+    featureLength?: number;
 };
 
 // -------------------------------- //
@@ -100,6 +133,22 @@ export type LayoutData = {
     sceneNumberOnRight: boolean;
     contdLabel: string;
     moreLabel: string;
+    /** Append `(CONT'D)` to a character cue resuming after an interruption. */
+    showContdDialogue: boolean;
+    /** Draw `(MORE)` / `(CONT'D)` around dialogue split by a page break. */
+    showContdPageBreak: boolean;
+    /** Page-header templates (left/middle/right) with `#`/`@`/`*` placeholders. */
+    headerLeft: string;
+    headerMiddle: string;
+    headerRight: string;
+    /** Whether the header is also shown on the (otherwise unnumbered) first page. */
+    showFirstPageHeader: boolean;
+    /** Page-footer templates (left/middle/right) with `#`/`@`/`*` placeholders. */
+    footerLeft: string;
+    footerMiddle: string;
+    footerRight: string;
+    /** Whether the footer is also shown on the (otherwise unnumbered) first page. */
+    showFirstPageFooter: boolean;
     elementMargins: Record<string, ElementMargin>;
     elementStyles: Record<string, ElementStyle>;
 };
@@ -134,6 +183,33 @@ export type ProductionData = {
      * content leaves an empty page slot in its place.
      */
     pageLocking?: boolean;
+    /**
+     * Revisions master switch. When true, edits stamp their top-level node with
+     * the current revision index, surfacing a right-margin asterisk on that line
+     * and a coloured stripe down the gutter of any page that has changed.
+     */
+    revisionsEnabled?: boolean;
+    /**
+     * Active revision index — into the shared `REVISION_COLORS` list
+     * (0 = White base draft, 1 = Blue, …). New edits are stamped with this
+     * value; advancing it never clears existing marks (revisions are
+     * cumulative). See `src/lib/screenplay/revisions.ts`.
+     */
+    currentRevision?: number;
+    /**
+     * Revision index the `revisionBase` map was captured for. Stamping only takes
+     * the baseline-derived path while this equals `currentRevision`; when it is
+     * absent or stale (a project that predates the feature, or a revision advanced
+     * with no editor open to snapshot it) marks fall back to being stamped from
+     * edit events, which is conservative — it can over-mark, never wrongly clear.
+     */
+    revisionBaseIndex?: number;
+    /**
+     * How committed revision marks are displayed ("all" | "hidden" | "current").
+     * Independent of `revisionsEnabled`, which only gates whether new edits are
+     * stamped. See `RevisionDisplayMode` in `src/lib/screenplay/revisions.ts`.
+     */
+    revisionDisplayMode?: RevisionDisplayMode;
 };
 
 /** Letters skipped by default in newly-created projects. */
@@ -208,15 +284,15 @@ export type DocumentNode = {
 };
 
 // -------------------------------- //
-//            OUTLINE               //
+//            TIMELINE              //
 // -------------------------------- //
 
 /**
- * Kind of source element an outline block references. Extensible — board cards
+ * Kind of source element a timeline clip references. Extensible — board cards
  * will later come in image/voice/link flavours, which become new source kinds
  * without a schema rewrite.
  */
-export type OutlineItemSource = "scene" | "card";
+export type TimelineClipSource = "scene" | "card";
 
 /**
  * Sentinel `refDocId` for scenes that live in the project's main screenplay
@@ -225,20 +301,38 @@ export type OutlineItemSource = "scene" | "card";
 export const MAIN_SCREENPLAY_REF = "screenplay";
 
 /**
- * A block in the project's Outline view. Like the document tree, the outline is
- * stored flat in the `outline` Y.Map keyed by `id`; hierarchy is reconstructed
- * from `parentId`, siblings ordered by ascending `order` (fractional float so
- * moves never rewrite neighbours). Any block can nest children.
- *
- * Each block references a live source element via (`source`, `refDocId`,
- * `refId`); `title`/`preview`/`color` are a cached snapshot kept in sync by the
- * Outline view's resolver and shown (greyed) when the source no longer exists.
+ * A horizontal lane in the project's Timeline. Layers stack top-to-bottom and
+ * are stored flat in the `timelineLayers` Y.Map keyed by `id`, ordered by
+ * ascending `order` (fractional float so inserts never rewrite neighbours).
  */
-export type OutlineItem = {
+export type TimelineLayer = {
     id: string;
-    parentId: string | null;
+    name: string;
     order: number;
-    source: OutlineItemSource;
+    /** Parent layer id for nesting; null/undefined = a root lane. Siblings are
+     *  ordered by ascending `order` (fractional float, like the document tree). */
+    parentId?: string | null;
+};
+
+/**
+ * A clip placed on the Timeline: a colored box on a single layer spanning a
+ * range of the minute-based ruler. Stored flat in the `timelineClips` Y.Map
+ * keyed by `id`.
+ *
+ * `start`/`duration` are measured in minutes. Each clip references a live source
+ * element via (`source`, `refDocId`, `refId`); `title`/`preview`/`color` are a
+ * cached snapshot kept fresh by the Timeline's resolver and shown (greyed) when
+ * the source no longer exists.
+ */
+export type TimelineClip = {
+    id: string;
+    /** Owning layer id. */
+    layerId: string;
+    /** Start offset from the timeline origin, in minutes. */
+    start: number;
+    /** Length of the clip, in minutes. */
+    duration: number;
+    source: TimelineClipSource;
     /** card: board docId · scene: MAIN_SCREENPLAY_REF or the editor doc id. */
     refDocId: string;
     /** card: card id · scene: scene heading `data-id`. */
@@ -261,7 +355,8 @@ export type ProjectData = {
     locations: Record<string, LocationItem>;
     metadata: ProjectMetadata;
     documents?: Record<string, DocumentNode>;
-    outline?: Record<string, OutlineItem>;
+    timelineLayers?: Record<string, TimelineLayer>;
+    timelineClips?: Record<string, TimelineClip>;
     layout: LayoutData;
     production: ProductionData;
     comments?: Record<string, Comment>;
@@ -291,7 +386,7 @@ export interface TypedMap<T extends Record<string, unknown>>
 // -------------------------------- //
 
 /**
- * Y.Doc subclass with typed accessors for Scriptio's schema. All accessors
+ * Y.Doc subclass with typed accessors for Scenarly's schema. All accessors
  * are pure Y.js operations — no ProseMirror, no React. Safe to instantiate
  * in the DurableObject. Browser-only ProseMirror conversion lives in
  * `project-state.ts` as standalone helpers.
@@ -306,12 +401,14 @@ export class ProjectState extends Y.Doc {
         LOCATIONS: "locations",
         METADATA: "metadata",
         DOCUMENTS: "documents",
-        OUTLINE: "outline",
+        TIMELINE_LAYERS: "timelineLayers",
+        TIMELINE_CLIPS: "timelineClips",
         LAYOUT: "layout",
         PRODUCTION: "production",
         COMMENTS: "comments",
         DICTIONARY: "dictionary",
         SHELF: "shelf",
+        REVISION_BASE: "revisionBase",
     } as const;
 
     private _readOnly: boolean = false;
@@ -357,9 +454,14 @@ export class ProjectState extends Y.Doc {
         return this.getMap(this.KEYS.DOCUMENTS);
     }
 
-    /** Outline blocks keyed by block id. */
-    outline(): Y.Map<OutlineItem> {
-        return this.getMap(this.KEYS.OUTLINE);
+    /** Timeline layers (lanes) keyed by layer id. */
+    timelineLayers(): Y.Map<TimelineLayer> {
+        return this.getMap(this.KEYS.TIMELINE_LAYERS);
+    }
+
+    /** Timeline clips (boxes) keyed by clip id. */
+    timelineClips(): Y.Map<TimelineClip> {
+        return this.getMap(this.KEYS.TIMELINE_CLIPS);
     }
 
     /** Content fragment for an `editor` document node. */
@@ -397,6 +499,21 @@ export class ProjectState extends Y.Doc {
     /** Get the Y.XmlFragment for a specific shelf version's content. */
     shelfFragment(nodeId: string, versionId: string): Y.XmlFragment {
         return this.getXmlFragment(`shelf_${nodeId}_${versionId}`);
+    }
+
+    /**
+     * Per-line text as of the moment the current revision opened, keyed by the
+     * line's stable `data-id`. Read on the debounced revision flush to decide
+     * whether an edited line still differs from the draft it is being compared
+     * to — a line restored to its baseline loses this revision's marks. Replaced
+     * wholesale whenever the revision advances, so it holds one draft's worth of
+     * text and never grows with the number of revisions. See
+     * `RevisionBaseEntry` in `src/lib/screenplay/revisions.ts` for the meaning of
+     * a `null` value, and `revisionBaseIndex` in {@link ProductionData} for the
+     * revision it belongs to.
+     */
+    revisionBase(): Y.Map<RevisionBaseEntry> {
+        return this.getMap(this.KEYS.REVISION_BASE);
     }
 }
 

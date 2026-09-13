@@ -1,7 +1,11 @@
 .container {
     z-index: 50;
     position: relative;
-    padding-block: 25px;
+    /* --navbar-height already reserves the top safe-area inset (globals.css), so
+     * pad the content down past it — otherwise the bar's controls render *under*
+     * the status bar on an iPad, which runs this layout full-bleed. The content
+     * box stays 40px tall on every other platform, where the inset is 0. */
+    padding-block: calc(25px + var(--safe-top)) 25px;
     width: 100%;
     height: var(--navbar-height);
     flex-shrink: 0;
@@ -16,14 +20,225 @@
 .center {
     position: absolute;
     left: 50%;
-    top: 50%;
+    /* Absolute positioning resolves against the container's padding box, which
+     * includes the top safe-area inset — so centring on it alone would ride up
+     * into the status bar on iOS. Offset by half the inset to land in the middle
+     * of the *content* row, and shrink by the full inset to match its height.
+     * Both terms are 0 wherever there is no inset. */
+    top: calc(50% + var(--safe-top) / 2);
     transform: translate(-50%, -50%);
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    height: calc(100% - 50px);
+    height: calc(100% - 50px - var(--safe-top));
     pointer-events: auto;
+}
+
+/* ==================== */
+/*     Phone navbar     */
+/* ==================== */
+
+.mobile_bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+    gap: 8px;
+    padding-left: calc(10px + var(--safe-left));
+    padding-right: calc(10px + var(--safe-right));
+}
+
+/* Both navbar clusters render as floating rounded islands (same treatment as
+ * .navbar_island) so the phone navbar reads as detached, rounded chrome that
+ * matches the sidebar handles and keyboard bar. The container row keeps the
+ * page background; only these pills stand out. */
+.mobile_left,
+.mobile_tools,
+.mobile_right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    background-color: var(--secondary);
+    border-radius: 999px;
+    box-shadow: var(--panel-shadow);
+
+    /* Fade the pill out as the chrome hides. The whole bar (.container) now slides
+     * up as one unit, so the pill no longer translates on its own — it just fades,
+     * in lockstep with the bar's slide, driven by --chrome-hide (0 shown → 1
+     * hidden). No transition: it tracks the scroll gesture directly (see
+     * applyChromeHide). On desktop these clusters don't render and --chrome-hide
+     * stays 0, so this is inert there. */
+    opacity: calc(1 - var(--chrome-hide, 0));
+}
+
+/* Always hug the right edge — the only other cluster (edit-mode controls) is on
+ * the left, and in reader mode this is the sole cluster, so it can't rely on a
+ * sibling to push it over. */
+.mobile_right {
+    margin-left: auto;
+}
+
+/* Icon buttons sit flush on the island (ghost fill), so the pill reads as one
+ * unit rather than buttons-within-a-button. Higher specificity than the shared
+ * NavbarIconButton .button rule so it wins regardless of stylesheet order. */
+.mobile_bar .mobile_icon {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.mobile_bar .mobile_icon:hover {
+    border-color: transparent;
+}
+
+.mobile_bar .mobile_icon:active {
+    background-color: var(--secondary-hover);
+}
+
+/* Live dictation: blink the mic red so it's obviously recording (mirrors the
+ * editor footer's mic on desktop). */
+.mobile_bar .mobile_icon.recording {
+    background-color: transparent;
+    animation: recording-blink 1.1s ease-in-out infinite;
+}
+
+/* Override the global `svg { color: var(--primary-text) }` (styles/globals.css),
+ * which sets the colour on the icon itself so it never inherits the button's. */
+.mobile_bar .mobile_icon.recording svg {
+    color: var(--error);
+}
+
+@keyframes recording-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* ------------------------------------ */
+/*  Folded screenplay tools (phone)     */
+/* ------------------------------------ */
+
+/* The same fold the desktop bar gives this cluster (.tools_island): the chevron
+ * sits on the tools pill itself, so folded the pill is just the chevron and
+ * expanding grows it rightwards — one control rather than a button parked beside
+ * a pill. Written separately from the desktop rules because the pill is already
+ * the right shape here: a phone NavbarIconButton is a 40px circle, so the 4px of
+ * cluster padding either side lands on exactly the 48px a single-icon cluster
+ * (.mobile_right, holding just the burger) measures — none of the concentric
+ * radius arithmetic .tools_island needs to reach that.
+ *
+ * The cluster's own 2px gap moves onto the reveal's margin, which animates with
+ * the column: left as a gap it would hold 2px of dead space inside the folded
+ * pill, and against a 40px circle that reads as an off-centre glyph. */
+.mobile_tools_fold {
+    gap: 0;
+}
+
+/* Grows its single grid column from 0fr to 1fr, so the pill animates open
+ * against the group's natural width — no hard-coded width to drift as the row
+ * changes length, which it does: the text-only tools drop out over a board. */
+.mobile_tools_reveal {
+    display: grid;
+    grid-template-columns: 0fr;
+    margin-left: 0;
+    opacity: 0;
+    transition:
+        grid-template-columns 0.28s ease,
+        margin-left 0.28s ease,
+        opacity 0.2s ease;
+}
+
+.mobile_tools_reveal_open {
+    grid-template-columns: 1fr;
+    margin-left: 2px;
+    opacity: 1;
+}
+
+/* min-width: 0 lets the grid column above collapse this to nothing, and
+ * overflow: hidden clips the buttons as it does — which also drops their
+ * hit-testing, so the folded cluster can't catch taps on top of the page.
+ *
+ * No overflow exception like the desktop's .tools_group_overflow: the phone's
+ * tool sheets are portaled to <body> ([ProjectNavbarMobile]), so nothing opened
+ * from here is a descendant for this to clip. */
+.mobile_tools_group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* The buttons must be clipped by the collapsing column, not squashed by it —
+ * they are flex children of a box being taken to zero width, so without this
+ * they would shrink off their 40px and the fold would deflate the circles
+ * instead of sliding them away. */
+.mobile_tools_group .mobile_icon {
+    flex-shrink: 0;
+}
+
+/* The home navbar reuses the pill clusters (.mobile_left/.mobile_right) but has
+ * no .mobile_bar wrapper, so re-apply the flush-icon treatment here, scoped to
+ * the home bar, so its burger/settings sit on the pill exactly like the project
+ * navbar's icons. */
+.home_container .mobile_icon {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.home_container .mobile_icon:hover {
+    border-color: transparent;
+}
+
+.home_container .mobile_icon:active {
+    background-color: var(--secondary-hover);
+}
+
+@media (max-width: 767px) {
+    .container {
+        /* Push the bar below the status bar / Dynamic Island. --navbar-height
+         * already reserves this space, so the content box stays 64px tall — the
+         * pill clusters (48px) then centre with an even ~8px above and below,
+         * clear of the bar's bottom edge. */
+        padding-block: 0;
+        padding-top: var(--safe-top);
+        /* Hide the bar by sliding it straight up off the top as the reader scrolls
+         * down — a compositor-only transform, NOT a height collapse. --chrome-hide
+         * runs 0 (shown) → 1 (fully up), driven from scrollTop in
+         * DocumentEditorPanel; no transition so it tracks the gesture, not an ease. */
+        transform: translateY(calc(var(--chrome-hide, 0) * -1 * var(--navbar-height)));
+        will-change: transform;
+    }
+
+    /* Project (reader) bar only — NOT the home bar (.home_container), which must
+     * stay in normal flow. Lift the bar OUT of the flex column into a fixed overlay
+     * pinned to the top. The editor scroll container then fills the full height
+     * behind it and pads its own top by --navbar-height (see EditorPanel
+     * .container), so the reader's content sits *under* the bar and is revealed as
+     * the bar slides away — the Google-Docs model. Because the bar no longer holds
+     * a slot in the column and the editor viewport never resizes, the content
+     * tracks the scroll 1:1 and the reclaimed space is filled by the content that
+     * was behind the bar, not by shifting the whole view. */
+    .container:not(.home_container) {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+    }
+
+    /* Fully hidden: drop hit-testing so the off-screen bar can't catch taps. */
+    .container_hidden {
+        pointer-events: none;
+    }
 }
 
 .navbar_island {
@@ -64,6 +279,155 @@
     align-items: center;
     gap: 6px;
     height: 100%;
+}
+
+/* ============================== */
+/*  Folded screenplay tools       */
+/*  (desktop, next to the title)  */
+/* ============================== */
+
+/* The fold toggle takes its circle and ghost fill from .tools_icon, like the
+ * tools it reveals — it sits on the same island, so it is one of them. */
+.tools_chevron {
+    transition: transform 0.25s ease;
+}
+
+/* Expanded: point the chevron back at the title island, so it reads as "fold
+ * these away again" rather than "there is more to open". */
+.tools_toggle_open .tools_chevron {
+    transform: rotate(180deg);
+}
+
+/* Reveal wrapper. Grows its single grid column from 0fr to 1fr, so the island
+ * animates open against the group's natural width — no hard-coded pixel width to
+ * drift as buttons are added or removed. The left margin is the chevron's gap,
+ * and has to animate with the column: as a fixed gap on .tools_island it would
+ * leave 4px of dead space inside the folded pill. */
+.tools_reveal {
+    display: grid;
+    grid-template-columns: 0fr;
+    height: 100%;
+    margin-left: 0;
+    opacity: 0;
+    transition:
+        grid-template-columns 0.28s ease,
+        margin-left 0.28s ease,
+        opacity 0.2s ease;
+}
+
+.tools_reveal_open {
+    grid-template-columns: 1fr;
+    margin-left: 4px;
+    opacity: 1;
+}
+
+/* One shared island for the whole cluster — the same single-unit idea the phone
+ * bar's .mobile_tools uses, though it has to be built differently (see the
+ * padding note below). The fold chevron lives on this pill too, so folded it is
+ * just the chevron and expanding grows it rightwards; the chevron is never a
+ * separate control sitting beside the island. */
+.tools_island {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 100%;
+    /* Same flat fill as a NavbarIconButton, and deliberately no --panel-shadow:
+     * folded, this is button-sized, and that shadow is an 8px blur in every
+     * direction — a halo that size reads as a chip noticeably larger than the
+     * flat buttons beside it. The title island can carry one because it is big
+     * enough that the halo stays proportionate. Since the fill matches the
+     * buttons', the pill still reads as a merged group of them either way. */
+    background-color: var(--secondary);
+
+    /* The size of the buttons on this pill, stated here because the pill's own
+     * radius is derived from it below. The island sits in the navbar's 40px row
+     * and everything is border-box, so the 3px block padding eats inward and
+     * leaves exactly this: 40 - 3 - 3 = 34. It is spelled out as a length
+     * rather than taken off that height with aspect-ratio — see .tools_icon. */
+    --tools-btn-size: 34px;
+
+    /* Padded like the editor's footer bubble (EditorFooter .bubble_right), which
+     * is the look this mirrors: a little air around the buttons instead of them
+     * running flush into the pill's ends.
+     *
+     * The radii have to stay concentric or the ends visibly disagree — outer =
+     * inner + the padding between them. That bubble floats, so it pads 3px and
+     * grows to 46px around full-size 40px buttons. This one can't, so its
+     * buttons are 34px circles (radius 17) and the pill's radius must be 17 + 3
+     * = 20 — which is what the calc says, so changing --tools-btn-size or the
+     * block padding keeps the caps matching instead of silently breaking them.
+     *
+     * The inline 4px is picked so the folded pill (4 + 34 + 4) is exactly the
+     * 42px of a NavbarIconButton — folded, this sits in a row of them and must
+     * not read as the odd one out. */
+    border-radius: calc(var(--tools-btn-size) / 2 + 3px);
+    padding: 3px 4px;
+}
+
+/* The three tools inside the reveal. Carries the clipping rather than the island
+ * doing it, since the island holds the chevron and must stay visible: min-width: 0
+ * lets the grid column above collapse this to nothing, and overflow: hidden clips
+ * the buttons as it does — which also drops their hit-testing, so the folded
+ * cluster can't catch clicks. */
+.tools_group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    /* Wider than the footer bubble's 2px: these circles are smaller, so their
+     * edges curve away from each other and a hairline gap reads as cramped.
+     * Matches that bubble's phone sizing, which opens up for the same reason. */
+    gap: 4px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* A panel is open: it drops below the bar and must not be clipped by the group. */
+.tools_group_overflow {
+    overflow: visible;
+}
+
+/* Icon buttons sit flush on the island (ghost fill), so the pill reads as one
+ * unit rather than buttons-within-a-button — mirrors .mobile_icon.
+ *
+ * Circles, like the footer bubble's .action. The shared .button is a stadium
+ * sized by its inline padding, which at the 34px height the island leaves would
+ * render these 42x34 — visibly wider than tall. Drop that padding and square
+ * them off --tools-btn-size instead. 34px circles carry a 17px radius, which is
+ * the inner half of the island's concentric 20 (see .tools_island).
+ *
+ * The width is that length and not `aspect-ratio: 1` off the inherited height,
+ * which is what it used to be: WebKit — so Safari and the Tauri webview, i.e.
+ * the desktop and iPad apps — will not resolve an aspect-ratio width whose
+ * height is a percentage while it measures an ancestor's intrinsic width. Each
+ * button was therefore measured as its 18px glyph, and .tools_reveal's 1fr
+ * column (and the pill sized by it) came out 12px short per button: the circles
+ * overlapped their neighbours, so the row lost its 4px gaps, and the last one
+ * spilled past the pill's right padding into .tools_group's clip. Chromium does
+ * resolve it and laid the same markup out correctly, which is why this only
+ * showed up in the app. */
+.navBtns .tools_icon {
+    width: var(--tools-btn-size);
+    height: var(--tools-btn-size);
+    padding-inline: 0;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.navBtns .tools_icon:hover {
+    background-color: var(--secondary-hover);
+    border-color: transparent;
+}
+
+/* Open tool. The flush rule above zeroes the shared .button border that
+ * normally marks the active state, so fill the button and ring it. Compounded
+ * so it outranks the :hover rule above — hovering the open tool must not strip
+ * the ring that says which panel is up. */
+.navBtns .tools_icon.tools_icon_active {
+    background-color: var(--secondary-hover);
+    border-color: var(--tertiary);
 }
 
 .back_btn {
@@ -153,16 +517,22 @@
     align-items: center;
 }
 
+/* Fixed width, not min-width: the panel's contents change with the file's state
+   — the path line appears only once a file is bound, and the actions under it
+   swap — so a shrink-to-fit box resized every time the user bound, moved or
+   unbound a file, and jumped again on the long German labels. The reader is
+   looking at the same readout each time and it should be the same shape each
+   time. Wide enough for the action pills at their longest; the path line
+   ellipsises into it (its full value stays in the row's title). */
 .storage_panel {
+    composes: panel from "./navbar-shared.module.css";
     position: absolute;
     top: 40px;
     left: 0;
-    min-width: 220px;
-    background-color: var(--secondary);
+    width: 300px;
     color: var(--primary-text);
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
     padding: 10px 12px;
-    border-radius: 8px;
+    border-radius: 16px;
     font-size: 12px;
     z-index: 100;
     display: flex;
@@ -170,8 +540,218 @@
     gap: 6px;
 }
 
-.storage_status {
+/* The same readout in the phone menu drawer, which has no panel around it. Every
+   other row in that drawer — the title row, the group labels, the items — sits on
+   a 12px inset inside the drawer's own gutter, so the targets take that inset too:
+   flush against the gutter they hung out to the left of everything above and below
+   them, and each target glyph missed the save glyph in the title row it is the
+   expansion of. The gap stands in for the drawer's flex gap, which stops reaching
+   these rows once they are wrapped. */
+.mobile_targets {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-inline: 12px;
+}
+
+/* Brief acknowledgement after an explicit save, anchored where the panel would
+   open. Not shown while the panel itself is open — it already says as much. */
+.save_flash {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    white-space: nowrap;
+    background-color: var(--secondary);
+    color: var(--primary-text);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* The island's save indicator: one glyph summarising all three targets, opening
+   the panel that breaks them down. Same footprint as the connection dot it
+   replaced, so the island's geometry is unchanged. */
+.save_targets {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Invisible bridge down to the panel.
+   The panel hangs 40px below a wrapper only as tall as its 20px icons, so the
+   band between them belongs to neither box: the pointer leaves the subtree
+   mid-journey, mouseleave fires, and the panel unmounts before it can be
+   reached. That was harmless while the panel only had readouts in it; not now
+   that it carries buttons. Hung off the trigger rather than the panel so it is
+   exactly as wide as the glyphs — a bridge spanning the panel's full width
+   would also cover the lower half of the title input beside it and eat clicks
+   meant for the field. */
+.save_targets::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 22px;
+}
+
+/* One save target in the panel: glyph, name, state. The glyph repeats the one
+   in the island so the panel reads as those three icons expanded, rather than a
+   separate list to map back onto them. */
+.target_row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.target_row_icon {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.target_label {
+    flex: 1;
+    color: var(--primary-text);
+}
+
+.target_value {
+    color: var(--secondary-text);
+    text-align: right;
+}
+
+/* The state, not the name, carries the colour: the row still reads normally at a
+   glance and only its right-hand side signals. */
+.target_row_ok .target_value {
+    color: var(--success);
+}
+
+.target_row_busy .target_value,
+.target_row_warn .target_value {
+    color: var(--warning);
+}
+
+.target_row_idle .target_value {
+    color: var(--secondary-text);
+}
+
+/* A file target that needs attention, pulsing so it is noticed in chrome the
+   user otherwise reads straight past. Applied to the glyph wrapper so the icon
+   and its warning badge breathe together rather than beating out of step. */
+.target_alert {
+    animation: target_alert_pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes target_alert_pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.25;
+    }
+}
+
+/* Motion is the attention-getter, not the message — the warning colour and the
+   badge say the same thing standing still. */
+@media (prefers-reduced-motion: reduce) {
+    .target_alert {
+        animation: none;
+    }
+}
+
+/* Wrapper for one target's glyph, so a warning badge can be pinned to it. */
+.target_glyph {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+
+/* Small affix on a target that needs attention — a file that moved, or a write
+   that failed. Deliberately tiny: it draws the eye to the right glyph without
+   turning the title island into an alert. */
+.target_affix {
+    position: absolute;
+    right: -3px;
+    bottom: -2px;
+    color: var(--warning);
+    background-color: var(--secondary);
+    border-radius: 50%;
+}
+
+/* The bound file's path. Strictly one line: a path that wraps breaks mid-segment
+   and reads as a typo. `shortenPath` drops the front so the filename survives,
+   and this catches whatever still overflows in a narrow panel. */
+.file_path {
+    font-size: 11px;
+    color: var(--secondary-text);
+    opacity: 0.8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file_problem {
+    color: var(--warning);
+    line-height: 1.4;
+}
+
+/* Actions for one target, stacked under the row they act on and spanning the
+   panel's full width — at this size a half-width control reads as a label with
+   a border, not as something to press. */
+.target_actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 2px 0 4px;
+}
+
+/* The same pill the Saves panel's upgrade button uses, so every call to action
+   across the navbar's panels is visibly the same kind of thing. */
+.target_action {
+    width: 100%;
+    padding: 6px 18px;
+    border: none;
+    border-radius: 20px;
+    background-color: var(--tertiary);
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: 0.82rem;
     font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.target_action:hover {
+    background-color: var(--tertiary-hover);
+}
+
+/* The compaction offer: a quiet aside inside the file target, not a warning.
+   Nothing is wrong — the file simply holds space it no longer needs, and this
+   says so and offers to fix it. Bordered rather than filled so it reads as a
+   note attached to the row above, not as a third save target. */
+.reclaim_card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 2px 0 6px;
+    padding: 10px;
+    border: 1px solid var(--separator);
+    border-radius: 8px;
+    /* Deliberately unfilled. The button inside is a `.target_action`, which is
+       filled with `--tertiary` like every other call to action in these panels
+       — so giving the card that same fill would hide the button inside it. The
+       border alone is enough to group the note with its action. */
+    background-color: transparent;
+}
+
+.reclaim_text {
+    color: var(--secondary-text);
+    line-height: 1.4;
 }
 
 .storage_separator {
@@ -348,4 +928,36 @@
     color: var(--primary-text);
     width: 90px;
     margin-left: 30px;
+}
+
+/* Phone-only burger in the home navbar (opens the projects sidebar drawer).
+ * It sits flush at the container's left padding so its gap from the edge matches
+ * the settings button's gap on the right (see .home_container below). */
+.home_burger {
+    margin-left: 0;
+}
+
+/* Home navbar on phone: symmetric edge padding so the burger sits the same
+ * distance from the left border as the settings button does from the right.
+ * Scoped to the home navbar so the editor navbar's clusters are untouched. */
+@media (max-width: 767px) {
+    .home_container {
+        /* Match the editor navbar's phone edge padding (.mobile_bar) so the burger
+         * and settings buttons sit the same distance from the edges as the project
+         * navbar's icon clusters. */
+        padding-inline: calc(10px + var(--safe-left)) calc(10px + var(--safe-right));
+    }
+
+    .home_container .right_btns {
+        width: auto;
+        margin-right: 0;
+    }
+
+    /* Centre the pill clusters instead of letting them stretch to the full bar
+     * height (these wrappers default to align-items: stretch), so they render at
+     * their natural ~48px size — the same as the project navbar's .mobile_bar. */
+    .home_container .left_btns,
+    .home_container .right_btns {
+        align-items: center;
+    }
 }

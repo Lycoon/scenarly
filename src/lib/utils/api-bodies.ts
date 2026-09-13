@@ -16,7 +16,6 @@ export const CreateProjectBodySchema = z.object({
     title: z.string(),
     description: z.string().optional(),
     author: z.string().optional(),
-    poster: z.string().optional(),
 });
 export type CreateProjectBody = z.infer<typeof CreateProjectBodySchema>;
 
@@ -24,7 +23,6 @@ export const UpdateProjectBodySchema = z.object({
     title: z.string().optional(),
     description: z.string().optional(),
     author: z.string().optional(),
-    poster: z.string().optional(),
     characters: z.any().optional(),
 });
 export type UpdateProjectBody = z.infer<typeof UpdateProjectBodySchema>;
@@ -33,6 +31,11 @@ export const UpdateRoleSchema = z.object({
     role: z.string(),
 });
 export type UpdateRoleBody = z.infer<typeof UpdateRoleSchema>;
+
+export const TransferOwnershipSchema = z.object({
+    userId: z.string().min(1),
+});
+export type TransferOwnershipBody = z.infer<typeof TransferOwnershipSchema>;
 
 const HEX_COLOR_REGEX = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 export const UpdateUserBodySchema = z.object({

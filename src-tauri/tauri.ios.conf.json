@@ -1,0 +1,13 @@
+{
+    "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+    "identifier": "com.scenarly",
+    "productName": "Scenarly",
+    "bundle": {
+        "category": "Productivity",
+        "fileAssociations": [],
+        "iOS": {
+            "developmentTeam": "G93CJ6PWZH",
+            "minimumSystemVersion": "16.0"
+        }
+    }
+}

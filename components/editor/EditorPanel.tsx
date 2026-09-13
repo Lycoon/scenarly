@@ -1,7 +1,6 @@
 "use client";
 
-import { useContext, useMemo } from "react";
-import { UserContext } from "@src/context/UserContext";
+import { useContext } from "react";
 import { ProjectContext } from "@src/context/ProjectContext";
 
 import { SCREENPLAY_EDITOR_CONFIG } from "@src/lib/editor/document-editor-config";
@@ -17,16 +16,7 @@ interface EditorPanelProps {
 }
 
 const EditorPanel = ({ isVisible, suggestions, updateSuggestions, suggestionData, updateSuggestionData }: EditorPanelProps) => {
-    const { updateIsZenMode } = useContext(UserContext);
     const { updateEditor } = useContext(ProjectContext);
-
-    const globalActions = useMemo(
-        () => ({
-            toggleFocusMode: () => updateIsZenMode((prev: boolean) => !prev),
-            saveProject: () => console.log("Project Saved"),
-        }),
-        [updateIsZenMode],
-    );
 
     return (
         <DocumentEditorPanel
@@ -37,7 +27,6 @@ const EditorPanel = ({ isVisible, suggestions, updateSuggestions, suggestionData
             updateSuggestions={updateSuggestions}
             suggestionData={suggestionData}
             updateSuggestionData={updateSuggestionData}
-            globalContext={globalActions}
         />
     );
 };

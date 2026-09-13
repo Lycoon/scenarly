@@ -1,4 +1,4 @@
-@import "./scriptio.css";
+@import "./scenarly.css";
 @import "./themes.css";
 
 html,
@@ -33,7 +33,33 @@ body {
     --format-sidebar-width: 250px;
     --navigation-sidebar-width: 400px;
     --navbar-sidebar-width: 500px;
-    --navbar-height: 90px;
+    /* Includes the top safe-area inset so the bar always reserves room for the
+     * status bar. The viewport is `viewport-fit: cover` (see layout.tsx), so on
+     * every iOS device — iPad included, which runs this desktop-width layout —
+     * the webview extends under the status bar. The navbar pads its content down
+     * by the same amount (see ProjectNavbar.module.css). 0 everywhere else. */
+    --navbar-height: calc(90px + var(--safe-top));
+
+    /* Width the sidebar drawers take when open on phones (leaves a strip of the
+     * editor visible so the drawer is easy to dismiss). */
+    --mobile-drawer-width: 75vw;
+    /* Safe-area insets (notch / home indicator). 0 on platforms without them. */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* Phone layout: a shorter navbar makes room for the writing surface. The
+ * editor goes full-bleed and the sidebars become overlay drawers (see the
+ * component modules), so their inline widths no longer reserve space. */
+@media (max-width: 767px) {
+    * {
+        /* Shorter bar than the default, still with the safe-area inset folded in.
+         * Sidebars/backdrop anchor to top: var(--navbar-height), so they stay
+         * flush with the bar. */
+        --navbar-height: calc(64px + var(--safe-top));
+    }
 }
 
 html {
@@ -67,6 +93,29 @@ h3 {
 p,
 span {
     font-family: var(--font-inter), sans-serif;
+    color: var(--primary-text);
+}
+
+/* Form controls are reached by neither the rule above nor inheritance: the UA
+ * stylesheet gives them its own font and colour, which wins over what they would
+ * otherwise inherit. So a label sitting directly inside <button> renders in the
+ * system font — and in the system tint on iOS, which is where blue buttons came
+ * from — while a label a button happens to wrap in a <span> renders in Inter.
+ * Stated once here rather than per button: roughly fifty button classes across
+ * the app carry a bare text label, and the next one written would need the fix
+ * again. A button that wants a different face or colour still overrides it, and
+ * on desktop this was invisible because `color-scheme` makes the UA's button
+ * colour follow the theme. */
+button,
+input,
+select,
+textarea {
+    font-family: var(--font-inter), sans-serif;
+}
+
+/* Inputs get their colour from the `select, textarea, input` rule further down;
+ * buttons have none of their own, so name it here. */
+button {
     color: var(--primary-text);
 }
 
@@ -106,6 +155,10 @@ svg {
 
 ::-webkit-scrollbar {
     width: 16px;
+    /* Also size the horizontal bar. Without an explicit height, WebKit collapses
+     * horizontal scrollbars to 0px once ANY ::-webkit-scrollbar rule exists, which
+     * hid them app-wide (e.g. the timeline could not be scrolled sideways). */
+    height: 16px;
     border-radius: 8px;
 }
 

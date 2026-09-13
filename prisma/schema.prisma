@@ -22,9 +22,10 @@ enum UserRole {
   ADMIN
 }
 
-enum SubscriptionProvider {
-  STRIPE
-  APPLE
+enum DataExportStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }
 
 model User {
@@ -38,14 +39,18 @@ model User {
 
   isProUntil                  DateTime?
   isSubscriptionCancelled     Boolean   @default(false)
-  subscriptionProvider        SubscriptionProvider?
+  // Stripe is the source of truth for billing; these only link the user to it.
+  // The customer id outlives the subscription so a lapsed user re-subscribes
+  // on the same Stripe customer; the subscription id is cleared when it ends.
+  stripeCustomerId            String?   @unique
+  stripeSubscriptionId        String?   @unique
 
   settings            Json?
 
   accounts            Account[]
   sessions            Session[]
   projects            ProjectMember[]
-  transactions        Transaction[]
+  dataExports         DataExport[]
 }
 
 model Account {
@@ -96,18 +101,6 @@ model MagicLinkToken {
   @@index([email, createdAt])
 }
 
-model Transaction {
-  id            Int                  @id @default(autoincrement())
-  userId        String
-  provider      SubscriptionProvider
-  transactionId String               @unique
-  createdAt     DateTime             @default(now())
-
-  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
 model Project {
   id                  String      @id @default(uuid(7))
   createdAt           DateTime    @default(now())
@@ -143,11 +136,27 @@ model ProjectAsset {
   @@index([projectId])
 }
 
+// One GDPR data-access request. The zip lives in R2 at `key` until `expiresAt`
+// (7 days); any non-FAILED row younger than an hour blocks a new request.
+model DataExport {
+  id                  String            @id @default(uuid(7))
+  status              DataExportStatus  @default(PENDING)
+  key                 String?
+  createdAt           DateTime          @default(now())
+  completedAt         DateTime?
+  expiresAt           DateTime?
+
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+
+  @@index([userId])
+}
+
 model ProjectMember {
   id                  Int         @id @default(autoincrement())
   role                ProjectRole @default(VIEWER)
 
-  user                User        @relation(fields: [userId], references: [id])
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId              String
   project             Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId           String

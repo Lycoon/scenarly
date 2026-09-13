@@ -2,7 +2,6 @@ import { ProjectCreation, ProjectUpdate } from "../../lib/utils/types";
 import { Prisma, ProjectRole } from "../../generated/client/client";
 import prisma from "../db";
 
-import * as S3 from "@src/lib/s3";
 import { ConflictError } from "@src/lib/utils/api-utils";
 
 const projectMembershipSelect = {
@@ -15,10 +14,16 @@ const projectMembershipSelect = {
             author: true,
             createdAt: true,
             updatedAt: true,
+            // Counted on the join table rather than fetched as rows: the library
+            // only needs "how many people share this", and the members
+            // themselves are a separate call the settings panel makes.
+            _count: {
+                select: { members: true },
+            },
         },
     },
     role: true,
-};
+} satisfies Prisma.ProjectMemberSelect;
 
 const collaboratorSelect = {
     user: {
@@ -44,37 +49,41 @@ type RawProject = Prisma.ProjectGetPayload<{
     select: typeof projectMembershipSelect.project.select;
 }>;
 
-type RawMembership = {
-    role: ProjectRole;
-    project: RawProject;
+/**
+ * Project metadata as the client sees it. The poster image itself is *not* part
+ * of this payload: it is fetched (and cached offline) through
+ * `/projects/[projectId]/poster`, so `hasPoster` is only a hint that one exists.
+ */
+export type Project = Omit<RawProject, "_count"> & {
+    /**
+     * How many people are members of this project, its owner included — the same
+     * population the collaborators panel lists.
+     *
+     * Optional because only the cloud knows it: a project read back from the
+     * local cache (local-only, or any project while offline) leaves it unset
+     * rather than claiming a number it cannot have.
+     */
+    collaboratorCount?: number;
 };
 
-export type Project = Omit<RawProject, "poster"> & {
-    poster: string | null;
-};
 export interface ProjectMembershipPayload {
     role: ProjectRole;
     project: Project;
 }
 
+/** Flattens Prisma's `_count` into the `collaboratorCount` the client reads. */
+const toMembershipPayload = ({
+    role,
+    project: { _count, ...project },
+}: {
+    role: ProjectRole;
+    project: RawProject;
+}): ProjectMembershipPayload => ({
+    role,
+    project: { ...project, collaboratorCount: _count.members },
+});
+
 export class ProjectRepository {
-    private async hydrateMembership(membership: RawMembership): Promise<ProjectMembershipPayload> {
-        let posterUrl: string | null = null;
-
-        if (membership.project.hasPoster) {
-            const key = `poster-${membership.project.id}`;
-            posterUrl = await S3.getSignedDownloadUrl(key);
-        }
-
-        return {
-            ...membership,
-            project: {
-                ...membership.project,
-                poster: posterUrl,
-            },
-        };
-    }
-
     async fetchProjectMemberships(userId: string) {
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -92,7 +101,7 @@ export class ProjectRepository {
 
         if (!user) return [];
 
-        return Promise.all(user.projects.map((m) => this.hydrateMembership(m)));
+        return user.projects.map(toMembershipPayload);
     }
 
     async fetchProjectMembership(projectId: string, userId: string) {
@@ -106,9 +115,7 @@ export class ProjectRepository {
             select: projectMembershipSelect,
         });
 
-        if (!membership) return null;
-
-        return this.hydrateMembership(membership);
+        return membership && toMembershipPayload(membership);
     }
 
     fetchProjectTitle(projectId: string) {
@@ -231,6 +238,22 @@ export class ProjectRepository {
         });
     }
 
+    /** Hands the OWNER role to another member and demotes the current owner in
+     *  one transaction — a half-applied swap would leave the project with two
+     *  owners (or none), and the owner is the quota holder for every asset. */
+    transferOwnership(projectId: string, currentOwnerId: string, newOwnerId: string, previousOwnerRole: ProjectRole) {
+        return prisma.$transaction([
+            prisma.projectMember.update({
+                where: { userId_projectId: { projectId, userId: currentOwnerId } },
+                data: { role: previousOwnerRole },
+            }),
+            prisma.projectMember.update({
+                where: { userId_projectId: { projectId, userId: newOwnerId } },
+                data: { role: ProjectRole.OWNER },
+            }),
+        ]);
+    }
+
     deleteProjectMember(projectId: string, userId: string) {
         return prisma.projectMember.delete({
             where: {
@@ -248,6 +271,42 @@ export class ProjectRepository {
 
     countMembershipsByUser(userId: string) {
         return prisma.projectMember.count({ where: { userId } });
+    }
+
+    /** Every membership of a user, with just what account deletion needs to
+     *  tear each project down (no poster signing — unlike fetchProjectMemberships). */
+    listMembershipsForTeardown(userId: string) {
+        return prisma.projectMember.findMany({
+            where: { userId },
+            select: { role: true, projectId: true },
+        });
+    }
+
+    /** Pending invitations addressed to an email, across every project. */
+    deleteInvitesByEmail(email: string) {
+        return prisma.projectInvitation.deleteMany({ where: { email } });
+    }
+
+    /** Memberships with raw project metadata — GDPR export (unlike
+     *  fetchProjectMemberships, no poster URL signing or hydration). */
+    listMembershipsWithProject(userId: string) {
+        return prisma.projectMember.findMany({
+            where: { userId },
+            select: {
+                role: true,
+                project: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        author: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    },
+                },
+            },
+            orderBy: { project: { createdAt: "asc" } },
+        });
     }
 
     fetchProjectById(projectId: string) {

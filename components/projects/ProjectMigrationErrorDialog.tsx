@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, RefreshCw, RotateCcw } from "lucide-react";
+
+import { useAppNavigation } from "@src/lib/utils/navigation";
 
 import type { ProjectMigrationOutcome } from "@src/lib/project/migrations/project-migration-runner";
 
@@ -16,14 +18,14 @@ interface Props {
 }
 
 const ProjectMigrationErrorDialog = ({ outcome }: Props) => {
-    const router = useRouter();
     const params = useSearchParams();
     const projectId = params.get("projectId");
     const [busy, setBusy] = useState(false);
+    const { goToProjects } = useAppNavigation();
 
     const goBack = useCallback(() => {
-        router.replace("/projects");
-    }, [router]);
+        goToProjects();
+    }, [goToProjects]);
 
     const handleRestore = useCallback(async () => {
         if (!projectId) return;
@@ -50,7 +52,7 @@ const ProjectMigrationErrorDialog = ({ outcome }: Props) => {
                 <div className={styles.modal}>
                     <h2 className={styles.title}>Project from a newer version</h2>
                     <p className={styles.description}>
-                        This project was created or last edited in a newer version of Scriptio. Update the
+                        This project was created or last edited in a newer version of Scenarly. Update the
                         app to open it safely.
                     </p>
                     <p className={styles.versionDetails}>
@@ -71,7 +73,7 @@ const ProjectMigrationErrorDialog = ({ outcome }: Props) => {
         return (
             <div className={styles.overlay}>
                 <div className={styles.modal}>
-                    <h2 className={styles.title}>Update Scriptio to open this project</h2>
+                    <h2 className={styles.title}>Update Scenarly to open this project</h2>
                     <p className={styles.description}>
                         The cloud copy of this project is at a newer schema version than your app
                         knows. Reload to fetch the latest version, or update the desktop app.
@@ -99,7 +101,7 @@ const ProjectMigrationErrorDialog = ({ outcome }: Props) => {
             <div className={styles.modal}>
                 <h2 className={styles.title}>Could not upgrade this project</h2>
                 <p className={styles.description}>
-                    Scriptio tried to upgrade this project to the latest version but a step failed. Your
+                    Scenarly tried to upgrade this project to the latest version but a step failed. Your
                     original data is safe — restore from the pre-upgrade backup, or open another project.
                 </p>
                 <p className={styles.versionDetails}>

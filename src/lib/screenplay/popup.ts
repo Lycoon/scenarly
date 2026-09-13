@@ -1,4 +1,5 @@
 import { UserContextType } from "@src/context/UserContext";
+import type { BindRefusal } from "@src/lib/persistence/file-binding";
 import { CharacterData } from "./characters";
 import { Scene } from "./scenes";
 
@@ -33,6 +34,26 @@ export type PopupUnlockDraftData = {
     confirmUnlock: () => void;
 };
 
+/**
+ * Binding a project to a file has a cost the OS "replace?" prompt does not
+ * mention, or is outright impossible. `confirm` is null for the cases the user
+ * cannot proceed through — the dialog then just explains and dismisses.
+ */
+export type PopupConfirmFileBindData = {
+    refusal: BindRefusal;
+    confirm: (() => void) | null;
+};
+
+/** ⌘S on a project with no file yet: explain, then offer to pick a path. */
+export type PopupSaveToFileData = {
+    confirmSave: () => void;
+};
+
+/** ⌘S on a project already bound to a file: say that the file keeps itself current. */
+export type PopupAutoSaveData = {
+    path: string;
+};
+
 // ------------------------------ //
 //         GENERIC POPUP          //
 // ------------------------------ //
@@ -43,7 +64,10 @@ export type PopupUnionData =
     | PopupUploadToCloudData
     | PopupUnlockScenesData
     | PopupUnlockPagesData
-    | PopupUnlockDraftData;
+    | PopupUnlockDraftData
+    | PopupConfirmFileBindData
+    | PopupSaveToFileData
+    | PopupAutoSaveData;
 
 export enum PopupType {
     NewCharacter,
@@ -54,6 +78,9 @@ export enum PopupType {
     UnlockScenes,
     UnlockPages,
     UnlockDraft,
+    ConfirmFileBind,
+    SaveToFile,
+    AutoSave,
 }
 
 export type PopupData<DataType extends PopupUnionData> = {
@@ -122,5 +149,30 @@ export const unlockDraftPopup = (confirmUnlock: () => void, userCtx: UserContext
     userCtx.updatePopup({
         type: PopupType.UnlockDraft,
         data: { confirmUnlock },
+    });
+};
+
+export const confirmFileBindPopup = (
+    userCtx: UserContextType,
+    refusal: BindRefusal,
+    confirm: (() => void) | null,
+) => {
+    userCtx.updatePopup({
+        type: PopupType.ConfirmFileBind,
+        data: { refusal, confirm },
+    });
+};
+
+export const saveToFilePopup = (userCtx: UserContextType, confirmSave: () => void) => {
+    userCtx.updatePopup({
+        type: PopupType.SaveToFile,
+        data: { confirmSave },
+    });
+};
+
+export const autoSavePopup = (userCtx: UserContextType, path: string) => {
+    userCtx.updatePopup({
+        type: PopupType.AutoSave,
+        data: { path },
     });
 };

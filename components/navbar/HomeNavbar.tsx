@@ -2,18 +2,30 @@
 
 import { useContext } from "react";
 import { DashboardContext } from "@src/context/DashboardContext";
-import { Settings } from "lucide-react";
+import { Menu, Settings } from "lucide-react";
 import { join } from "@src/lib/utils/misc";
-import { useCookieUser } from "@src/lib/utils/hooks";
+import { useCookieUser, useIsPhone } from "@src/lib/utils/hooks";
+import { useTranslations } from "next-intl";
 
-import Logo from "@public/images/scriptio.svg"
+import Logo from "@public/images/scenarly.svg"
 
 import navbar from "./ProjectNavbar.module.css";
 import navBtn from "@components/utils/NavbarIconButton.module.css";
 
-const HomeNavbar = () => {
-    const { openDashboard } = useContext(DashboardContext);
+interface HomeNavbarProps {
+    /**
+     * Phone only: toggles the projects sidebar drawer (the burger lives here now).
+     * Both phone drawers sit below the navbar, so their opener stays tappable while
+     * they're open and has to close them again — see [ProjectPageContainer.module.css].
+     */
+    onToggleSidebar?: () => void;
+}
+
+const HomeNavbar = ({ onToggleSidebar }: HomeNavbarProps) => {
+    const { isOpen, openDashboard, closeDashboard } = useContext(DashboardContext);
     const { user, isLoading } = useCookieUser();
+    const isPhone = useIsPhone();
+    const tNav = useTranslations("navbar");
 
     // Pick a tab the user can actually see: Profile only renders when signed in,
     // Auth only when signed out. Defaulting to "Profile" unconditionally would
@@ -21,25 +33,50 @@ const HomeNavbar = () => {
     // While the auth state is still loading, omit the tab arg so the modal
     // opens on its current activeTab instead of guessing wrong.
     const onOpen = () => {
+        // Second tap on the Settings icon closes the drawer it opened.
+        if (isOpen) return closeDashboard();
         if (isLoading) openDashboard();
         else openDashboard(user ? "Profile" : "Auth");
     };
 
     return (
-        <nav className={join(navbar.container)}>
-            {/* Left side - could add logo or app name */}
+        <nav className={join(navbar.container, navbar.home_container)}>
+            {/* Left side: the logo on desktop; on phone the logo lives in the
+                sidebar drawer instead, so the bar shows the burger that opens it.
+                On phone the button sits in the same rounded pill as the project
+                navbar's clusters so the two bars' icons read at the same size. */}
             <div className={navbar.left_btns}>
-                <Logo className={navbar.logo} />
+                {isPhone ? (
+                    <div className={navbar.mobile_left}>
+                        <button
+                            className={join(navBtn.button, navbar.mobile_icon, navbar.home_burger)}
+                            onClick={onToggleSidebar}
+                            aria-label={tNav("menu")}
+                        >
+                            <Menu size={18} />
+                        </button>
+                    </div>
+                ) : (
+                    <Logo className={navbar.logo} />
+                )}
             </div>
 
             {/* Center - empty on home page */}
             <div></div>
 
-            {/* Right side - settings */}
+            {/* Right side - settings (same pill as the project navbar on phone). */}
             <div className={navbar.right_btns}>
-                <div className={navBtn.button} onClick={onOpen}>
-                    <Settings size={18} />
-                </div>
+                {isPhone ? (
+                    <div className={navbar.mobile_right}>
+                        <div className={join(navBtn.button, navbar.mobile_icon)} onClick={onOpen}>
+                            <Settings size={18} />
+                        </div>
+                    </div>
+                ) : (
+                    <div className={navBtn.button} onClick={onOpen}>
+                        <Settings size={18} />
+                    </div>
+                )}
             </div>
         </nav>
     );

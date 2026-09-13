@@ -1,20 +1,3 @@
-.sectionHeader {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    user-select: none;
-}
-
-.chevron {
-    flex-shrink: 0;
-    transition: transform 0.2s ease;
-}
-
-.chevronOpen {
-    transform: rotate(90deg);
-}
-
 .input {
     width: 100%;
     height: 100%;
@@ -69,6 +52,16 @@
     border-color: var(--primary);
 }
 
+/* A label input whose continuation case is switched off: still readable, but
+   visibly inert (the input itself is `disabled`). */
+.labelDisabled {
+    opacity: 0.5;
+}
+
+.labelDisabled .input {
+    cursor: not-allowed;
+}
+
 .marginsSection {
     display: flex;
     flex-direction: column;
@@ -82,6 +75,27 @@
 
 .labelRow > div {
     flex: 1;
+}
+
+/* A header/footer editor block: a title above the three alignment inputs
+   (left / middle / right), with the "show on first page" toggle below them.
+   The title sits on its own row rather than beside the inputs so a longer
+   translation can't shift the inputs out of alignment between the header and
+   footer blocks. */
+.hfGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hfTitle {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--primary-text);
+}
+
+.hfToggle {
+    margin-top: 4px;
 }
 
 .marginRow {
@@ -221,4 +235,43 @@
 .styleBtnActive {
     background: var(--tertiary);
     color: var(--primary-text);
+}
+
+/* Phone: these rows are sized for the wide desktop modal (a 100px label sitting
+ * beside two ~100px input pills, three header/footer inputs in a row). In the
+ * narrow dashboard drawer that overflows off-screen, so let the label + inputs
+ * wrap and stack the header/footer inputs vertically instead. */
+@media (max-width: 767px) {
+    .marginRow {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding-left: 0;
+    }
+
+    .marginLabel {
+        min-width: 0;
+    }
+
+    .marginInputs {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .labelRow {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* Header/footer: keep the three alignment inputs (left / middle / right) on one
+     * row even in the narrow drawer — stacking them into a column loses the
+     * left/center/right meaning. min-width:0 lets the inputs shrink to share the
+     * width instead of overflowing off-screen. */
+    .hfGroup .labelRow {
+        flex-direction: row;
+        gap: 8px;
+    }
+
+    .hfGroup .labelRow > div {
+        min-width: 0;
+    }
 }

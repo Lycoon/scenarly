@@ -4,15 +4,19 @@ import Loading from "@components/utils/Loading";
 import DashboardModal from "@components/dashboard/DashboardModal";
 import ProjectUnavailableDialog from "@components/projects/ProjectUnavailableDialog";
 import ProjectMigrationErrorDialog from "@components/projects/ProjectMigrationErrorDialog";
-import { useRouter, useSearchParams } from "next/navigation";
+import ScenarlyOpenDialog from "@components/projects/ScenarlyOpenDialog";
+import { useSearchParams } from "next/navigation";
 import { ProjectProvider, useProjectReady } from "@src/context/ProjectContext";
 import { ViewProvider } from "@src/context/ViewContext";
 import { useProjectMembership, useSettings } from "@src/lib/utils/hooks";
+import { useAppNavigation } from "@src/lib/utils/navigation";
 import { useLocale } from "@src/context/LocaleContext";
 import { useTheme } from "next-themes";
 import { ReactNode, Suspense, useEffect } from "react";
 import ProjectNavbar from "@components/navbar/ProjectNavbar";
+import ProjectNavbarSkeleton from "@components/navbar/ProjectNavbarSkeleton";
 import ApplyTimingPanel from "@components/debug/ApplyTimingPanel";
+import { useOsFileOpen } from "@src/lib/import/use-os-file-open";
 import { isTauri } from "@tauri-apps/api/core";
 
 /**
@@ -46,12 +50,16 @@ function SettingsSync() {
     return null;
 }
 
+// Shared by the loading skeleton and the resolved layout so the navbar sits at
+// the exact same place across the transition — no vertical shift on load.
+const shellStyle = { display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" } as const;
+
 interface ProjectLayoutInnerProps {
     children: ReactNode;
 }
 
 const ProjectLayoutInner = ({ children }: ProjectLayoutInnerProps) => {
-    const router = useRouter();
+    const { goToProjects } = useAppNavigation();
     const { status } = useProjectReady();
     const { membership, isLoading: isMembershipLoading, isLocalOnly: isBrowserLocalOnly } = useProjectMembership();
 
@@ -68,11 +76,11 @@ const ProjectLayoutInner = ({ children }: ProjectLayoutInnerProps) => {
     // NEXT_REDIRECT mid-render tore down the project session before the async
     // navigation committed; React then remounted this subtree (projectId is
     // still in the URL), re-fired /api/users + cloud-token, and threw again —
-    // an endless 401 loop in production. router.replace runs once, after the
+    // an endless 401 loop in production. goToProjects runs once, after the
     // session has mounted cleanly, and stops once projectId leaves the URL.
     useEffect(() => {
-        if (mustRedirect) router.replace("/projects");
-    }, [mustRedirect, router]);
+        if (mustRedirect) goToProjects();
+    }, [mustRedirect, goToProjects]);
 
     // Surface terminal error states first so the user always gets a clear message,
     // before any redirect or loading gating runs.
@@ -86,14 +94,21 @@ const ProjectLayoutInner = ({ children }: ProjectLayoutInnerProps) => {
         return <ProjectUnavailableDialog />;
     }
     // Wait for local data and (for cloud projects) for membership to resolve;
-    // also hold here while the redirect effect navigates away.
+    // also hold here while the redirect effect navigates away. Render a navbar
+    // skeleton (not a bare spinner) so the bar stays put when the real navbar
+    // mounts, keeping the layout fixed through loading.
     if (isResolving || mustRedirect) {
-        return <Loading />;
+        return (
+            <div style={shellStyle}>
+                <ProjectNavbarSkeleton />
+                <Loading />
+            </div>
+        );
     }
 
     return (
         <ViewProvider>
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+            <div style={shellStyle}>
                 <ProjectNavbar />
                 {children}
             </div>
@@ -119,10 +134,21 @@ function ProjectLayoutContent({ children }: { children: ReactNode }) {
     );
 }
 
+/**
+ * Hosts the `.scenarly` open flow above both the project listing and an open
+ * project, because a file can arrive from the OS at either — a double-click with
+ * the app already showing a script has to be answerable without leaving it.
+ */
+function ScenarlyFileOpenHost() {
+    useOsFileOpen();
+    return <ScenarlyOpenDialog />;
+}
+
 export default function ProjectLayout({ children }: { children: ReactNode }) {
     return (
         <Suspense fallback={<Loading />}>
             <SettingsSync />
+            <ScenarlyFileOpenHost />
             <ProjectLayoutContent>{children}</ProjectLayoutContent>
         </Suspense>
     );

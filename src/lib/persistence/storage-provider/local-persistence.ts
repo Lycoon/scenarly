@@ -4,10 +4,16 @@
  */
 
 import type { UserSettings } from "@src/lib/utils/types";
-import { getStorageProvider, type CachedProject, type ProjectEntryInput } from "./storage-provider";
+import {
+    getStorageProvider,
+    type CachedProject,
+    type FileFingerprint,
+    type ProjectEntryInput,
+} from "./storage-provider";
+import { pushPendingPoster } from "@src/lib/posters/poster-store";
 import { yjsDbKey } from "../y-local-provider";
 
-export type { CachedProject };
+export type { CachedProject, FileFingerprint };
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -60,9 +66,12 @@ export async function touchCachedProject(id: string): Promise<void> {
 export async function deleteCachedProject(id: string): Promise<void> {
     const provider = await getStorageProvider();
     await provider.delete(id);
-    // Reclaim the project's binary assets (board images). This is the chokepoint
-    // every deletion flow funnels through (DangerZone + discardCloudProjectData).
+    // Reclaim the project's binary assets (board images), its poster and its
+    // local version history. This is the chokepoint every deletion flow funnels
+    // through (DangerZone + discardCloudProjectData).
     await provider.deleteProjectAssets(id);
+    await provider.deletePoster(id);
+    await provider.deleteProjectSnapshots(id);
 }
 
 export async function isCachedProject(projectId: string): Promise<boolean> {
@@ -90,6 +99,35 @@ export async function ensureCachedEntries(projects: ProjectEntryInput[]): Promis
     return (await getStorageProvider()).ensureEntries(projects);
 }
 
+// ── File binding (desktop only) ───────────────────────────────────────────────
+//
+// Thin pass-throughs so UI code never reaches for the StorageProvider directly.
+// The policy around these calls — when a write is safe, what to do when the file
+// changed underneath us — lives in `src/lib/persistence/file-binding.ts`.
+
+/** Bind a project to a `.scenarly` file that Scenarly will keep up to date. */
+export async function bindProjectFile(
+    id: string,
+    path: string,
+    fingerprint?: FileFingerprint,
+): Promise<void> {
+    return (await getStorageProvider()).bindProjectFile(id, path, fingerprint);
+}
+
+/** Stop keeping a project's file up to date, and forget the path. */
+export async function unbindProjectFile(id: string): Promise<void> {
+    return (await getStorageProvider()).unbindProjectFile(id);
+}
+
+/** Note a successful write, so the next one can be skipped or checked against it. */
+export async function recordFileWrite(
+    id: string,
+    sv: Uint8Array,
+    fingerprint?: FileFingerprint,
+): Promise<void> {
+    return (await getStorageProvider()).recordFileWrite(id, sv, fingerprint);
+}
+
 // ── Settings persistence ──────────────────────────────────────────────────────
 
 export async function getPersistedSettings(): Promise<Partial<UserSettings>> {
@@ -105,7 +143,7 @@ export async function persistSettings(updates: Partial<UserSettings>): Promise<v
 /**
  * Migrate a cloud project to a new local-only project.
  * Creates a new cached entry and copies the Yjs document from the old
- * IndexedDB database (`scriptio-<oldId>`) to a new one (`scriptio-<newId>`).
+ * IndexedDB database (`scenarly-<oldId>`) to a new one (`scenarly-<newId>`).
  */
 export async function migrateToCachedProject(
     oldProjectId: string,
@@ -138,7 +176,14 @@ export async function migrateToCachedProject(
 
     // 3b. Copy the project's binary assets to the new id (they are keyed by
     // projectId, so the copied board cards would otherwise reference nothing).
-    await (await getStorageProvider()).copyProjectAssets(oldProjectId, newProject.id);
+    const provider = await getStorageProvider();
+    await provider.copyProjectAssets(oldProjectId, newProject.id);
+
+    // 3c. Carry the poster over too, flagged as pending: the copy lives only on
+    // this device now, so a later promotion to the cloud has to upload it.
+    await provider.copyPoster(oldProjectId, newProject.id);
+    const copiedPoster = await provider.getPoster(newProject.id);
+    if (copiedPoster) await provider.putPoster({ ...copiedPoster, pendingUpload: true });
 
     // 4. Clean up old project data
     await discardCloudProjectData(oldProjectId);
@@ -149,7 +194,7 @@ export async function migrateToCachedProject(
 /**
  * Promote a local-only cached project to a cloud project, reusing the same id.
  * Creates a cloud project record + membership, then flips the local cache flag.
- * The Y.js doc at `scriptio-{projectId}` is unchanged — the cloud provider in
+ * The Y.js doc at `scenarly-{projectId}` is unchanged — the cloud provider in
  * `useProjectYjs` will push it to the empty server doc on next mount via the
  * standard CRDT handshake.
  */
@@ -187,6 +232,16 @@ export async function promoteLocalProjectToCloud(projectId: string): Promise<voi
     }
     await markCachedProjectAsSynced(projectId);
 
+    // The cloud owns this project's versions from this line on, so the local
+    // history is discarded here rather than at the end of the function.
+    // Everything below can throw — a quota error aborts the asset upload — and
+    // snapshots left behind by a half-finished promotion are unreachable: the
+    // panel resolves to the cloud provider, and the local pruner only ever runs
+    // for local-only projects, so nothing would collect them or release the
+    // assets their `assetHashes` pin.
+    const { discardLocalSnapshots } = await import("@src/lib/saves/local-snapshots");
+    await discardLocalSnapshots(projectId);
+
     // Push existing board assets to R2 now that the cloud project exists. A quota
     // error aborts (pre-check should make this rare); other per-asset failures are
     // logged so promotion still completes.
@@ -199,6 +254,10 @@ export async function promoteLocalProjectToCloud(projectId: string): Promise<voi
             console.warn("[assets] failed to upload asset on cloud promotion:", e);
         }
     }
+
+    // The poster the project already had locally now belongs in the cloud too.
+    // Best-effort: it stays flagged pending and is retried on the next open.
+    await pushPendingPoster(projectId);
 }
 
 /**

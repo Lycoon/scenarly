@@ -9,19 +9,44 @@
     z-index: 1000;
 }
 
+/* Height is sized off the viewport rather than to a fixed box, so the modal keeps
+ * roughly the same share of the screen through a tablet rotation: the old
+ * `800px/max-height:80vh` pair *took away* height on rotating to landscape
+ * (834h → 667px), leaving the modal shorter than the layout it had just rotated
+ * from, where min() scales with the screen instead.
+ *
+ * Width is capped tighter than the height is, because past ~900px the modal has
+ * nothing useful to spend the extra width on: the nav is fixed (see .sidebar) and
+ * every settings row is a label-left/control-right pair, so a wider box only
+ * pushes the two ends further apart and makes the panels harder to read. Tablets
+ * get the looser cap below. */
 .modal {
-    width: 900px;
-    max-width: 90vw;
-    height: 800px;
-    max-height: 80vh;
+    width: min(900px, 92vw);
+    height: min(840px, 90vh);
     display: flex;
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
+/* Tablet (a touch device wide enough for the desktop layout — an iPad reports
+ * `pointer: coarse` with or without a trackpad, see use-board-touch). There the
+ * modal is the screen rather than a box sitting on a much larger desktop, so it
+ * keeps the viewport-relative width: portrait fills the screen (834w → 92vw) and
+ * landscape keeps growing with it (1194w → ~1098) instead of stalling at the
+ * desktop cap and reading as *narrower* than the portrait layout it came from. */
+@media (pointer: coarse) and (min-width: 768px) {
+    .modal {
+        width: min(1100px, 92vw);
+    }
+}
+
+/* Fixed rather than `flex: 1`: the nav is a list of eight short labels, so a
+ * wider modal (landscape, desktop) has nothing to spend the extra width on here.
+ * Pinning it sends all of the growth to .content, which does. */
 .sidebar {
-    flex: 1;
+    width: 260px;
+    flex: none;
     background: var(--editor-sidebar);
     padding: 32px 0;
     border-right: 1px solid var(--separator);
@@ -29,10 +54,38 @@
     flex-direction: column;
 }
 
+.sidebarHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
 .sidebarTitle {
     font-size: 1.2rem;
-    padding: 0 24;
+    font-weight: 600;
+    padding: 0 24px;
     margin-bottom: 18px;
+    color: var(--primary-text);
+}
+
+/* Only shown on phone, where the sections list is a standalone drawer screen. */
+.sidebarClose {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+}
+
+.sidebarClose:hover {
+    background-color: var(--secondary-hover);
     color: var(--primary-text);
 }
 
@@ -43,12 +96,19 @@
     color: var(--secondary-text);
     margin-bottom: 5px;
     margin-top: 14px;
-    padding: 0 12;
+    padding: 0 12px;
     opacity: 0.6;
 }
 
 .navMenu {
     padding: 0 12px;
+}
+
+/* Bottom cluster (Sign in / Log out + About). Pinned to the bottom of the sidebar
+ * on desktop; on phone it gets a separator + gap so it reads as a distinct group
+ * set apart from the section list above. */
+.navMenuFooter {
+    margin-top: auto;
 }
 
 .navItem {
@@ -95,6 +155,12 @@
     padding: 30px;
     background: var(--main-bg);
     min-height: 0;
+    /* Without this, a panel containing a child with a fixed minimum width wider
+     * than the narrow phone drawer (e.g. Keybinds' .keyArea, Layout's margin-input
+     * pills) forces .content past the modal's `overflow: hidden` edge, clipping the
+     * right gutter and the close button. min-width:0 pins .content to the drawer
+     * width so any overflow scrolls inside .scrollArea and the header stays aligned. */
+    min-width: 0;
 }
 
 .contentHeader {
@@ -105,12 +171,56 @@
     flex-shrink: 0;
 }
 
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+/* Truncate rather than grow: a long tab title must not push the close button off
+   its gutter, so the button sits at the same spot on every tab. */
+.headerLeft h3 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Back to the sections list; only rendered on phone (see DashboardModal). */
+.back_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    margin-left: -6px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: var(--primary-text);
+    cursor: pointer;
+}
+
+.back_btn:hover {
+    background-color: var(--secondary-hover);
+}
+
+/* `scroll` rather than `auto` + `scrollbar-gutter: stable`: WebKit claims to
+   support the gutter (CSS.supports says yes) but does not reserve it, so a
+   section unfolding past the bottom of the panel shifted every row 16px left the
+   moment the scrollbar appeared. Keeping the bar there from the start reserves
+   the same strip in every engine; the track below is transparent, so an
+   unscrollable panel shows nothing but the gutter it already had. */
 .scrollArea {
-    overflow-y: auto;
+    overflow-y: scroll;
     flex: 1;
     min-height: 0;
-    scrollbar-gutter: stable;
     padding-right: 20px;
+}
+
+.scrollArea::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .scrollArea::before {
@@ -143,13 +253,155 @@
     font-family: inherit;
 }
 
+/* Same look as the sections-list close (.sidebarClose) so the drawer's two close
+ * buttons don't differ (and matches the project sidebar + burger drawers). */
 .close_btn {
-    height: 22px;
-    width: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: none;
     color: var(--secondary-text);
     cursor: pointer;
 }
 
 .close_btn:hover {
+    background-color: var(--secondary-hover);
     color: var(--primary-text);
+}
+
+/* Slide the drawer in from the right on phone: on every open, and again on each
+ * screen change inside it (the modal is keyed on its screen — see [DashboardModal]),
+ * so picking a section reads as the drawer closing and coming back rather than its
+ * content being swapped out under it. That is what the burger menu ⇄ dashboard swap
+ * does in a project, where the two screens are two separate drawers. */
+@keyframes dashboardDrawerIn {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Phone: on a project the sidebar nav lives in the burger menu, so the modal
+ * drops it and renders as a right-side drawer matching that menu (same width and
+ * position below the navbar) instead of a full-screen pane. Tabs are switched from
+ * the burger, whose drawer slides out as this one slides in on the chosen tab.
+ * Content is tightened and slightly scaled down so the settings sit comfortably in
+ * the narrow width. */
+@media (max-width: 767px) {
+    .overlay {
+        /* Anchor below the navbar and push the drawer to the right edge, leaving
+         * a strip of the page visible to dismiss — same as the burger drawer. */
+        top: var(--navbar-height);
+        align-items: stretch;
+        justify-content: flex-end;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: none;
+    }
+
+    .modal {
+        /* Single horizontal gutter for both drawer screens (sections list and
+         * section content). Both use it for their outer edges so the close button
+         * and the panel content sit on the same lines whichever screen is up —
+         * switching screens must not shift the close button. */
+        --drawer-gutter: 16px;
+        width: var(--mobile-drawer-width);
+        max-width: var(--mobile-drawer-width);
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        /* No shadow — see ProjectNavbarMobileMenu .drawer. */
+        animation: dashboardDrawerIn 0.25s ease;
+    }
+
+    /* The nav sidebar and the content share the drawer, one screen at a time.
+     * Default screen is content; .mobileSections flips to the sections list (used
+     * when the dashboard is opened without a burger menu behind it — e.g. the
+     * home Settings button). */
+    .sidebar {
+        display: none;
+        /* Undo the desktop nav's fixed width: here it is a whole drawer screen,
+         * so it fills the drawer rather than sitting in a column of its own. */
+        width: auto;
+        flex: 1;
+        padding: 12px calc(var(--drawer-gutter) + var(--safe-right)) calc(16px + var(--safe-bottom))
+            var(--drawer-gutter);
+        border-right: none;
+        overflow-y: auto;
+        /* On mobile the whole modal is one drawer, so the sections screen wears the
+         * same flat drawer background as the content screen (and the project menu +
+         * burger drawers) rather than the desktop two-tone sidebar colour. */
+        background: var(--main-bg);
+    }
+
+    /* No horizontal padding of its own: the close button must land on the drawer
+     * gutter, exactly where the content screen's close button sits. */
+    .sidebarHeader {
+        padding: 4px 0 8px;
+    }
+
+    /* Align the title with the section labels + item icons below, whose left edge
+     * is the gutter + navItem's own padding(12). */
+    .sidebarTitle {
+        padding: 0 12px;
+        margin-bottom: 0;
+    }
+
+    .navMenu {
+        padding: 0;
+    }
+
+    .navMenuFooter {
+        margin-top: 24px;
+        padding-top: 12px;
+        border-top: 1px solid var(--separator);
+    }
+
+    .sidebarClose {
+        display: flex;
+    }
+
+    .modal.mobileSections .sidebar {
+        display: flex;
+    }
+
+    .modal.mobileSections .content {
+        display: none;
+    }
+
+    .content {
+        flex: 1;
+        /* Symmetric horizontal gutter + the right safe-area inset so the close
+         * button and settings panels (Keybinds, Layout, …) never crowd the screen
+         * edge. */
+        padding: 12px calc(var(--drawer-gutter) + var(--safe-right)) calc(16px + var(--safe-bottom))
+            var(--drawer-gutter);
+        /* Nudge inherited/em-based text down a touch for a denser, phone-friendly
+         * scale; width-driven layouts reflow into the narrow drawer on their own. */
+        font-size: 0.92rem;
+    }
+
+    .contentHeader {
+        margin-bottom: 14px;
+    }
+
+    .contentHeader h3 {
+        font-size: 1.1rem;
+    }
+
+    /* The drawer gutter is the only horizontal padding on phone: no extra right
+     * padding and no reserved scrollbar gutter, so panel content lines up with the
+     * header on both edges instead of drifting left. The phone's scrollbars are
+     * overlays that take no room, so `auto` costs nothing here and keeps the
+     * narrow drawer from spending 16px on a permanent gutter. */
+    .scrollArea {
+        padding-right: 0;
+        overflow-y: auto;
+    }
 }

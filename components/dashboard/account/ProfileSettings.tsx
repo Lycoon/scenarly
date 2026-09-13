@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { editUserInfo, deleteUser } from "@src/lib/utils/requests";
+import { editUserInfo, deleteUser, requestDataExport, downloadDataExport } from "@src/lib/utils/requests";
 import { signOut } from "next-auth/react";
 import { isTauri } from "@tauri-apps/api/core";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Trash2, Save } from "lucide-react";
+import { ArrowRight, Download, Trash2, Save, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import form from "./../../utils/Form.module.css";
@@ -14,7 +14,9 @@ import styles from "./ProfileSettings.module.css";
 import dangerStyles from "../project/DangerZone.module.css";
 import modal from "../../utils/ModalBtn.module.css";
 import { ApiResponse } from "@src/lib/utils/api-utils";
-import { useUser } from "@src/lib/utils/hooks";
+import { useDataExport, useUser } from "@src/lib/utils/hooks";
+import { saveBlob } from "@src/lib/utils/save-file";
+import { useLocale } from "@src/context/LocaleContext";
 
 const PRESET_COLORS = [
     "#ef4444", // red
@@ -29,10 +31,22 @@ const PRESET_COLORS = [
 
 const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; onDangerToggle: () => void }) => {
     const { user, mutate } = useUser();
+    const { dataExport, mutate: mutateExport } = useDataExport();
     const router = useRouter();
     const t = useTranslations("profile");
     const tCommon = useTranslations("common");
+    const { locale } = useLocale();
     const confirmPhrase = t("deleteConfirmPhrase");
+
+    // A subscription still renewing is money at stake: deleting the account
+    // cancels it on the spot, so the dialog has to say so before they confirm.
+    const isPro = !!user?.isProUntil && new Date(user.isProUntil) > new Date();
+    const hasLiveSubscription = isPro && !user?.isSubscriptionCancelled;
+    const proExpiryDate = user?.isProUntil
+        ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(
+              new Date(user.isProUntil),
+          )
+        : "";
 
     const [username, setUsername] = useState("");
     const [color, setColor] = useState(PRESET_COLORS[0]);
@@ -43,6 +57,24 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [exportLoading, setExportLoading] = useState(false);
+    const [exportRequested, setExportRequested] = useState(false);
+    const [downloadLoading, setDownloadLoading] = useState(false);
+    const [exportMessage, setExportMessage] = useState<{ type: "success" | "error"; text: string } | null>(
+        null,
+    );
+
+    // The server is the authority on whether another export is allowed — a reload
+    // must not hand back a button the API would only answer with 429. `exportRequested`
+    // just covers the blink between the request landing and the state refetching.
+    const isExportBlocked =
+        exportLoading || exportRequested || !!dataExport?.canRequestAt || dataExport?.status === "PENDING";
+    const exportExpiryDate = dataExport?.expiresAt
+        ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(
+              new Date(dataExport.expiresAt),
+          )
+        : "";
 
     // Sync state when settings load
     useEffect(() => {
@@ -65,19 +97,76 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
         setMessage(null);
     };
 
+    // GDPR data-access request. The server bundles the zip in the background and
+    // keeps it for 7 days; the panel below polls until it is ready to download,
+    // and the email that goes out is only a notification.
+    const handleRequestExport = async () => {
+        if (isExportBlocked) return;
+        setExportLoading(true);
+        setExportMessage(null);
+        try {
+            const res = await requestDataExport();
+            if (res.ok) {
+                setExportRequested(true);
+                setExportMessage({ type: "success", text: t("exportRequested") });
+            } else if (res.status === 409) {
+                setExportMessage({ type: "error", text: t("exportPending") });
+            } else if (res.status === 429) {
+                setExportMessage({ type: "error", text: t("exportThrottled") });
+            } else {
+                setExportMessage({ type: "error", text: t("exportFailed") });
+            }
+        } catch {
+            setExportMessage({ type: "error", text: t("exportFailed") });
+        } finally {
+            setExportLoading(false);
+            mutateExport();
+        }
+    };
+
+    // Streamed through the API rather than linked to, so the archive is only ever
+    // handed to a request carrying this user's session.
+    const handleDownloadExport = async () => {
+        if (!dataExport?.id || downloadLoading) return;
+        setDownloadLoading(true);
+        setExportMessage(null);
+        try {
+            const res = await downloadDataExport(dataExport.id);
+            if (!res.ok) throw new Error("Download failed");
+
+            await saveBlob(await res.blob(), "scenarly-data-export.zip", {
+                label: t("exportArchive"),
+                extension: "zip",
+            });
+        } catch {
+            // Most likely the archive lapsed while the panel was open — refetch so
+            // the state stops offering a download that no longer exists.
+            setExportMessage({ type: "error", text: t("exportDownloadFailed") });
+            mutateExport();
+        } finally {
+            setDownloadLoading(false);
+        }
+    };
+
     const handleDeleteAccount = async () => {
         setDeleteLoading(true);
+        setDeleteError(null);
         try {
             const res = await deleteUser();
-            if (res.ok) {
-                if (isTauri()) {
-                    const { clearDesktopToken } = await import("@src/lib/desktop-auth");
-                    await clearDesktopToken();
-                } else {
-                    await signOut({ redirect: false });
-                }
-                router.replace("/");
+            if (!res.ok) {
+                setDeleteError(t("deleteFailed"));
+                return;
             }
+
+            if (isTauri()) {
+                const { clearDesktopToken } = await import("@src/lib/desktop-auth");
+                await clearDesktopToken();
+            } else {
+                await signOut({ redirect: false });
+            }
+            router.replace("/");
+        } catch {
+            setDeleteError(t("deleteFailed"));
         } finally {
             setDeleteLoading(false);
         }
@@ -113,6 +202,49 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
     if (dangerOpen) {
         return (
             <>
+                <div className={styles.exportSection}>
+                    <div className={styles.exportContainer}>
+                        <div className={dangerStyles.dangerItem}>
+                            <div>
+                                <p className={form.label}>{t("exportData")}</p>
+                                <p className={dangerStyles.dangerDescription}>{t("exportDataDesc")}</p>
+                            </div>
+                            <button
+                                className={styles.exportBtn}
+                                onClick={handleRequestExport}
+                                disabled={isExportBlocked}
+                            >
+                                {exportLoading ? t("exportRequesting") : t("exportBtn")}
+                            </button>
+                        </div>
+                        {dataExport && dataExport.status !== "NONE" && (
+                            <div className={styles.exportStatus}>
+                                <span className={styles.exportStatusText}>
+                                    {dataExport.status === "PENDING" && t("exportStatePreparing")}
+                                    {dataExport.status === "READY" &&
+                                        t("exportStateReady", { date: exportExpiryDate })}
+                                    {dataExport.status === "EXPIRED" && t("exportStateExpired")}
+                                </span>
+                                {dataExport.status === "READY" && (
+                                    <button
+                                        className={styles.exportDownloadBtn}
+                                        onClick={handleDownloadExport}
+                                        disabled={downloadLoading}
+                                    >
+                                        <Download size={16} />
+                                        {downloadLoading ? t("exportDownloading") : t("exportDownload")}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    {exportMessage && (
+                        <div className={`${styles.message} ${styles[exportMessage.type]}`}>
+                            {exportMessage.text}
+                        </div>
+                    )}
+                </div>
+
                 <div className={dangerStyles.dangerContainer}>
                     <div className={dangerStyles.dangerItem}>
                         <div>
@@ -130,6 +262,12 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
                         <div className={dangerStyles.modal}>
                             <h2 className={dangerStyles.modalTitle}>{t("deleteModalTitle")}</h2>
                             <p className={dangerStyles.modalDescription}>{t("deleteModalDesc")}</p>
+                            {hasLiveSubscription && (
+                                <div className={styles.subscriptionWarning}>
+                                    <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
+                                    <span>{t("deleteSubscriptionWarning", { date: proExpiryDate })}</span>
+                                </div>
+                            )}
                             <label
                                 htmlFor="delete-confirm"
                                 className={dangerStyles.modalDescription}
@@ -146,6 +284,9 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
                                 onChange={(e) => setDeleteConfirmInput(e.target.value)}
                                 autoComplete="off"
                             />
+                            {deleteError && (
+                                <div className={`${styles.message} ${styles.error}`}>{deleteError}</div>
+                            )}
                             <div className={dangerStyles.modalActions}>
                                 <button
                                     className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
@@ -160,6 +301,7 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
                                     onClick={() => {
                                         setShowDeleteDialog(false);
                                         setDeleteConfirmInput("");
+                                        setDeleteError(null);
                                     }}
                                     disabled={deleteLoading}
                                 >

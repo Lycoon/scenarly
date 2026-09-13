@@ -1,15 +1,26 @@
 "use client";
 
 import { join } from "@src/lib/utils/misc";
-import { useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useContext, useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { ProjectContext } from "@src/context/ProjectContext";
 import { useViewContext } from "@src/context/ViewContext";
 import { Scene } from "@src/lib/screenplay/scenes";
 import { focusOnPosition } from "@src/lib/screenplay/editor";
+import { moveScene } from "@src/lib/screenplay/scene-reorder";
 import { computeSceneLabels } from "@src/lib/screenplay/scene-locking";
-import { Archive, Clapperboard, FolderTree, MessageSquare } from "lucide-react";
+import { Archive, Clapperboard, FolderTree, ListFilter, MessageSquare } from "lucide-react";
+import {
+    EMPTY_SCENE_FILTER,
+    SceneFilter,
+    collectFacetOptions,
+    computeSceneFacets,
+    countSceneFilters,
+    isSceneFilterActive,
+    sceneMatchesFilter,
+} from "@src/lib/screenplay/scene-filters";
 import SidebarSceneItem from "./SidebarSceneItem";
+import SceneFilterPanel from "./SceneFilterPanel";
 import ShelfSidebarView from "./ShelfSidebarView";
 import CommentSidebarView from "./CommentSidebarView";
 import DocumentTreeSidebarView from "./DocumentTreeSidebarView";
@@ -17,12 +28,24 @@ import DocumentTreeSidebarView from "./DocumentTreeSidebarView";
 import form from "./../../utils/Form.module.css";
 import sidebar_nav from "./EditorSidebarNavigation.module.css";
 
+// Touch reordering: a swipe scrolls the list, so a scene is only picked up after
+// the finger is held roughly still for this long. Moving farther than the cancel
+// threshold before then is read as a scroll and abandons the pending pick-up.
+const TOUCH_DRAG_HOLD_MS = 300;
+const TOUCH_DRAG_CANCEL_PX = 10;
+
+// useLayoutEffect warns on the server; fall back to useEffect there. Aligning
+// the marker gutter has to happen before paint, or its ticks flash at the top
+// of the sidebar before landing on the list.
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 const EditorSidebarNavigation = () => {
     const t = useTranslations("editorSidebar");
     const {
         scenes,
         updateScenes,
         editor,
+        screenplay,
         sceneLocking,
         sceneNumberingStyle,
         skippedSceneLetters,
@@ -31,6 +54,39 @@ const EditorSidebarNavigation = () => {
     const { leftSidebarOpen } = useViewContext();
 
     const [activeTab, setActiveTab] = useState<"scenes" | "shelf" | "comments" | "documents">("scenes");
+
+    // Scene filter (characters / locations / times of day), cumulative across
+    // the three dimensions. Kept here so the dimming survives the panel closing.
+    const [filter, setFilter] = useState<SceneFilter>(EMPTY_SCENE_FILTER);
+    const [filterOpen, setFilterOpen] = useState(false);
+    const filterBtnRef = useRef<HTMLButtonElement>(null);
+    const filterActive = isSceneFilterActive(filter);
+
+    // Facets are re-derived on every screenplay change, so only pay for them
+    // when something actually consumes them — the panel being open, or a filter
+    // dimming the list.
+    const facets = useMemo(
+        () => (filterOpen || filterActive ? computeSceneFacets(screenplay) : []),
+        [screenplay, filterOpen, filterActive],
+    );
+
+    // Keyed by scene heading position rather than by index: an optimistic drag
+    // reorder moves the scenes before the screenplay is re-parsed, and position
+    // keeps each scene matched to its own facets in the meantime.
+    const facetsByPosition = useMemo(() => new Map(facets.map((f) => [f.position, f])), [facets]);
+    const facetOptions = useMemo(() => collectFacetOptions(facets), [facets]);
+
+    // Which scenes the filter excludes, in list order. Drives both the greyed
+    // out items and the marker gutter beside the list.
+    const filteredOut = useMemo(
+        () =>
+            scenes.map(
+                (scene) => filterActive && !sceneMatchesFilter(facetsByPosition.get(scene.position), filter),
+            ),
+        [scenes, filterActive, facetsByPosition, filter],
+    );
+
+    const showMarkerGutter = activeTab === "scenes" && filterActive;
 
     const [dragIndex, setDragIndex] = useState<number | null>(null);
     // indicatorIndex represents the gap where the item will be inserted.
@@ -62,9 +118,16 @@ const EditorSidebarNavigation = () => {
     }, [scenes, sceneLocking, sceneNumberingStyle, skippedSceneLetters, persistentScenes]);
 
     const listRef = useRef<HTMLDivElement>(null);
+    const sidebarContentRef = useRef<HTMLDivElement>(null);
+    const gutterRef = useRef<HTMLDivElement>(null);
     const currentSceneRef = useRef<HTMLDivElement>(null);
     const scenesRef = useRef(scenes);
     const suppressSceneScrollRef = useRef(false);
+
+    // Touch-drag bookkeeping. The long-press timer arms the pick-up; the abort
+    // controller tears down that gesture's window listeners in one shot.
+    const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const gestureAbortRef = useRef<AbortController | null>(null);
 
     // Keep scenesRef in sync so the editor callback can read the latest scenes
     useEffect(() => {
@@ -103,18 +166,89 @@ const EditorSidebarNavigation = () => {
         };
     }, [editor]);
 
-    // Auto-scroll the current scene item into view (suppressed when user initiated navigation)
+    /**
+     * Auto-scroll the current scene item into view (suppressed when the user
+     * initiated the navigation themselves).
+     *
+     * Scrolls the list box directly rather than calling `scrollIntoView` on the
+     * item. `scrollIntoView` walks *every* scrollable ancestor and, when the
+     * inner ones can't bring the target into view, escalates to scrolling the
+     * document itself — and with `behavior: "smooth"` that is a running
+     * animation, not a one-shot.
+     *
+     * Both conditions were met here on phone. The drawer is `position: fixed`
+     * and, when shut, translated fully off-screen with its contents still
+     * rendered (see .collapsed in the stylesheet), so the target could never be
+     * revealed and the animation never converged — a scroll left running
+     * indefinitely against the shell's window-anchoring guard (see
+     * ProjectWorkspace) for no visible reason.
+     *
+     * Scrolling `listRef` itself cannot touch the document, and the shut-drawer
+     * case is skipped outright — there is nothing to reveal, and the effect
+     * re-runs when it opens.
+     */
     useEffect(() => {
         if (suppressSceneScrollRef.current) {
             suppressSceneScrollRef.current = false;
             return;
         }
-        if (currentSceneRef.current) {
-            currentSceneRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-    }, [currentSceneIndex]);
+        if (!leftSidebarOpen) return;
 
+        const list = listRef.current;
+        const item = currentSceneRef.current;
+        if (!list || !item) return;
+
+        // Rect-based, not offsetTop: the list establishes no containing block, so
+        // the item's offsetParent is some ancestor further up.
+        const itemRect = item.getBoundingClientRect();
+        const listRect = list.getBoundingClientRect();
+        const delta = itemRect.top - listRect.top - (list.clientHeight - itemRect.height) / 2;
+        list.scrollTo({ top: list.scrollTop + delta, behavior: "smooth" });
+    }, [currentSceneIndex, leftSidebarOpen]);
+
+    // The marker gutter is drawn beside the panel, not in it, so nothing lays it
+    // out against the scene list — it is measured onto it instead. Written
+    // straight to the node: a state round-trip would re-render the whole list on
+    // every resize.
+    useIsoLayoutEffect(() => {
+        const list = listRef.current;
+        const gutter = gutterRef.current;
+        const content = sidebarContentRef.current;
+        if (!list || !gutter || !content) return;
+
+        const align = () => {
+            const listRect = list.getBoundingClientRect();
+            const contentRect = content.getBoundingClientRect();
+            gutter.style.top = `${listRect.top - contentRect.top}px`;
+            gutter.style.height = `${listRect.height}px`;
+        };
+
+        align();
+        // Follows the list through sidebar open/close, window resizes and the
+        // timeline strip opening above the workspace.
+        const observer = new ResizeObserver(align);
+        observer.observe(list);
+        observer.observe(content);
+        return () => observer.disconnect();
+    }, [showMarkerGutter]);
+
+    // The filter popover belongs to the scenes tab: leaving it shuts the panel,
+    // while the filter itself is kept so coming back restores the same view.
+    const selectTab = useCallback((tab: "scenes" | "shelf" | "comments" | "documents") => {
+        setActiveTab(tab);
+        setFilterOpen(false);
+    }, []);
+
+    // End any in-progress drag and clear its drop indicator.
+    const resetDrag = useCallback(() => {
+        setDragIndex(null);
+        setIndicatorIndex(null);
+    }, []);
+
+    // Desktop drag starts immediately on press; touch is handled by the
+    // long-press path below so a swipe can still scroll the list.
     const handlePointerDown = useCallback((index: number, e: React.PointerEvent) => {
+        if (e.pointerType === "touch") return;
         if (e.button !== 0) return;
         setDragIndex(index);
     }, []);
@@ -125,100 +259,179 @@ const EditorSidebarNavigation = () => {
         focusOnPosition(editor, scene.position);
     }, [editor]);
 
+    // Resolve the drop gap for a pointer Y. Rects are read live so mid-drag
+    // scrolling doesn't cause offset drift. Shared by the mouse and touch paths.
+    const updateIndicatorFromY = useCallback((clientY: number) => {
+        if (!listRef.current) return;
+
+        const children = listRef.current.children;
+        for (let i = 0; i < children.length; i++) {
+            const rect = children[i].getBoundingClientRect();
+            if (clientY >= rect.top && clientY < rect.bottom) {
+                setIndicatorIndex(clientY < rect.top + rect.height / 2 ? i : i + 1);
+                return;
+            }
+        }
+
+        if (children.length === 0) return;
+        // Above the first / below the last → drop at the corresponding end.
+        if (clientY < children[0].getBoundingClientRect().top) {
+            setIndicatorIndex(0);
+        } else if (clientY >= children[children.length - 1].getBoundingClientRect().bottom) {
+            setIndicatorIndex(children.length);
+        }
+    }, []);
+
     const handlePointerMove = useCallback(
         (e: React.PointerEvent) => {
-            if (dragIndex === null || !listRef.current) return;
-
-            // Read rects live so scrolling doesn't cause offset drift
-            const children = listRef.current.children;
-            for (let i = 0; i < children.length; i++) {
-                const rect = children[i].getBoundingClientRect();
-                if (e.clientY >= rect.top && e.clientY < rect.bottom) {
-                    const half = e.clientY < rect.top + rect.height / 2 ? "top" : "bottom";
-                    setIndicatorIndex(half === "top" ? i : i + 1);
-                    return;
-                }
-            }
-
-            // Below all items → drop after last
-            if (children.length > 0) {
-                const lastRect = children[children.length - 1].getBoundingClientRect();
-                if (e.clientY >= lastRect.bottom) {
-                    setIndicatorIndex(children.length);
-                }
-            }
+            if (e.pointerType === "touch") return; // touch tracks moves via its own listener
+            if (dragIndex === null) return;
+            updateIndicatorFromY(e.clientY);
         },
-        [dragIndex],
+        [dragIndex, updateIndicatorFromY],
     );
 
     const handleDrop = useCallback(() => {
         if (dragIndex === null || indicatorIndex === null || !editor) {
-            setDragIndex(null);
-            setIndicatorIndex(null);
+            resetDrag();
             return;
         }
 
-        const targetIndex = indicatorIndex;
+        const reordered = moveScene(editor, scenes, dragIndex, indicatorIndex);
+        if (reordered) updateScenes(reordered);
 
-        // No-op if dropping in original position
-        if (targetIndex === dragIndex || targetIndex === dragIndex + 1) {
-            setDragIndex(null);
-            setIndicatorIndex(null);
-            return;
+        resetDrag();
+    }, [dragIndex, indicatorIndex, scenes, editor, updateScenes, resetDrag]);
+
+    // Keep a live handle on handleDrop so the touch listeners — attached once at
+    // the start of a gesture — drop with current state, not a stale closure.
+    const dropRef = useRef(handleDrop);
+    useEffect(() => {
+        dropRef.current = handleDrop;
+    }, [handleDrop]);
+
+    // Tear down a touch gesture: cancel its pending long-press and remove its
+    // window listeners. Shared by the scroll-cancel, the drop, and unmount.
+    const stopGesture = useCallback(() => {
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
         }
+        gestureAbortRef.current?.abort();
+        gestureAbortRef.current = null;
+    }, []);
 
-        const dragScene = scenes[dragIndex];
-        const from = dragScene.position - 1;
-        const to = dragScene.nextPosition - 1;
-        const slice = editor.state.doc.slice(from, to);
+    // Touch reordering: hold a scene still to pick it up, then drag to a new
+    // position. A move before the hold fires scrolls the list instead. Runs off
+    // native touch events (not pointer events) so the active drag can
+    // preventDefault to stop the list from scrolling under the finger.
+    const handleTouchStart = useCallback(
+        (index: number, e: React.TouchEvent) => {
+            const touch = e.touches[0];
+            if (!touch) return;
 
-        const tr = editor.state.tr;
-        tr.delete(from, to);
+            stopGesture(); // abandon any gesture still in flight (e.g. a second finger)
 
-        let insertPos: number;
-        if (targetIndex <= dragIndex) {
-            insertPos = scenes[targetIndex].position - 1;
-        } else {
-            // targetIndex can be scenes.length (drop after last item)
-            const refPos =
-                targetIndex < scenes.length ? scenes[targetIndex].position - 1 : editor.state.doc.content.size;
-            insertPos = refPos - (to - from);
-        }
+            const drag = { startX: touch.clientX, startY: touch.clientY, active: false };
+            const controller = new AbortController();
+            gestureAbortRef.current = controller;
+            const { signal } = controller;
 
-        tr.insert(insertPos, slice.content);
-        editor.view.dispatch(tr);
+            longPressTimerRef.current = setTimeout(() => {
+                drag.active = true;
+                setDragIndex(index);
+            }, TOUCH_DRAG_HOLD_MS);
 
-        // Optimistically reorder the scenes array so the sidebar updates immediately,
-        // before the debounced screenplay observer re-parses with accurate positions.
-        const reordered = [...scenes];
-        const [moved] = reordered.splice(dragIndex, 1);
-        const insertIndex = targetIndex > dragIndex ? targetIndex - 1 : targetIndex;
-        reordered.splice(insertIndex, 0, moved);
-        updateScenes(reordered);
+            window.addEventListener(
+                "touchmove",
+                (ev) => {
+                    const t = ev.touches[0];
+                    if (!t) return;
+                    if (!drag.active) {
+                        // Long-press hasn't fired: a real move means the user is
+                        // scrolling, so drop the pending pick-up and let it scroll.
+                        if (Math.hypot(t.clientX - drag.startX, t.clientY - drag.startY) > TOUCH_DRAG_CANCEL_PX) {
+                            stopGesture();
+                        }
+                        return;
+                    }
+                    // Active drag: block the list scroll and track the drop gap.
+                    ev.preventDefault();
+                    updateIndicatorFromY(t.clientY);
+                },
+                { passive: false, signal },
+            );
 
-        setDragIndex(null);
-        setIndicatorIndex(null);
-    }, [dragIndex, indicatorIndex, scenes, editor, updateScenes]);
+            const onEnd = () => {
+                const wasActive = drag.active;
+                stopGesture();
+                if (wasActive) dropRef.current();
+                else resetDrag();
+            };
+            window.addEventListener("touchend", onEnd, { signal });
+            window.addEventListener("touchcancel", onEnd, { signal });
+        },
+        [stopGesture, updateIndicatorFromY, resetDrag],
+    );
 
-    // Window-level pointerup so the drop works even if cursor leaves the list
+    // Abandon any in-flight gesture if the panel unmounts mid-drag.
+    useEffect(() => stopGesture, [stopGesture]);
+
+    // Window-level pointerup so the drop works even if cursor leaves the list.
+    // Touch drops through its own touchend handler, so ignore touch here to
+    // avoid dropping twice (pointerup also fires for touch releases).
     useEffect(() => {
         if (dragIndex === null) return;
 
-        const onPointerUp = () => handleDrop();
+        const onPointerUp = (e: PointerEvent) => {
+            if (e.pointerType === "touch") return;
+            handleDrop();
+        };
         window.addEventListener("pointerup", onPointerUp);
         return () => window.removeEventListener("pointerup", onPointerUp);
     }, [dragIndex, handleDrop]);
 
     return (
         <div className={sidebar_nav.container}>
-            <div className={join(sidebar_nav.sidebar_content, !leftSidebarOpen ? sidebar_nav.collapsed : "")}>
+            <div
+                ref={sidebarContentRef}
+                className={join(sidebar_nav.sidebar_content, !leftSidebarOpen ? sidebar_nav.collapsed : "")}
+            >
                 <div className={sidebar_nav.element}>
                     {activeTab === "scenes" ? (
                         <>
                             <div className={sidebar_nav.list_header}>
                                 <Clapperboard size={18} />
                                 <p className={form.label}>{t("scenes")}</p>
+                                <button
+                                    ref={filterBtnRef}
+                                    className={join(
+                                        sidebar_nav.filter_btn,
+                                        filterActive ? sidebar_nav.filter_btn_active : "",
+                                    )}
+                                    onClick={() => setFilterOpen((open) => !open)}
+                                    aria-label={t("filterScenes")}
+                                >
+                                    <ListFilter size={16} />
+                                    {filterActive && (
+                                        <span className={sidebar_nav.filter_badge}>{countSceneFilters(filter)}</span>
+                                    )}
+                                </button>
                             </div>
+                            {/* Portaled to <body>, so it must not stay up over the
+                                editor once the sidebar it hangs off is shut — a
+                                collapsed column on desktop, a slid-out drawer on
+                                phone. Reopening the sidebar brings it back. */}
+                            {filterOpen && leftSidebarOpen && (
+                                <SceneFilterPanel
+                                    anchorRef={filterBtnRef}
+                                    filter={filter}
+                                    onChange={setFilter}
+                                    onClear={() => setFilter(EMPTY_SCENE_FILTER)}
+                                    onClose={() => setFilterOpen(false)}
+                                    options={facetOptions}
+                                />
+                            )}
                             <div
                                 ref={listRef}
                                 className={join(sidebar_nav.list, sidebar_nav.scene_list)}
@@ -241,10 +454,12 @@ const EditorSidebarNavigation = () => {
                                                 index={index}
                                                 label={display?.label ?? `${index + 1}`}
                                                 isOmitted={display?.isOmitted ?? false}
+                                                isFilteredOut={filteredOut[index]}
                                                 showDropIndicator={showIndicator}
                                                 isDragging={dragIndex === index}
                                                 isCurrent={isCurrent}
                                                 onPointerDown={handlePointerDown}
+                                                onTouchStart={handleTouchStart}
                                                 onDoubleClick={handleDoubleClick}
                                             />
                                         );
@@ -265,30 +480,51 @@ const EditorSidebarNavigation = () => {
                     <div className={sidebar_nav.tab_bar}>
                         <button
                             className={join(sidebar_nav.tab_btn, activeTab === "scenes" ? sidebar_nav.tab_btn_active : "")}
-                            onClick={() => setActiveTab("scenes")}
+                            onClick={() => selectTab("scenes")}
                         >
                             <Clapperboard size={16} />
                         </button>
                         <button
                             className={join(sidebar_nav.tab_btn, activeTab === "documents" ? sidebar_nav.tab_btn_active : "")}
-                            onClick={() => setActiveTab("documents")}
+                            onClick={() => selectTab("documents")}
                         >
                             <FolderTree size={16} />
                         </button>
                         <button
                             className={join(sidebar_nav.tab_btn, activeTab === "comments" ? sidebar_nav.tab_btn_active : "")}
-                            onClick={() => setActiveTab("comments")}
+                            onClick={() => selectTab("comments")}
                         >
                             <MessageSquare size={16} />
                         </button>
                         <button
                             className={join(sidebar_nav.tab_btn, activeTab === "shelf" ? sidebar_nav.tab_btn_active : "")}
-                            onClick={() => setActiveTab("shelf")}
+                            onClick={() => selectTab("shelf")}
                         >
                             <Archive size={16} />
                         </button>
                     </div>
                 </div>
+                {/* Overview strip: one tick per scene the filter keeps, placed at its
+                    share of the list's height, so it is obvious at a glance whether
+                    the matches cluster or run through the whole screenplay. It sits
+                    in the sidebar's own right padding, beside the panel rather than
+                    inside it, so the scene titles keep the full panel width. */}
+                {showMarkerGutter && (
+                    <div ref={gutterRef} className={sidebar_nav.marker_gutter}>
+                        {scenes.map((scene: Scene, index: number) =>
+                            filteredOut[index] ? null : (
+                                <span
+                                    key={scene.position}
+                                    className={sidebar_nav.marker}
+                                    style={{
+                                        top: `${((index + 0.5) / scenes.length) * 100}%`,
+                                        backgroundColor: scene.color || "var(--primary-text)",
+                                    }}
+                                />
+                            ),
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

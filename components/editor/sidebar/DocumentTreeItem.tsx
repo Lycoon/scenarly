@@ -4,7 +4,7 @@ import { useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { DocumentNode, DocumentNodeType } from "@src/lib/project/project-state";
 import { join } from "@src/lib/utils/misc";
-import { ChevronRight, FileText, Folder, LayoutDashboard } from "lucide-react";
+import { ChevronRight, FileText, Folder, LayoutDashboard, MoreVertical } from "lucide-react";
 
 import styles from "./DocumentTreeItem.module.css";
 
@@ -21,7 +21,7 @@ export type DropPosition = "into" | "before" | "after";
  * tree onto a panel to open it there. Reordering within the tree uses internal
  * React state, so this only matters for cross-target (panel) drops.
  */
-export const DOC_DND_MIME = "application/x-scriptio-doc";
+export const DOC_DND_MIME = "application/x-scenarly-doc";
 
 export interface DocumentTreeItemProps {
     node: DocumentNode;
@@ -94,6 +94,23 @@ const DocumentTreeItem = ({
         onRenameCommit(node.id, (renameInputRef.current?.value ?? "").trim());
     }, [node.id, onRenameCommit]);
 
+    // Touch equivalent of right-click: the ⋮ button (shown only on coarse
+    // pointers) opens the same node menu, anchored under the button.
+    const handleMenuButton = useCallback(
+        (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            onContextMenu(node, {
+                preventDefault: () => {},
+                stopPropagation: () => {},
+                clientX: rect.left,
+                clientY: rect.bottom,
+            } as React.MouseEvent);
+        },
+        [node, onContextMenu],
+    );
+
     const handleDragOver = useCallback(
         (e: React.DragEvent) => {
             if (!draggingId || draggingId === node.id) return;
@@ -127,6 +144,9 @@ const DocumentTreeItem = ({
         <>
             <div
                 className={rowClass}
+                // Lets the list's touch long-press resolve the held row without
+                // depending on hashed CSS-module names (see DocumentTreeSidebarView).
+                data-doc-id={node.id}
                 style={{ paddingLeft: 12 + depth * INDENT, opacity: draggingId === node.id ? 0.4 : 1 }}
                 onClick={handleRowClick}
                 onContextMenu={(e) => {
@@ -199,6 +219,17 @@ const DocumentTreeItem = ({
                     </div>
                 ) : (
                     <span className={join(styles.title, "unselectable")}>{node.title}</span>
+                )}
+
+                {!busy && (
+                    <button
+                        className={styles.menu_btn}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={handleMenuButton}
+                        aria-label="Document options"
+                    >
+                        <MoreVertical size={14} />
+                    </button>
                 )}
             </div>
 

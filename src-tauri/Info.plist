@@ -4,5 +4,53 @@
 <dict>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
+    <key>NSCameraUsageDescription</key>
+    <string>Scenarly uses the camera so you can photograph reference images and add them to your project boards.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Scenarly uses the microphone to record voice notes for your boards and to dictate text into your screenplay.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Scenarly uses speech recognition to transcribe your dictation into the screenplay editor.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Scenarly accesses your photo library so you can add existing images to your project boards.</string>
+    <!--
+        Type identifier for `.scenarly`, so macOS has a name for the format
+        rather than treating it as an anonymous ZIP. Conforms to `public.data`
+        (it is a file) and `public.zip-archive` (it genuinely is one — the
+        `mimetype` first entry is the EPUB/ODF trick, and Archive Utility can
+        open it), which is what lets Quick Look and `file` do something sensible
+        with a copy that reaches a machine without Scenarly.
+
+        Only the *declaration* lives here. The claim to open these files —
+        CFBundleDocumentTypes — is generated from `bundle.fileAssociations` in
+        tauri.conf.json, which the desktop bundlers act on and the mobile ones do
+        not. That split is deliberate: this plist is merged into the iOS bundle
+        too, and a document-type claim there would put Scenarly in iOS's "Open
+        in" sheet with nothing behind it. A bare type declaration is inert.
+    -->
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.scenarly.project</string>
+            <key>UTTypeDescription</key>
+            <string>Scenarly Project</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+                <string>public.zip-archive</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>scenarly</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>application/vnd.scenarly+zip</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
 </dict>
 </plist>

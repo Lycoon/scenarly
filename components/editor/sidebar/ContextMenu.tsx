@@ -39,7 +39,7 @@ import {
     Trash2,
     UserRound,
 } from "lucide-react";
-import { makeDualDialogue } from "@src/lib/screenplay/dual-dialogue";
+import { canMakeDualDialogue, makeDualDialogue } from "@src/lib/screenplay/dual-dialogue";
 import { extractShelveCandidate } from "@src/lib/shelf/shelf-utils";
 import { omitSceneByUuid, unomitSceneByUuid } from "@src/lib/screenplay/scene-locking";
 import { ScreenplayElement } from "@src/lib/utils/enums";
@@ -125,16 +125,15 @@ const SceneItemMenu = ({ props }: SubMenuProps<SceneContextProps>) => {
         unomitSceneByUuid(editor, repository, scene.id);
     };
 
-    const handleSendToOutline = () => {
+    const handleSendToTimeline = () => {
         if (!repository || !scene.id) return;
-        repository.addOutlineItem({
+        repository.appendTimelineClip({
             source: "scene",
             refDocId: MAIN_SCREENPLAY_REF,
             refId: scene.id,
             title: scene.title,
             preview: scene.synopsis || scene.preview,
             color: scene.color,
-            parentId: null,
         });
     };
 
@@ -154,9 +153,9 @@ const SceneItemMenu = ({ props }: SubMenuProps<SceneContextProps>) => {
                     <ContextMenuSeparator />
                     {scene.id && (
                         <ContextMenuItem
-                            text={t("sendToOutline")}
+                            text={t("sendToTimeline")}
                             icon={ListTree}
-                            action={handleSendToOutline}
+                            action={handleSendToTimeline}
                         />
                     )}
                     <ContextMenuItem text={t("edit")} icon={Pencil} action={() => editScenePopup(scene, userCtx)} />
@@ -201,7 +200,16 @@ const CharacterItemMenu = ({ props }: SubMenuProps<CharacterContextProps>) => {
             {!isReadOnly && (
                 <>
                     <ContextMenuItem text={t("edit")} icon={Pencil} action={() => editCharacterPopup(character, userCtx)} />
-                    <ContextMenuItem text={t("remove")} action={() => deleteCharacter(character.name, projectCtx)} />
+                    {/* Only characters saved in the project's character map can be
+                     * removed. An auto-detected one only exists as cues in the
+                     * script, so deleting it is a no-op — greyed out rather than
+                     * hidden, so the row keeps its place and can say why. */}
+                    <ContextMenuItem
+                        text={t("remove")}
+                        action={() => deleteCharacter(character.name, projectCtx)}
+                        disabled={!character.persistent}
+                        title={character.persistent ? undefined : t("removeUnsavedHint")}
+                    />
                     <ContextMenuItem
                         text={t("paste")}
                         action={() => pasteText(projectCtx.editor!, character.name)}
@@ -439,23 +447,8 @@ const ShelveNodeMenu = ({ props }: SubMenuProps<{ pos: number; nodeClass: string
     };
 
     // Check if dual dialogue is available (Character node followed by valid dialogue pattern)
-    const canDualDialogue = (() => {
-        if (nodeClass !== ScreenplayElement.Character || !editor) return false;
-        const doc = editor.state.doc;
-        const $pos = doc.resolve(pos);
-        const idx = $pos.index(0);
-        const count = doc.childCount;
-        let i = idx + 1;
-        while (i < count && doc.child(i).attrs.class === ScreenplayElement.Parenthetical) i++;
-        if (i >= count || doc.child(i).attrs.class !== ScreenplayElement.Dialogue) return false;
-        i++;
-        while (i < count) {
-            const cls = doc.child(i).attrs.class;
-            if (cls === ScreenplayElement.Parenthetical || cls === ScreenplayElement.Dialogue) i++;
-            else break;
-        }
-        return i < count && doc.child(i).attrs.class === ScreenplayElement.Character;
-    })();
+    const canDualDialogue =
+        nodeClass === ScreenplayElement.Character && !!editor && canMakeDualDialogue(editor, pos);
 
     const shelveLabel =
         nodeClass === ScreenplayElement.Scene
@@ -497,7 +490,7 @@ export type EditorContextMenuProps = {
     spellError?: { word: string; from: number; to: number };
     nodePos?: number;
     nodeClass?: string;
-    /** Present when the caret sits on a scene heading that can be sent to the Outline. */
+    /** Present when the caret sits on a scene heading that can be sent to the Timeline. */
     outlineScene?: { refDocId: string; refId: string; title: string };
     /** Present on paginated screenplay editors: the top-level block under the
      *  caret (`pos`) and whether it already forces a manual page break. */
@@ -515,15 +508,14 @@ const EditorContextMenu = ({ props }: SubMenuProps<EditorContextMenuProps>) => {
     const { editor, from, to, onAddComment, spellError, nodePos, nodeClass, outlineScene, pageBreak } = props;
     const hasSelection = from !== to;
 
-    const handleSendToOutline = () => {
+    const handleSendToTimeline = () => {
         if (!repository || !outlineScene) return;
-        repository.addOutlineItem({
+        repository.appendTimelineClip({
             source: "scene",
             refDocId: outlineScene.refDocId,
             refId: outlineScene.refId,
             title: outlineScene.title,
             preview: "",
-            parentId: null,
         });
         updateContextMenu(undefined);
     };
@@ -636,23 +628,11 @@ const EditorContextMenu = ({ props }: SubMenuProps<EditorContextMenuProps>) => {
         updateContextMenu(undefined);
     };
 
-    const canDualDialogue = (() => {
-        if (nodeClass !== ScreenplayElement.Character || !editor || nodePos === undefined) return false;
-        const doc = editor.state.doc;
-        const $pos = doc.resolve(nodePos);
-        const idx = $pos.index(0);
-        const count = doc.childCount;
-        let i = idx + 1;
-        while (i < count && doc.child(i).attrs.class === ScreenplayElement.Parenthetical) i++;
-        if (i >= count || doc.child(i).attrs.class !== ScreenplayElement.Dialogue) return false;
-        i++;
-        while (i < count) {
-            const cls = doc.child(i).attrs.class;
-            if (cls === ScreenplayElement.Parenthetical || cls === ScreenplayElement.Dialogue) i++;
-            else break;
-        }
-        return i < count && doc.child(i).attrs.class === ScreenplayElement.Character;
-    })();
+    const canDualDialogue =
+        nodeClass === ScreenplayElement.Character &&
+        !!editor &&
+        nodePos !== undefined &&
+        canMakeDualDialogue(editor, nodePos);
 
     const isShelvable =
         nodeClass === ScreenplayElement.Scene ||
@@ -745,11 +725,11 @@ const EditorContextMenu = ({ props }: SubMenuProps<EditorContextMenuProps>) => {
                 </>
             )}
 
-            {/* Send a scene heading to the Outline */}
+            {/* Send a scene heading to the Timeline */}
             {outlineScene && !isReadOnly && (
                 <>
                     <ContextMenuSeparator />
-                    <ContextMenuItem text={t("sendToOutline")} icon={ListTree} action={handleSendToOutline} />
+                    <ContextMenuItem text={t("sendToTimeline")} icon={ListTree} action={handleSendToTimeline} />
                 </>
             )}
 
@@ -805,16 +785,16 @@ const renderContextMenu = (contextMenu: ContextMenuProps) => {
 const ContextMenu = () => {
     const { contextMenu, updateContextMenu } = useContext(UserContext);
 
-    const handleClick = () => {
-        if (contextMenu) updateContextMenu(undefined);
-    };
-
+    // Close on any click outside. Only bound while a menu is actually open: this
+    // effect had no dependency array at all, so it tore down and re-attached a
+    // window-level click listener on every render of a component that sits at
+    // the root of the workspace and re-renders with the whole user context.
     useEffect(() => {
-        addEventListener("click", handleClick, false);
-        return () => {
-            removeEventListener("click", handleClick, false);
-        };
-    });
+        if (!contextMenu) return;
+        const handleClick = () => updateContextMenu(undefined);
+        window.addEventListener("click", handleClick);
+        return () => window.removeEventListener("click", handleClick);
+    }, [contextMenu, updateContextMenu]);
 
     useEffect(() => {
         if (!contextMenu) return;

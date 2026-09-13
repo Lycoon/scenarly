@@ -109,6 +109,16 @@
     background-color: var(--editor-sidebar-hover);
 }
 
+/* Scene excluded by the sidebar's scene filter. Greyed out rather than removed,
+   so the list keeps its shape and the scene stays navigable. */
+.filtered_out {
+    opacity: 0.35;
+}
+
+.filtered_out:hover {
+    opacity: 0.6;
+}
+
 .drop_indicator_top {
     box-shadow: inset 0 2px 0 0 var(--tertiary-hover);
 }
@@ -116,4 +126,42 @@
 .dragging {
     opacity: 0.4;
     cursor: grabbing;
+    /* While a touch-drag is active the item owns the gesture, so the list must
+       not also try to scroll under the finger. */
+    touch-action: none;
+}
+
+/* Touch-only "⋮" affordance that opens the scene context menu (the desktop
+ * right-click has no touch equivalent). Hidden on fine pointers. */
+.menu_btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 2px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+}
+
+.menu_btn:hover {
+    background-color: var(--editor-style-bg-hover);
+    color: var(--primary-text);
+}
+
+@media (pointer: coarse) {
+    .menu_btn {
+        display: flex;
+    }
+
+    /* Touch: a hold on a nav item should pick it up for reordering — never
+       trigger iOS's native text selection / callout on the background text,
+       which otherwise leaves a sticky selection that makes the panel laggy. */
+    .container {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
 }

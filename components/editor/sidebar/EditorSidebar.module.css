@@ -16,21 +16,60 @@
     overflow: hidden;
 }
 
-.collapsed .element {
-    visibility: hidden;
-}
-
+/* NB: this module has no `.element` rule of its own on purpose. EditorSidebarFormat
+ * renders the *navigation* module's `.element` inside this module's
+ * `.sidebar_content`, and CSS Modules scope the two independently — so a
+ * `.collapsed .element` selector written here could never match the panel it was
+ * aimed at, and this drawer went on rendering its full contents while shut.
+ * `visibility` inherits, so hiding the drawer itself covers whatever panel the
+ * markup puts inside it. */
 .collapsed {
     width: 0;
     padding: 0;
+    visibility: hidden;
 }
 
-.element {
-    background-color: var(--editor-sidebar);
-    padding-top: 10px;
-    padding-bottom: 38px;
-    border-radius: 35px;
-    box-shadow: var(--panel-shadow);
+/* Phone: the format sidebar becomes a right overlay drawer, mirroring the
+ * navigation drawer on the left. */
+@media (max-width: 767px) {
+    .container {
+        position: fixed;
+        top: var(--navbar-height);
+        right: 0;
+        bottom: 0;
+        z-index: 60;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .sidebar_content {
+        width: var(--mobile-drawer-width);
+        height: 100%;
+        padding: 12px calc(12px + var(--safe-right)) calc(20px + var(--safe-bottom)) 12px;
+        /* No drawer background — only the rounded .element panel shows, floating
+         * over the (backdrop-dimmed) editor, matching the desktop look. */
+        transform: translateX(0);
+        /* No delay on the visibility flip coming back in: the drawer has to be
+         * rendered before it can slide into view. */
+        transition:
+            transform 0.25s ease,
+            visibility 0s;
+        pointer-events: auto;
+    }
+
+    .collapsed {
+        width: var(--mobile-drawer-width);
+        padding: 12px;
+        transform: translateX(100%);
+        pointer-events: none;
+        /* Hold the hide until the slide-out has played, then stop rendering the
+         * drawer entirely — see the matching block in
+         * EditorSidebarNavigation.module.css for why an off-screen translate is
+         * not enough on its own. */
+        transition:
+            transform 0.25s ease,
+            visibility 0s linear 0.25s;
+    }
 }
 
 .tabs {
@@ -69,4 +108,18 @@
 
 .active_style {
     background-color: var(--editor-style-bg-hover);
+}
+
+/* Phone drawer: no caret may be parked in it by a tap — see the matching block in
+ * EditorSidebarNavigation.module.css for the reasoning. */
+@media (max-width: 767px) {
+    .sidebar_content {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    .sidebar_content :is(input, textarea) {
+        -webkit-user-select: text;
+        user-select: text;
+    }
 }

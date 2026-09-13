@@ -1,12 +1,20 @@
 name: Apply App Version
-description: Writes version into src-tauri/tauri.conf.json + Cargo.toml. Optionally sets window title to "Scriptio (Staging)".
+description: Writes version into src-tauri/tauri.conf.json + Cargo.toml. Optionally sets window title to "Scenarly (Staging)".
 
 inputs:
     version:
         description: Version string (e.g. 2.0.1.5) to write into Tauri + Cargo configs.
         required: true
     staging:
-        description: When "true", sets window title to "Scriptio (Staging)".
+        description: When "true", sets window title to "Scenarly (Staging)".
+        required: false
+        default: "false"
+    ios:
+        description: When "true" (on a macOS runner), stamp product name, bundle id, and version into src-tauri/gen/apple.
+        required: false
+        default: "false"
+    android:
+        description: When "true", stamp the Play application ID and launcher label into src-tauri/gen/android.
         required: false
         default: "false"
 
@@ -28,23 +36,45 @@ runs:
               REVISION=$(echo "$INPUT_VERSION" | cut -d. -f4)
 
               if [[ "$INPUT_STAGING" == "true" ]]; then
-                  PRODUCT_NAME="Scriptio (Staging)"
-                  WINDOW_TITLE="Scriptio (Staging)"
-                  APPSTORE_IDENTIFIER="app.scriptio.staging"
-                  WINDOWS_IDENTIFIER="ArkoLogic.ScriptioStaging"
+                  PRODUCT_NAME="Scenarly (Staging)"
+                  WINDOW_TITLE="Scenarly (Staging)"
+                  APPSTORE_IDENTIFIER="com.scenarly.staging"
+                  IOS_IDENTIFIER="com.scenarly.staging"
+                  # tauri ios build writes this straight into pbxproj's PRODUCT_NAME
+                  # (see synchronize_project_config in tauri-cli), which becomes the
+                  # .app's actual executable filename — App Store Connect rejects
+                  # parens/brackets/etc there, so it must stay identifier-safe unlike
+                  # the desktop PRODUCT_NAME above.
+                  IOS_PRODUCT_NAME="Scenarly_Staging"
+                  WINDOWS_IDENTIFIER="ArkoLogic.ScenarlyStaging"
                   # MS Store reserves the 4th version field (must stay 0). Staging's
                   # build counter (REVISION) sits in that slot, so fold PATCH+REVISION
                   # into the 3rd field to keep MSIX versions strictly increasing
                   # across staging pushes and release bumps.
                   MSIX_VERSION="${MAJOR}.${MINOR}.$(( PATCH * 10000 + REVISION )).0"
               else
-                  PRODUCT_NAME="Scriptio"
-                  WINDOW_TITLE="Scriptio"
-                  APPSTORE_IDENTIFIER="app.scriptio"
-                  WINDOWS_IDENTIFIER="ArkoLogic.Scriptio"
+                  PRODUCT_NAME="Scenarly"
+                  WINDOW_TITLE="Scenarly"
+                  APPSTORE_IDENTIFIER="com.scenarly"
+                  IOS_IDENTIFIER="com.scenarly"
+                  IOS_PRODUCT_NAME="Scenarly"
+                  WINDOWS_IDENTIFIER="ArkoLogic.Scenarly"
                   # Release builds carry REVISION=0, so the app version is Store-legal as-is.
                   MSIX_VERSION="${MAJOR}.${MINOR}.${PATCH}.0"
               fi
+
+              # Play requires versionCode to strictly increase on every upload and
+              # caps it at 2,100,000,000. Tauri's default (major*1000000 +
+              # minor*1000 + patch) has no room for REVISION, so it would repeat
+              # across staging pushes between releases and Play would reject the
+              # second one. Widen every field and give REVISION its own, which
+              # keeps both channels monotonic (they are separate listings, so their
+              # counters are independent). Ceiling is MAJOR=200.
+              if [[ "$REVISION" -ge 1000 ]]; then
+                  echo "REVISION $REVISION overflows the 3 digits reserved for it in versionCode" >&2
+                  exit 1
+              fi
+              ANDROID_VERSION_CODE=$(( MAJOR * 10000000 + MINOR * 100000 + PATCH * 1000 + REVISION ))
 
               jq --arg v "$SEMVER" --arg t "$WINDOW_TITLE" --arg n "$PRODUCT_NAME" \
                   '.version = $v | .app.windows[0].title = $t | .productName = $n' \
@@ -55,10 +85,31 @@ runs:
                   src-tauri/tauri.appstore.conf.json > src-tauri/tauri.appstore.conf.json.tmp
               mv src-tauri/tauri.appstore.conf.json.tmp src-tauri/tauri.appstore.conf.json
 
+              # bundle.iOS.bundleVersion maps straight to CFBundleVersion (same as
+              # macOS's bundle.macOS.bundleVersion below) — tauri ios build writes
+              # Info.plist's CFBundleVersion from this config value directly, so a
+              # PlistBuddy edit after the fact would just get overwritten. Use
+              # REVISION alone (not the full dotted version) so it stays a small,
+              # strictly-increasing integer across pushes, same as macOS's build number.
+              jq --arg id "$IOS_IDENTIFIER" --arg n "$IOS_PRODUCT_NAME" --arg bv "$REVISION" \
+                  '.identifier = $id | .productName = $n | .bundle.iOS.bundleVersion = $bv' \
+                  src-tauri/tauri.ios.conf.json > src-tauri/tauri.ios.conf.json.tmp
+              mv src-tauri/tauri.ios.conf.json.tmp src-tauri/tauri.ios.conf.json
+
               jq --arg id "$WINDOWS_IDENTIFIER" --arg v "$SEMVER" \
                   '.identifier = $id | .version = $v' \
                   src-tauri/tauri.windows.conf.json > src-tauri/tauri.windows.conf.json.tmp
               mv src-tauri/tauri.windows.conf.json.tmp src-tauri/tauri.windows.conf.json
+
+              # Only the version code: the build regenerates app/tauri.properties
+              # from it (that file is gitignored). The channel's package name is
+              # applicationId in gen/android, patched in the Android step below —
+              # the config identifier has to keep matching the committed Kotlin
+              # package tree, since the build regenerates those sources from it.
+              jq --argjson vc "$ANDROID_VERSION_CODE" \
+                  '.bundle.android.versionCode = $vc' \
+                  src-tauri/tauri.android.conf.json > src-tauri/tauri.android.conf.json.tmp
+              mv src-tauri/tauri.android.conf.json.tmp src-tauri/tauri.android.conf.json
 
               if [[ -f "src-tauri/gen/windows/bundle.config.json" ]]; then
                   jq --arg v "$MSIX_VERSION" '.version = $v' \
@@ -69,7 +120,75 @@ runs:
               sed -i.bak "s/^version = \".*\"/version = \"$SEMVER\"/" src-tauri/Cargo.toml
               rm -f src-tauri/Cargo.toml.bak
 
-              echo "Applied version $INPUT_VERSION (MSIX: $MSIX_VERSION, productName: '$PRODUCT_NAME', appstore: $APPSTORE_IDENTIFIER, windows: $WINDOWS_IDENTIFIER)"
+              echo "Applied version $INPUT_VERSION (MSIX: $MSIX_VERSION, productName: '$PRODUCT_NAME', appstore: $APPSTORE_IDENTIFIER, windows: $WINDOWS_IDENTIFIER, android versionCode: $ANDROID_VERSION_CODE)"
+
+        # All the bundlers resolve icons out of src-tauri/icons at build time:
+        # tauri.conf.json's bundle.icon list (macOS .app + Windows exe favicon),
+        # our windows:assets script, which regenerates the whole Microsoft
+        # Store asset set from src-tauri/icons/icon.png, and our android:icons
+        # script, which regenerates the launcher mipmaps from app-icon.png.
+        # Swapping the staging icon set in here — before those run — is enough to
+        # make staging builds visually distinct from release on a device that has
+        # both installed.
+        # Only touches the checkout for this CI run, never committed.
+        - name: Select app icon set
+          shell: bash
+          env:
+              INPUT_STAGING: ${{ inputs.staging }}
+          run: |
+              set -e
+
+              if [[ "$INPUT_STAGING" == "true" && -d "src-tauri/icons-staging" ]]; then
+                  # Liquid Glass icons take a different input per platform (the two
+                  # build systems differ): macOS uses the precompiled Assets.car
+                  # (the Tauri bundler copies it into the .app — no actool), with
+                  # icon.icns as the pre-macOS-26 fallback; iOS uses the icon.icon
+                  # Icon Composer source, which xcodebuild's actool compiles itself
+                  # (the iOS step below places it into gen/apple). Both derive from
+                  # the same Icon Composer project.
+                  # Only the icons actually consumed at build: the bundle.icon
+                  # PNGs, icon.png (Store asset source), icon.icns + Assets.car
+                  # (macOS), icon.ico (Windows exe favicon), and app-icon.png
+                  # (master square source the Android mipmaps are rendered from).
+                  cp src-tauri/icons-staging/32x32.png \
+                      src-tauri/icons-staging/128x128.png "src-tauri/icons-staging/128x128@2x.png" \
+                      src-tauri/icons-staging/icon.png src-tauri/icons-staging/icon.icns src-tauri/icons-staging/icon.ico \
+                      src-tauri/icons-staging/Assets.car src-tauri/icons-staging/app-icon.png \
+                      src-tauri/icons/
+                  # icon.icon is a directory — replace wholesale rather than cp into it.
+                  rm -rf src-tauri/icons/icon.icon
+                  cp -r src-tauri/icons-staging/icon.icon src-tauri/icons/icon.icon
+                  echo "Using staging icon set (src-tauri/icons-staging)"
+              else
+                  echo "Using release icon set (src-tauri/icons)"
+              fi
+
+        - name: Apply Android settings
+          if: ${{ inputs.android == 'true' }}
+          shell: bash
+          env:
+              INPUT_STAGING: ${{ inputs.staging }}
+          run: |
+              set -e
+
+              GRADLE="src-tauri/gen/android/app/build.gradle.kts"
+              if [[ ! -f "$GRADLE" ]]; then
+                  echo "No $GRADLE found; run 'tauri android init' and commit gen/android." >&2
+                  exit 1
+              fi
+
+              if [[ "$INPUT_STAGING" == "true" ]]; then
+                  CHANNEL="staging"
+              else
+                  CHANNEL="release"
+              fi
+
+              # scripts/apply-android-channel.ts owns the per-channel applicationId
+              # and launcher label, so local store builds (build:android:release)
+              # and CI can't drift apart. Needs npm ci to have run, which the
+              # toolchain setup step does before this action.
+              npm run android:channel -- "$CHANNEL"
+              grep -n "applicationId" "$GRADLE"
 
         - name: Apply macOS-specific settings
           if: ${{ runner.os == 'macOS' }}
@@ -80,12 +199,64 @@ runs:
               set -e
 
               if [[ "$INPUT_STAGING" == "true" ]]; then
-                  APPSTORE_IDENTIFIER="app.scriptio.staging"
+                  APPSTORE_IDENTIFIER="com.scenarly.staging"
               else
-                  APPSTORE_IDENTIFIER="app.scriptio"
+                  APPSTORE_IDENTIFIER="com.scenarly"
               fi
 
               TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :com.apple.developer.team-identifier" src-tauri/Entitlements.plist)
               /usr/libexec/PlistBuddy -c "Set :com.apple.application-identifier ${TEAM_ID}.${APPSTORE_IDENTIFIER}" src-tauri/Entitlements.plist
 
               echo "Applied macOS settings (app-id: ${TEAM_ID}.${APPSTORE_IDENTIFIER})"
+
+        - name: Apply iOS settings
+          if: ${{ runner.os == 'macOS' && inputs.ios == 'true' }}
+          shell: bash
+          env:
+              INPUT_STAGING: ${{ inputs.staging }}
+          run: |
+              set -e
+
+              INFO_PLIST="src-tauri/gen/apple/Scenarly_iOS/Info.plist"
+              if [[ ! -f "$INFO_PLIST" ]]; then
+                  echo "No $INFO_PLIST found; run 'tauri ios init' and commit gen/apple." >&2
+                  exit 1
+              fi
+
+              if [[ "$INPUT_STAGING" == "true" ]]; then
+                  DISPLAY_NAME="Scenarly (Staging)"
+              else
+                  DISPLAY_NAME="Scenarly"
+              fi
+
+              # PRODUCT_NAME, PRODUCT_BUNDLE_IDENTIFIER, CFBundleShortVersionString and
+              # CFBundleVersion are NOT set here. `tauri ios build` overwrites all four
+              # in project.pbxproj/Info.plist on every build, straight from the merged
+              # tauri.conf.json + tauri.ios.conf.json (synchronize_project_config in
+              # tauri-cli: PRODUCT_NAME/PRODUCT_BUNDLE_IDENTIFIER from
+              # identifier/productName; CFBundleShortVersionString from the top-level
+              # version; CFBundleVersion from bundle.iOS.bundleVersion) — all patched
+              # into tauri.ios.conf.json in the step above. Setting them here would just
+              # get clobbered by that same build step, like PRODUCT_NAME was before.
+              # CFBundleDisplayName is the one field Tauri doesn't manage, so it's the
+              # only one still set directly on the real, committed Info.plist here. It
+              # may not exist yet on a fresh checkout, so Add first (ignoring failure if
+              # it's already there) and Set to cover both cases.
+              for plist in src-tauri/gen/apple/*/Info.plist; do
+                  /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string ${DISPLAY_NAME}" "$plist" 2>/dev/null || \
+                      /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName ${DISPLAY_NAME}" "$plist" || true
+              done
+
+              # icon.icon (Icon Composer source) must sit at the project root next
+              # to Assets.xcassets — NOT inside the catalog — and be referenced in
+              # project.pbxproj (PBXFileReference + Resources build phase) so
+              # actool routes it as the app icon. It's committed for release; the
+              # "Select app icon set" step above swaps src-tauri/icons/icon.icon to
+              # the staging source when staging, so sync whatever is there.
+              # ASSETCATALOG_COMPILER_APPICON_NAME=icon (project.pbxproj) selects it;
+              # actool compiles Liquid Glass for iOS 26 and PNG rasters for older iOS.
+              rm -rf src-tauri/gen/apple/icon.icon
+              cp -r src-tauri/icons/icon.icon src-tauri/gen/apple/icon.icon
+              echo "Synced iOS app icon (icon.icon) to gen/apple/"
+
+              echo "Applied iOS settings (display: '$DISPLAY_NAME')"

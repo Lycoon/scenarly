@@ -41,7 +41,10 @@
     background: var(--secondary);
     padding: 20px;
     border-radius: 12px;
-    height: 200px;
+    /* min-height, not height: the controls column is a wrapping help line plus a
+       dropzone, so a locked height cannot contain it once either grows — a long
+       translation is enough to push the dropzone out of the panel. */
+    min-height: 200px;
 }
 
 .posterPreview {
@@ -81,10 +84,111 @@
     line-height: 1.4;
 }
 
+/* Shared section heading for dashboard settings panels (e.g. Include, Security,
+   Page header). Factored here so every settings section reads identically.
+   font-family is set explicitly so the heading looks the same whether it is a
+   <span> (which globals.css styles via `p, span`) or a <label> (which would
+   otherwise fall back to the universal system font). */
+.sectionTitle {
+    font-family: var(--font-inter), sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Collapsible section (see SettingsSection.tsx): a .sectionTitle heading that
+   folds its body away. Here rather than in one panel's stylesheet so every
+   panel that folds looks the same. */
+.section {
+    display: flex;
+    flex-direction: column;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.chevron {
+    flex-shrink: 0;
+    margin-left: auto;
+    color: var(--secondary-text);
+    transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+    transform: rotate(90deg);
+}
+
+/* The fold itself. Animating the body's grid row from 0fr to 1fr grows it to
+   exactly its own height without anyone having to measure it, so a section that
+   opens or closes slides instead of jumping. */
+.sectionFold {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.2s ease;
+}
+
+.sectionFoldOpen {
+    grid-template-rows: 1fr;
+}
+
+/* Hides the part of the body the row has not made room for yet. Dropped once an
+   open section has settled (see SettingsSection.tsx) so content that overflows
+   on purpose — an open dropdown menu — is not cut off. */
+.sectionClip {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.sectionClipOff {
+    overflow: visible;
+}
+
+/* Body of a collapsible section, revealed when the header is expanded. The
+   indent and left rule tie the content to the heading above it, so an open
+   section reads as one block instead of running into the next heading. The top
+   margin spaces it off the heading; it sits inside the clip, so it collapses
+   with the rest of the body. */
+.sectionBody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 18px;
+    padding-left: 14px;
+    border-left: 2px solid var(--separator);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.sectionFoldOpen .sectionBody {
+    opacity: 1;
+}
+
+/* The fold is a nicety, not information: hand it over instantly when the user
+   has asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+    .sectionFold,
+    .sectionBody,
+    .chevron {
+        transition: none;
+    }
+}
+
+/* The row is right-aligned, so anything too wide for it spills over the panel's
+   LEFT edge. Translated labels are the usual cause (German "Änderungen
+   speichern", French "Réinitialiser"), so let the buttons drop onto their own
+   line instead of overflowing. */
 .formActions {
     border-top: 1px solid var(--separator);
     padding-top: 24px;
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 8px;
 }
@@ -94,14 +198,25 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    height: 40px;
+    /* min-height + vertical padding rather than a fixed height: a label too long
+       for one line wraps and grows the button instead of spilling out of it.
+       Single-line buttons still measure exactly 40px. */
+    min-height: 40px;
+    max-width: 100%;
     background-color: var(--secondary);
     border: 2px solid var(--tertiary);
-    padding: 0 36px;
+    padding: 8px 36px;
     border-radius: 40px;
     font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
     cursor: pointer;
     transition: background-color 0.2s;
+}
+
+/* Keep the leading icon at full size when a wrapped label squeezes the row. */
+.formBtn > svg {
+    flex-shrink: 0;
 }
 
 .formBtn:hover {
@@ -115,4 +230,36 @@
 
 .formBtn.danger {
     background: var(--error);
+}
+
+/* Phone: the drawer is much narrower than the desktop panel, so two roomy pills
+ * rarely fit side by side. Trim the side padding and let them share the row —
+ * once wrapped, each takes the full width rather than sitting undersized. */
+@media (max-width: 767px) {
+    .formActions .formBtn {
+        flex: 1 1 auto;
+        padding: 8px 20px;
+    }
+
+    /* Narrower indent in the drawer — the rule still marks the section, but
+       every inner row keeps its width. */
+    .sectionBody {
+        padding-left: 10px;
+    }
+
+    /* The settings drawer is ~75vw, so the row left barely 110px beside the
+       100px-wide preview: the help text wrapped to a half-dozen lines and the
+       dropzone under it ran well past the area's height. Stack the two instead,
+       so each gets the drawer's full width. */
+    .posterUploadArea {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        padding: 16px;
+    }
+
+    /* Centred now that it sits on its own row above the controls. */
+    .posterPreview {
+        align-self: center;
+    }
 }

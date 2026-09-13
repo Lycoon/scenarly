@@ -1,11 +1,11 @@
 {
     "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-    "productName": "Scriptio (Staging)",
-    "identifier": "ArkoLogic.ScriptioStaging",
+    "productName": "Scenarly (Staging)",
+    "identifier": "ArkoLogic.ScenarlyStaging",
     "version": "../package.json",
     "build": {
         "frontendDist": "../out",
-        "devUrl": "http://localhost:3000/projects",
+        "devUrl": "http://localhost:3000",
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build:tauri"
     },
@@ -16,12 +16,11 @@
         "windows": [
             {
                 "url": "projects.html",
-                "title": "Scriptio",
+                "title": "Scenarly",
                 "width": 1350,
                 "height": 900,
                 "resizable": true,
                 "maximized": true,
-                "incognito": true,
                 "dragDropEnabled": false
             }
         ]
@@ -30,15 +29,18 @@
         "active": true,
         "targets": "all",
         "publisher": "Arko Logic",
+        "fileAssociations": [
+            {
+                "ext": ["scenarly"],
+                "name": "Scenarly Project",
+                "description": "Scenarly screenplay project",
+                "mimeType": "application/vnd.scenarly+zip",
+                "role": "Editor"
+            }
+        ],
         "macOS": {
             "minimumSystemVersion": "13.0"
         },
-        "icon": [
-            "icons/32x32.png",
-            "icons/128x128.png",
-            "icons/128x128@2x.png",
-            "icons/icon.icns",
-            "icons/icon.ico"
-        ]
+        "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/Assets.car", "icons/icon.ico"]
     }
 }

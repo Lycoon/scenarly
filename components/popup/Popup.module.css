@@ -6,20 +6,19 @@
     background-color: var(--primary);
     border: 2px solid var(--separator);
     box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
-    border-radius: 12px;
+    border-radius: 38px;
     pointer-events: auto;
 }
 
 .window {
     position: fixed;
+    inset: 0;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
-    padding-top: 10%;
+    align-items: center;
+    padding: 20px;
     z-index: 1100;
 
-    width: 100%;
-    height: 100%;
     pointer-events: none;
 }
 
@@ -41,7 +40,7 @@
     font-size: 1.4rem;
     font-weight: bold;
     color: var(--primary-text);
-    font-family: var(--font-josef);
+    font-family: var(--font-josefin), sans-serif;
     text-transform: uppercase;
 }
 
@@ -159,5 +158,29 @@
     }
     to {
         transform: rotate(360deg);
+    }
+}
+
+/* Phone: the 500px fixed width overflows narrow screens, so shrink the popup to
+ * the viewport (respecting the safe-area insets) and let tall content scroll
+ * inside it instead of spilling off-screen. Dragging is mouse-only, so on touch
+ * the container's transform stays at the identity and centring holds. */
+@media (max-width: 767px) {
+    .window {
+        align-items: center;
+        justify-content: center;
+        padding: calc(12px + var(--safe-top)) calc(12px + var(--safe-right))
+            calc(12px + var(--safe-bottom)) calc(12px + var(--safe-left));
+    }
+
+    .container {
+        position: relative;
+        width: 100%;
+        max-width: 460px;
+        max-height: 100%;
+        overflow-y: auto;
+        padding: 18px;
+        padding-bottom: 20px;
+        border-radius: 24px;
     }
 }

@@ -11,7 +11,7 @@ import { ScreenplayElement, Style, TitlePageElement } from "@src/lib/utils/enums
 import { getRandomColor } from "@src/lib/utils/misc";
 import { useUser } from "@src/lib/utils/hooks";
 import { getStylesFromMarks, SCREENPLAY_FORMATS } from "@src/lib/screenplay/editor";
-import { ScriptioPagination, refreshPageLocking } from "@src/lib/screenplay/extensions/pagination-extension";
+import { ScenarlyPagination, refreshPageLocking } from "@src/lib/screenplay/extensions/pagination-extension";
 import { KeybindsExtension } from "@src/lib/screenplay/extensions/keybinds-extension";
 import { executeKeybindAction, KeybindId } from "@src/lib/utils/keybinds";
 import {
@@ -23,6 +23,8 @@ import {
     refreshSearchHighlights,
     SearchMatch,
 } from "@src/lib/screenplay/extensions/search-highlight-extension";
+import { createReadAloudHighlightExtension } from "@src/lib/screenplay/extensions/read-aloud-highlight-extension";
+import { createDictationPreviewExtension } from "./dictation-preview-extension";
 import {
     createSceneBookmarkExtension,
     refreshSceneBookmarks,
@@ -31,12 +33,16 @@ import {
     createSceneLockingExtension,
     refreshSceneLocking,
 } from "@src/lib/screenplay/extensions/scene-locking-extension";
+import {
+    createRevisionsExtension,
+    refreshRevisions,
+} from "@src/lib/screenplay/extensions/revisions-extension";
 import { computeAbsorbedPageTokens, SCENE_OMIT_UNDO_ORIGIN } from "@src/lib/screenplay/scene-locking";
 import { createNodeIdDedupExtension } from "@src/lib/screenplay/extensions/node-id-dedup-extension";
 import { createSpellcheckExtension, refreshSpellcheck } from "@src/lib/spellcheck/spellcheck-extension";
 import { useSpellcheck } from "@src/context/SpellcheckContext";
 import { getActiveTitlePageElement } from "@src/lib/titlepage/editor";
-import { DocumentEditorConfig } from "./document-editor-config";
+import { DocumentEditorConfig, EDITOR_INPUT_ATTRIBUTES } from "./document-editor-config";
 import type { SuggestionData } from "@components/editor/SuggestionMenu";
 
 export interface DocumentEditorCallbacks {
@@ -46,13 +52,12 @@ export interface DocumentEditorCallbacks {
     updateSuggestions?: (suggestions: string[]) => void;
     updateSuggestionsData?: (data: SuggestionData) => void;
     userKeybinds?: Record<string, string>;
-    globalContext?: { toggleFocusMode: () => void; saveProject: () => void };
     // Title-type callbacks
     setSelectedTitlePageElement?: (element: TitlePageElement) => void;
 }
 
 /**
- * Unified editor hook that replaces both useScriptioEditor and useTitlePageEditor.
+ * Unified editor hook that replaces both useScenarlyEditor and useTitlePageEditor.
  * Builds a Tiptap editor instance bound to the Y.XmlFragment specified in config.
  */
 export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: DocumentEditorCallbacks): Editor | null => {
@@ -74,12 +79,24 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
         activeSearchEditor,
         contdLabel,
         moreLabel,
+        headerLeft,
+        headerMiddle,
+        headerRight,
+        showFirstPageHeader,
+        footerLeft,
+        footerMiddle,
+        footerRight,
+        showFirstPageFooter,
+        showContdPageBreak,
         sceneLocking,
         sceneNumberingStyle,
         skippedSceneLetters,
         persistentScenes,
         pageLocking,
         persistentPages,
+        revisionsEnabled,
+        currentRevision,
+        revisionDisplayMode,
     } = projectCtx;
 
     const projectState = repository?.getState();
@@ -183,6 +200,9 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
             persistentScenes,
             pageLocking,
             persistentPages,
+            revisionsEnabled,
+            currentRevision,
+            revisionDisplayMode,
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }),
         [],
@@ -205,6 +225,9 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
     ext.persistentScenes = persistentScenes;
     ext.pageLocking = pageLocking;
     ext.persistentPages = persistentPages;
+    ext.revisionsEnabled = revisionsEnabled;
+    ext.currentRevision = currentRevision;
+    ext.revisionDisplayMode = revisionDisplayMode;
 
     const lastReportedElementRef = useRef<ScreenplayElement | null>(null);
 
@@ -237,17 +260,12 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
         cb(data);
     }, []);
 
+    // Only ever called for editor-scope actions — elements and styles, which need
+    // nothing but the editor. The global ones are the workspace's, registered on
+    // the window by ProjectWorkspace, and never reach this keymap.
     const onKeybindAction = useCallback(
-        (id: KeybindId, editorInstance: Editor) => {
-            const gc = callbacks.globalContext;
-            if (!gc) return;
-            executeKeybindAction(id, {
-                editor: editorInstance,
-                toggleFocusMode: gc.toggleFocusMode,
-                saveProject: gc.saveProject,
-            });
-        },
-        [callbacks.globalContext],
+        (id: KeybindId, editorInstance: Editor) => executeKeybindAction(id, { editor: editorInstance }),
+        [],
     );
 
     // ---- Dynamic extensions (created once, read from ext container) ----
@@ -292,6 +310,15 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
           })
         : null;
 
+    const revisionsExtension = features.revisions
+        ? createRevisionsExtension({
+              getRevisionsEnabled: () => !!ext.revisionsEnabled,
+              getCurrentRevision: () => ext.currentRevision ?? 0,
+              getDisplayMode: () => ext.revisionDisplayMode ?? "all",
+              getBaseline: () => ext.repository?.getRevisionBaseline() ?? null,
+          })
+        : null;
+
     const spellcheckExtension = features.spellcheck
         ? createSpellcheckExtension({
               getWorker: () => ext.spellWorker,
@@ -316,6 +343,12 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
     const editor = useEditor(
         {
             immediatelyRender: false,
+            // Text-input traits for the contenteditable: native autocorrect on, native
+            // spellcheck off (see EDITOR_INPUT_ATTRIBUTES). Screenplay editors re-set
+            // editorProps via setOptions in DocumentEditorPanel, which re-applies these.
+            editorProps: {
+                attributes: EDITOR_INPUT_ATTRIBUTES,
+            },
             extensions: [
                 ...config.baseExtensions,
 
@@ -337,7 +370,7 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
                               user: userInfo,
                               render: (user: { color: string; name: string }) => {
                                   // Render with no DOM children. The username label is rendered
-                                  // via a ::before pseudo-element (see styles/scriptio.css),
+                                  // via a ::before pseudo-element (see styles/scenarly.css),
                                   // so there is no text node Firefox can place the local HTML
                                   // caret into when the user clicks an empty node containing
                                   // this remote caret.
@@ -355,19 +388,40 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
                     : []),
 
                 // Pagination
-                ScriptioPagination.configure(
+                ScenarlyPagination.configure(
                     config.features.paginationMode === "screenplay"
                         ? {
                               pageGap: 20,
-                              headerRight: `<p class="page-number">{page}.</p>`,
+                              headerLeft,
+                              headerMiddle,
+                              headerRight,
+                              // Page 1 is unnumbered by convention, so its header
+                              // is blanked unless "Show first page header" is on,
+                              // in which case it uses the same templates as the
+                              // rest. Live toggles flow through updateHeaderContent
+                              // (see DocumentEditorPanel).
                               customHeader: {
-                                  1: {
-                                      headerLeft: "",
-                                      headerRight: `<p class="page-number"></p>`,
-                                  },
+                                  1: showFirstPageHeader
+                                      ? { headerLeft, headerMiddle, headerRight }
+                                      : { headerLeft: "", headerMiddle: "", headerRight: "" },
                               },
-                              footerRight: "",
+                              footerLeft,
+                              footerMiddle,
+                              footerRight,
+                              // Page 1 is unnumbered by convention, so its footer
+                              // is blanked unless "Show first page footer" is on,
+                              // mirroring the header. Page 1's footer is rendered by
+                              // the first page-break widget (footer of pagenum-1),
+                              // so the page-1 override lives in customFooter.
+                              customFooter: {
+                                  1: showFirstPageFooter
+                                      ? { footerLeft, footerMiddle, footerRight }
+                                      : { footerLeft: "", footerMiddle: "", footerRight: "" },
+                              },
                               ...SCREENPLAY_FORMATS[pageSize],
+                              // Initial mount only; live toggles flow through
+                              // updateShowContdPageBreak (see DocumentEditorPanel).
+                              showContdPageBreak,
                               getPageLocking: () => !!ext.pageLocking,
                               getPageLocks: () => ext.persistentPages ?? {},
                               getSkippedLetters: () => ext.skippedSceneLetters ?? [],
@@ -385,20 +439,28 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
                           },
                 ),
 
-                // Screenplay-only extensions
-                ...(features.keybinds && callbacks.userKeybinds !== undefined
-                    ? [
-                          KeybindsExtension.configure({
-                              userKeybinds: callbacks.userKeybinds || {},
-                              onAction: onKeybindAction,
-                          }),
-                      ]
-                    : []),
+                // Every editor: a shortcut the user configured should work in
+                // whichever document they are typing in, and the extension
+                // itself skips the actions a given schema cannot perform.
+                KeybindsExtension.configure({
+                    getUserKeybinds: () => callbacksRef.current.userKeybinds ?? {},
+                    onAction: onKeybindAction,
+                }),
 
                 ...(characterHighlightExtension ? [characterHighlightExtension] : []),
                 ...(searchHighlightExtension ? [searchHighlightExtension] : []),
+                // Read-aloud "now reading" node highlight (screenplay editors only;
+                // controlled externally via transaction metas, so no config needed).
+                ...(config.type === "screenplay" ? [createReadAloudHighlightExtension()] : []),
+                // Live preview of in-flight dictation at the caret. Every editor
+                // can be dictated into (the footer mic targets whichever panel is
+                // active), so this one isn't gated on the document type.
+                createDictationPreviewExtension(),
                 ...(sceneBookmarkExtension ? [sceneBookmarkExtension] : []),
                 ...(sceneLockingExtension ? [sceneLockingExtension] : []),
+                // After ScenarlyPagination so its plugin reads fresh pagination
+                // state (page breaks) when grouping lines into pages.
+                ...(revisionsExtension ? [revisionsExtension] : []),
                 ...(nodeIdDedupExtension ? [nodeIdDedupExtension] : []),
                 ...(spellcheckExtension ? [spellcheckExtension] : []),
             ],
@@ -413,9 +475,13 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
 
                     lastReportedElementRef.current = elementAnchor;
                     cb.setActiveElement?.(elementAnchor, false);
-                    if (anchor.nodeBefore) {
-                        cb.setSelectedStyles?.(getStylesFromMarks([...anchor.nodeBefore.marks]));
-                    }
+                    // $anchor.marks() is the set that applies *at the caret*: the
+                    // preceding text node's marks normally, but the following
+                    // node's at offset 0, where there is no nodeBefore. Reading
+                    // nodeBefore directly left the style buttons showing the
+                    // previous line's marks whenever the caret landed on a node's
+                    // first character (and none at all in an empty node).
+                    cb.setSelectedStyles?.(getStylesFromMarks([...anchor.marks()]));
                     if (!transaction.docChanged) {
                         setSuggestions([]);
                     }
@@ -627,6 +693,14 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
             refreshSceneLocking(editor);
         }
     }, [editor, sceneLocking, sceneNumberingStyle, skippedSceneLetters, persistentScenes, features.sceneLocking]);
+
+    // Refresh revision decorations when the toggle flips or the current
+    // revision advances (colours/visibility change with no doc edit).
+    useEffect(() => {
+        if (editor && features.revisions) {
+            refreshRevisions(editor);
+        }
+    }, [editor, revisionsEnabled, currentRevision, revisionDisplayMode, features.revisions]);
 
     // Refresh pagination when page locking or the page-lock map changes.
     // Pagination only reads these via getter closures on its options, so

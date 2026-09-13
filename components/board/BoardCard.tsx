@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { memo, useRef, useState, useCallback, useEffect } from "react";
 import styles from "./BoardCanvas.module.css";
 import { useTranslations } from "next-intl";
 import { Play, Pause } from "lucide-react";
 import { BoardCardData } from "@src/lib/project/project-state";
 import { useAssetUrl } from "@src/lib/assets/use-asset-url";
+import { useIsTouch } from "@src/lib/utils/hooks";
 
 /** Join truthy class names (false/undefined are skipped). */
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -284,12 +285,23 @@ interface BoardCardProps {
     scale: number;
     isSnapping: boolean;
     gridSize: number;
-    onUpdate: (card: BoardCardData) => void;
+    /**
+     * Commit a card change. `transient` marks a frame of a live drag/resize:
+     * the board applies it locally but doesn't write it to Yjs (see
+     * BoardCanvas.handleUpdateCard). Every gesture ends with one non-transient
+     * update, which is the one that gets stored.
+     */
+    onUpdate: (card: BoardCardData, options?: { transient?: boolean }) => void;
     onContextMenu: (e: React.MouseEvent, card: BoardCardData) => void;
     onStartConnection: (cardId: string, side: string, initialX: number, initialY: number) => void;
     onCompleteConnection: (cardId: string) => void;
     isConnecting: boolean;
     isSelected: boolean;
+    /** The board's link tool is armed: a tap on this card picks a link end. */
+    linkMode: boolean;
+    /** This card is the link already picked, waiting for its target. */
+    isLinkSource: boolean;
+    onLinkTap: (cardId: string) => void;
 }
 
 const BoardCard = ({
@@ -304,9 +316,27 @@ const BoardCard = ({
     onCompleteConnection,
     isConnecting,
     isSelected,
+    linkMode,
+    isLinkSource,
+    onLinkTap,
 }: BoardCardProps) => {
     const kind = kindOf(card);
+    // Coarse pointer, not phone width: a tablet renders the desktop board but is
+    // still driven by a finger, so it needs the touch gestures too.
+    const isTouch = useIsTouch();
     const cardRef = useRef<HTMLDivElement>(null);
+    // Timestamp of the last touch on this card. Touch devices fire a synthesized
+    // mousedown/mouseup after a touch; every handler wires *both* pointer types
+    // (an iPad reports a coarse pointer even with a trackpad attached, so the
+    // mouse path can never be dropped), and this lets the mouse handlers ignore
+    // those synthetic echoes to avoid double-firing. Refreshed throughout a
+    // gesture, not only at touchstart, so a long drag can't age out of the window.
+    const lastTouch = useRef(0);
+    const isSyntheticMouse = () => Date.now() - lastTouch.current < 700;
+    // Latest card data for touch handlers, which capture their closure at
+    // gesture start but must merge against the current card on each update.
+    const cardDataRef = useRef(card);
+    cardDataRef.current = card;
     const [isDragging, setIsDragging] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
@@ -317,6 +347,29 @@ const BoardCard = ({
     const [prevDescription, setPrevDescription] = useState(card.description);
     const dragOffset = useRef({ x: 0, y: 0 });
     const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
+    /**
+     * The canvas layer's viewport origin, measured once when a drag starts.
+     *
+     * Measuring it per move is a `getBoundingClientRect()` right after the card's
+     * own style was mutated, which forces a synchronous layout of the entire
+     * document — every open sidebar, the timeline, and the parked screenplay
+     * editor — on every move event. The canvas cannot pan or zoom while a card is
+     * being dragged, so the origin taken at the start holds for the gesture.
+     */
+    const canvasOrigin = useRef({ left: 0, top: 0 });
+    const captureCanvasOrigin = useCallback(() => {
+        const parent = cardRef.current?.parentElement;
+        if (!parent) return;
+        const rect = parent.getBoundingClientRect();
+        canvasOrigin.current = { left: rect.left, top: rect.top };
+    }, []);
+    /**
+     * The latest local-only (transient) geometry produced by the gesture in
+     * flight, held here rather than read back off the `card` prop so the commit
+     * can't miss a final move that hasn't been re-rendered yet. Null when there
+     * is nothing left to write.
+     */
+    const pendingCommit = useRef<BoardCardData | null>(null);
 
     if (prevTitle !== card.title) {
         setPrevTitle(card.title);
@@ -339,6 +392,7 @@ const BoardCard = ({
 
     const handleMouseDown = useCallback(
         (e: React.MouseEvent) => {
+            if (isSyntheticMouse()) return; // ignore the mouse echo of a touch
             if (
                 isEditing ||
                 isEditingTitle ||
@@ -351,50 +405,80 @@ const BoardCard = ({
             const rect = cardRef.current?.getBoundingClientRect();
             if (!rect) return;
 
+            captureCanvasOrigin();
             dragOffset.current = {
                 x: (e.clientX - rect.left) / scale,
                 y: (e.clientY - rect.top) / scale,
             };
             setIsDragging(true);
         },
-        [isEditing, isEditingTitle, scale],
+        [isEditing, isEditingTitle, scale, captureCanvasOrigin],
     );
+
+    // Shared drag/resize math, driven by either mouse or touch coordinates.
+    const applyDrag = useCallback(
+        (clientX: number, clientY: number) => {
+            const { left, top } = canvasOrigin.current;
+            const newX = (clientX - left) / scale - dragOffset.current.x;
+            const newY = (clientY - top) / scale - dragOffset.current.y;
+            const next = { ...cardDataRef.current, x: snapToGrid(newX), y: snapToGrid(newY) };
+            pendingCommit.current = next;
+            onUpdate(next, { transient: true });
+        },
+        [scale, onUpdate, snapToGrid],
+    );
+
+    const applyResize = useCallback(
+        (clientX: number, clientY: number) => {
+            const dx = (clientX - resizeStart.current.x) / scale;
+            const dy = (clientY - resizeStart.current.y) / scale;
+            const newWidth = Math.max(150, resizeStart.current.width + dx);
+            const newHeight = Math.max(minHeightFor(kind), resizeStart.current.height + dy);
+            const next = {
+                ...cardDataRef.current,
+                width: snapToGrid(newWidth),
+                height: snapToGrid(newHeight),
+            };
+            pendingCommit.current = next;
+            onUpdate(next, { transient: true });
+        },
+        [scale, kind, onUpdate, snapToGrid],
+    );
+
+    // End of a drag/resize: write the geometry the gesture landed on to Yjs.
+    const commitMove = useCallback(() => {
+        const pending = pendingCommit.current;
+        if (!pending) return;
+        pendingCommit.current = null;
+        onUpdate(pending);
+    }, [onUpdate]);
+
+    // Flush a gesture cut short by an unmount (the board closed, the document
+    // switched) so its last transient move isn't dropped. Goes through a ref so
+    // the cleanup runs on unmount only, never on a new `commitMove` identity.
+    const commitMoveRef = useRef(commitMove);
+    useEffect(() => {
+        commitMoveRef.current = commitMove;
+    }, [commitMove]);
+    useEffect(() => () => commitMoveRef.current(), []);
 
     const handleMouseMove = useCallback(
         (e: MouseEvent) => {
-            if (!isDragging && !isResizing) return;
-
-            if (isDragging) {
-                const parent = cardRef.current?.parentElement;
-                if (!parent) return;
-
-                const parentRect = parent.getBoundingClientRect();
-                const newX = (e.clientX - parentRect.left) / scale - dragOffset.current.x;
-                const newY = (e.clientY - parentRect.top) / scale - dragOffset.current.y;
-
-                onUpdate({ ...card, x: snapToGrid(newX), y: snapToGrid(newY) });
-            }
-
-            if (isResizing) {
-                const dx = (e.clientX - resizeStart.current.x) / scale;
-                const dy = (e.clientY - resizeStart.current.y) / scale;
-
-                const newWidth = Math.max(150, resizeStart.current.width + dx);
-                const newHeight = Math.max(minHeightFor(kind), resizeStart.current.height + dy);
-
-                onUpdate({ ...card, width: snapToGrid(newWidth), height: snapToGrid(newHeight) });
-            }
+            if (isDragging) applyDrag(e.clientX, e.clientY);
+            if (isResizing) applyResize(e.clientX, e.clientY);
         },
-        [isDragging, isResizing, kind, card, onUpdate, scale, snapToGrid],
+        [isDragging, isResizing, applyDrag, applyResize],
     );
 
     const handleMouseUp = useCallback(() => {
+        commitMove();
         setIsDragging(false);
         setIsResizing(false);
-    }, []);
+    }, [commitMove]);
 
     const handleResizeStart = useCallback(
         (e: React.MouseEvent) => {
+            if (isSyntheticMouse()) return; // ignore the mouse echo of a touch
             e.stopPropagation();
             e.preventDefault();
             resizeStart.current = {
@@ -419,7 +503,175 @@ const BoardCard = ({
         }
     }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
 
+    // ── Touch (mobile) ───────────────────────────────────────────────────────
+    // One finger drags the card. A stationary long-press opens the card menu; a
+    // tap (no movement) completes a pending connection, or on a second tap enters
+    // edit mode. The resize / connection handles get their own touch starters.
+    const cardLongPress = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastCardTap = useRef(0);
+    const touchDrag = useRef<{ startX: number; startY: number; moved: boolean; suppressed: boolean } | null>(
+        null,
+    );
+
+    useEffect(
+        () => () => {
+            if (cardLongPress.current) clearTimeout(cardLongPress.current);
+        },
+        [],
+    );
+
+    const handleCardTouchStart = useCallback(
+        (e: React.TouchEvent) => {
+            if (isEditing || isEditingTitle) return;
+            const target = e.target as HTMLElement;
+            if (
+                target.closest(`.${styles.card_resize_handle}`) ||
+                target.closest(`.${styles.connection_handle}`) ||
+                target.closest("input,textarea,button,audio")
+            )
+                return;
+            const t = e.touches[0];
+            if (!t) return;
+            lastTouch.current = Date.now();
+            e.stopPropagation();
+
+            const rect = cardRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            captureCanvasOrigin();
+            dragOffset.current = { x: (t.clientX - rect.left) / scale, y: (t.clientY - rect.top) / scale };
+            touchDrag.current = { startX: t.clientX, startY: t.clientY, moved: false, suppressed: false };
+
+            if (cardLongPress.current) clearTimeout(cardLongPress.current);
+            const lpX = t.clientX;
+            const lpY = t.clientY;
+            cardLongPress.current = setTimeout(() => {
+                if (touchDrag.current) touchDrag.current.suppressed = true;
+                setIsDragging(false);
+                onContextMenu(
+                    {
+                        clientX: lpX,
+                        clientY: lpY,
+                        preventDefault() {},
+                        stopPropagation() {},
+                    } as unknown as React.MouseEvent,
+                    card,
+                );
+            }, 500);
+
+            const onMove = (ev: TouchEvent) => {
+                lastTouch.current = Date.now();
+                const tt = ev.touches[0];
+                const state = touchDrag.current;
+                if (!tt || !state) return;
+                const dx = tt.clientX - state.startX;
+                const dy = tt.clientY - state.startY;
+                if (!state.moved && Math.hypot(dx, dy) > 8) {
+                    state.moved = true;
+                    if (cardLongPress.current) {
+                        clearTimeout(cardLongPress.current);
+                        cardLongPress.current = null;
+                    }
+                    setIsDragging(true);
+                }
+                if (state.moved && !state.suppressed) applyDrag(tt.clientX, tt.clientY);
+            };
+            const onEnd = () => {
+                lastTouch.current = Date.now();
+                if (cardLongPress.current) {
+                    clearTimeout(cardLongPress.current);
+                    cardLongPress.current = null;
+                }
+                window.removeEventListener("touchmove", onMove);
+                window.removeEventListener("touchend", onEnd);
+                window.removeEventListener("touchcancel", onEnd);
+                commitMove();
+                setIsDragging(false);
+                const state = touchDrag.current;
+                touchDrag.current = null;
+                if (state && !state.moved && !state.suppressed) {
+                    // The link tool takes the tap ahead of everything else: while
+                    // it is armed a tap means "this end of the link", not
+                    // double-tap-to-edit. Dragging the card is untouched — that
+                    // path needs movement, which rules a tap out.
+                    if (linkMode) {
+                        onLinkTap(card.id);
+                        return;
+                    }
+                    if (isConnecting) {
+                        onCompleteConnection(card.id);
+                        return;
+                    }
+                    const now = Date.now();
+                    if (now - lastCardTap.current < 300) {
+                        lastCardTap.current = 0;
+                        if (kind === "text") setIsEditing(true);
+                        else if (kind === "audio") setIsEditingTitle(true);
+                    } else {
+                        lastCardTap.current = now;
+                    }
+                }
+            };
+            window.addEventListener("touchmove", onMove, { passive: true });
+            window.addEventListener("touchend", onEnd);
+            window.addEventListener("touchcancel", onEnd);
+        },
+        [
+            isEditing,
+            isEditingTitle,
+            scale,
+            card,
+            kind,
+            isConnecting,
+            linkMode,
+            applyDrag,
+            commitMove,
+            captureCanvasOrigin,
+            onContextMenu,
+            onCompleteConnection,
+            onLinkTap,
+        ],
+    );
+
+    const handleResizeTouchStart = useCallback(
+        (e: React.TouchEvent) => {
+            const t = e.touches[0];
+            if (!t) return;
+            lastTouch.current = Date.now();
+            e.stopPropagation();
+            resizeStart.current = { x: t.clientX, y: t.clientY, width: card.width, height: card.height };
+            setIsResizing(true);
+            const onMove = (ev: TouchEvent) => {
+                lastTouch.current = Date.now();
+                const tt = ev.touches[0];
+                if (tt) applyResize(tt.clientX, tt.clientY);
+            };
+            const onEnd = () => {
+                lastTouch.current = Date.now();
+                commitMove();
+                setIsResizing(false);
+                window.removeEventListener("touchmove", onMove);
+                window.removeEventListener("touchend", onEnd);
+                window.removeEventListener("touchcancel", onEnd);
+            };
+            window.addEventListener("touchmove", onMove, { passive: true });
+            window.addEventListener("touchend", onEnd);
+            window.addEventListener("touchcancel", onEnd);
+        },
+        [card.width, card.height, applyResize, commitMove],
+    );
+
+    const handleConnectionTouchStart = useCallback(
+        (e: React.TouchEvent) => {
+            if (!e.touches[0]) return;
+            lastTouch.current = Date.now();
+            e.stopPropagation();
+            onStartConnection(card.id, "center", card.x + card.width / 2, card.y + card.height / 2);
+        },
+        [card.id, card.x, card.y, card.width, card.height, onStartConnection],
+    );
+
     const handleStartEditDescription = useCallback((e: React.MouseEvent) => {
+        if (isSyntheticMouse()) return; // double-tap to edit is handled by the touch path
         e.stopPropagation();
         setIsEditing(true);
     }, []);
@@ -479,6 +731,7 @@ const BoardCard = ({
 
     const handleConnectionHandleMouseDown = useCallback(
         (e: React.MouseEvent) => {
+            if (isSyntheticMouse()) return; // ignore the mouse echo of a touch
             e.stopPropagation();
             e.preventDefault();
             // Pass the center of the card as initial position (in canvas coordinates)
@@ -491,12 +744,23 @@ const BoardCard = ({
 
     const handleCardMouseUp = useCallback(
         (e: React.MouseEvent) => {
+            if (isSyntheticMouse()) return; // ignore the mouse echo of a touch
+            // Trackpad counterpart of the link tap — an iPad reports a coarse
+            // pointer with a Magic Keyboard attached, so the tool has to answer to
+            // both. A pending commit means this mouseup ends a drag rather than a
+            // click, and dragging a card must not link it. (The window mouseup
+            // that clears it runs after this delegated handler.)
+            if (linkMode && !pendingCommit.current) {
+                e.stopPropagation();
+                onLinkTap(card.id);
+                return;
+            }
             if (isConnecting) {
                 e.stopPropagation();
                 onCompleteConnection(card.id);
             }
         },
-        [card.id, isConnecting, onCompleteConnection],
+        [card.id, isConnecting, linkMode, onCompleteConnection, onLinkTap],
     );
 
     const titleEditing: TitleEditing = {
@@ -535,34 +799,54 @@ const BoardCard = ({
     return (
         <div
             ref={cardRef}
+            data-card-id={card.id}
             className={cx(
                 styles.card,
                 kind === "image" && styles.image_card,
                 kind === "audio" && styles.audio_card,
                 isDragging && styles.card_dragging,
-                isConnecting && styles.card_connecting,
+                (isConnecting || linkMode) && styles.card_connecting,
                 isSelected && styles.card_selected,
+                isLinkSource && styles.card_link_source,
             )}
             style={{
-                left: card.x,
-                top: card.y,
+                // Position via transform, not left/top — a drag frame is then a
+                // compositor translate of this card's own layer instead of
+                // layout + repaint inside the canvas layer (see .card).
+                transform: `translate3d(${card.x}px, ${card.y}px, 0)`,
                 width: card.width,
                 height: card.height,
                 ...cardColorStyle(card),
             }}
             onMouseDown={handleMouseDown}
             onMouseUp={handleCardMouseUp}
+            onTouchStart={isTouch ? handleCardTouchStart : undefined}
             onDoubleClick={kind === "text" ? handleStartEditDescription : undefined}
             onContextMenu={handleRightClick}
         >
             {renderBody()}
 
-            <div className={styles.card_resize_handle} onMouseDown={handleResizeStart} />
+            <div
+                className={styles.card_resize_handle}
+                onMouseDown={handleResizeStart}
+                onTouchStart={isTouch ? handleResizeTouchStart : undefined}
+            />
 
             {/* Connection handle */}
-            <div className={styles.connection_handle} onMouseDown={handleConnectionHandleMouseDown} />
+            <div
+                className={styles.connection_handle}
+                onMouseDown={handleConnectionHandleMouseDown}
+                onTouchStart={isTouch ? handleConnectionTouchStart : undefined}
+            />
         </div>
     );
 };
 
-export default BoardCard;
+/**
+ * Memoised: a drag emits a transient board update per frame, and without this
+ * every card re-rendered on each of those frames. Only the dragged card's
+ * `card` prop changes identity, so with the canvas's callbacks kept stable
+ * (they read through cardsRef, not the cards state) a drag frame re-renders
+ * exactly one card.
+ */
+export default memo(BoardCard);

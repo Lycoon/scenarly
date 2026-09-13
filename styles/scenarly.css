@@ -1,0 +1,824 @@
+@import "./fonts.css";
+
+:root {
+    --font-screenplay: "CourierPrime", "FreeMono", "Cousine", "SarasaMonoSC", monospace;
+}
+
+.rm-page-header,
+.rm-page-footer,
+.rm-pagination-gap {
+    user-select: none;
+    cursor: default !important;
+}
+
+.rm-pagination-gap {
+    border: none !important;
+    background-color: var(--main-bg) !important;
+    position: relative;
+    z-index: 1; /* Ensure gap covers any bleeding backgrounds from content */
+}
+
+.breaker {
+    pointer-events: none;
+    position: relative;
+    z-index: 1;
+}
+
+/* Registered so the read-aloud focus mask (.read-aloud-active in .ProseMirror)
+   can transition its centre as a real <length>; unregistered custom properties
+   don't interpolate. Falls back to an instant jump where @property is
+   unsupported. */
+@property --ra-center {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+.ProseMirror {
+    --font-size: 12pt;
+
+    /* Display-only multiplier applied to every horizontal element margin below.
+       Defaults to 1 (desktop / print / the offscreen pagination measurement div,
+       which is #pagination-test-div in <body> and never matched by the phone rule
+       in EditorPanel.module.css). On phones it is lowered to compress the wide
+       screenplay margins so text reflows larger — a purely visual change: the
+       offscreen measurement div keeps scale 1, so page count / breaks / PDF export
+       stay identical to desktop. */
+    --display-margin-scale: 1;
+
+    --action-l-margin: 1.5in;
+    --action-r-margin: 1in;
+    --scene-l-margin: 1.5in;
+    --scene-r-margin: 1in;
+    --character-l-margin: 4in;
+    --character-r-margin: 1in;
+    --dialogue-l-margin: 2.8in;
+    --dialogue-r-margin: 2in;
+    --parenthetical-l-margin: 3.5in;
+    --parenthetical-r-margin: 3in;
+    --transition-l-margin: 1.5in;
+    --transition-r-margin: 1in;
+    --line-height: 16px;
+
+    border: none !important;
+    background-color: var(--editor-script-bg) !important;
+
+    /* Prevent outline from appearing when focused on screenplay */
+    outline: none;
+
+    /* Default screenplay paragraph attributes - direct children only
+       Critical: block + width:100% ensures consistent sizing between empty 
+       and non-empty nodes, preventing pagination flickering and infinite loops.
+       Scoped with > to avoid affecting pagination header/footer elements */
+    > p,
+    .dual_dialogue_column p {
+        display: block;
+        width: 100%;
+        color: var(--editor-text);
+        font-family: var(--font-screenplay);
+        font-size: var(--font-size);
+        text-align: left;
+        line-height: var(--line-height) !important;
+        margin-top: var(--line-height);
+        margin-bottom: 0;
+        min-height: 1lh;
+        padding-left: calc(var(--action-l-margin) * var(--display-margin-scale));
+        padding-right: calc(var(--action-r-margin) * var(--display-margin-scale));
+        box-sizing: border-box;
+    }
+
+    /* Suppress the first paragraph's margin-top when it sits directly under
+       a pagination widget. Without this, the page-break div's margin-bottom
+       (0) collapses with the next paragraph's margin-top (16) and leaves a
+       wasted 16px gap at the top of every page. Pagination's break decisions
+       use measured outer heights in isolation, so removing the margin only
+       affects rendering — same paragraphs per page, no determinism hit.
+
+       These target classes are applied by the pagination extension as node
+       decorations (pagination-doc-start / pagination-break-start) rather than
+       via an adjacent-sibling selector (`.pagination-page-break + p`). The
+       sibling combinator forced Blink to invalidate the style of the whole
+       document tail on every structural edit — the dominant cost in the
+       per-keystroke "Recalculate Style". A plain class carries no sibling
+       dependency, so only nodes whose first-of-page status changed restyle.
+
+       In endless-scroll mode the page-break widgets are hidden (display:none),
+       so there is no gap to collapse and zeroing the margin would make each
+       page's first node stick to the previous page's content. The
+       `:not(.endless-scroll)` guard skips the break-start reset there. The
+       first-page widget is still shown in endless scroll, so pagination-doc-start
+       keeps its reset unconditionally. */
+    &:not(.endless-scroll) > p.pagination-break-start,
+    > p.pagination-doc-start {
+        margin-top: 0 !important;
+    }
+
+    /* Spans inside paragraphs - NO display/width overrides
+       These must remain inline (default) to not break text flow */
+    > p span,
+    .dual_dialogue_column p span {
+        color: var(--editor-text);
+        font-family: var(--font-screenplay);
+        font-size: var(--font-size);
+        line-height: var(--line-height) !important;
+    }
+
+    /* Keep the revision colour on text that also carries another inline span
+       (e.g. a spellcheck underline): the generic `> p span` rule above would
+       otherwise re-pin that nested child to --editor-text, blanking the colour
+       the revision mark sets via inline style on its parent span. (The display
+       mode — all/hidden/current — is applied by re-defining the per-index
+       `--rev-color-*` variables on the editor root, which these spans inherit.) */
+    span[data-revision] span {
+        color: inherit;
+    }
+
+    .page-number,
+    .page-number > * {
+        color: var(--editor-text);
+        font-family: var(--font-screenplay);
+        line-height: var(--line-height);
+    }
+
+    /* Editor styles */
+    span.bold {
+        font-weight: bold;
+    }
+    span.italic {
+        font-style: italic;
+    }
+    span.underline {
+        text-decoration: underline;
+    }
+
+    /* Screenplay elements */
+    .is-empty {
+        cursor: text;
+        background-color: transparent; /* Catches the click */
+        overflow: hidden;
+        height: var(--line-height);
+    }
+
+    /* Stabilize the absolute caret's containing block. Without this, the caret
+       resolves up to .ProseMirror — and during a backspace that destroys the
+       paragraph it lives in, y-prosemirror briefly remaps the caret's head
+       position to 0 before awareness syncs, painting it for one frame at the
+       editor's leftmost edge (the very start of the document). Pinning the
+       containing block to whichever paragraph the caret currently sits in
+       keeps the absolute position bounded to that paragraph's box. */
+    p:has(.collab-caret),
+    .dual_dialogue_column p:has(.collab-caret) {
+        position: relative;
+    }
+
+    /* Empty non-parenthetical paragraphs additionally need overflow:visible so
+       the caret's pseudo-element username label (anchored above the line via
+       top: -1.8em) isn't clipped. Parenthetical empties keep overflow:hidden
+       to clip the trailing line box that would push their `)` to a second
+       line; the label is sacrificed there as an acceptable trade. */
+    .is-empty:has(.collab-caret):not(.parenthetical) {
+        overflow: visible;
+    }
+
+    /* Defensive: the widget should always live inside a paragraph. If a
+       transaction ever briefly attaches it directly to .ProseMirror (e.g.
+       during a structural restructure), don't paint it. */
+    > .collab-caret {
+        display: none;
+    }
+
+    .action {
+        text-align: var(--action-align, left) !important;
+        font-weight: var(--action-weight, normal);
+        font-style: var(--action-style, normal);
+        text-decoration: var(--action-decoration, none);
+        text-transform: var(--action-transform, none);
+    }
+
+    .scene {
+        position: relative;
+        overflow: visible;
+        background-color: none;
+        margin-top: 1lh;
+        text-transform: var(--scene-transform, uppercase);
+        font-weight: var(--scene-weight, bold);
+        font-style: var(--scene-style, normal);
+        text-decoration: var(--scene-decoration, none);
+        text-align: var(--scene-align, left) !important;
+        counter-increment: scenenumber;
+        padding-left: calc(var(--scene-l-margin) * var(--display-margin-scale)) !important;
+        padding-right: calc(var(--scene-r-margin) * var(--display-margin-scale)) !important;
+    }
+
+    /* Left scene number (CSS counter via ::before). The offset scales with
+       --display-margin-scale so the number tracks the (scaled) left gutter
+       instead of landing over the heading text in endless mode, where the
+       gutter is compressed to 0.3 (see EditorPanel.module.css). */
+    .scene::before {
+        position: absolute;
+        content: counter(scenenumber);
+        right: 100%;
+        margin-right: calc(-120px * var(--display-margin-scale));
+    }
+
+    /* Right scene number (CSS counter via ::after, hidden by default) */
+    .scene::after {
+        position: absolute;
+        content: counter(scenenumber);
+        top: 0;
+        left: 100%;
+        margin-left: calc(-85px * var(--display-margin-scale));
+        user-select: none;
+        pointer-events: none;
+        display: none;
+    }
+
+    /* Show right scene number when enabled */
+    &.scene-number-right .scene::after {
+        display: block;
+    }
+
+    /* Hide all scene numbers when disabled */
+    &.hide-scene-numbers .scene::before,
+    &.hide-scene-numbers .scene::after {
+        display: none;
+    }
+
+    /* Production lock: suppress CSS counter pseudo-elements — labels come
+       from widget decorations (scene-locking-extension) so we can render
+       suffixed / OMITTED labels that CSS counters can't express. */
+    &.production-locked .scene::before,
+    &.production-locked .scene::after {
+        display: none;
+    }
+
+    /* Widget decoration for the left scene label (mirrors the ::before slot).
+       text-transform: none !important is required to defeat the parent
+       .scene's text-transform: uppercase (matching the same pattern used by
+       .collab-caret-name above) so lowercase suffix markers like "3aA"
+       render with their original case. */
+    .scene-label-left {
+        position: absolute;
+        right: 100%;
+        margin-right: calc(-120px * var(--display-margin-scale));
+        user-select: none;
+        pointer-events: none;
+        text-transform: none !important;
+    }
+
+    /* Widget decoration for the right scene label (mirrors the ::after slot). */
+    .scene-label-right {
+        position: absolute;
+        top: 0;
+        left: 100%;
+        margin-left: calc(-85px * var(--display-margin-scale));
+        user-select: none;
+        pointer-events: none;
+        display: none;
+        text-transform: none !important;
+    }
+    &.scene-number-right .scene-label-right {
+        display: block;
+    }
+    &.hide-scene-numbers .scene-label-left,
+    &.hide-scene-numbers .scene-label-right {
+        display: none;
+    }
+
+    /* OMITTED scene: heading text is rewritten to "OMITTED" in the document
+       by `omitSceneByUuid` (original preserved in scene metadata) and the body
+       is cut out of the document entirely, so the omitted scene is just a
+       greyed one-line heading. The scene-number widgets are re-greyed because
+       the generic `.ProseMirror > p span` rule above pins them to
+       --editor-text. */
+    .scene[data-scene-omitted="true"],
+    .scene[data-scene-omitted="true"] .scene-label-left,
+    .scene[data-scene-omitted="true"] .scene-label-right {
+        color: var(--secondary-text);
+    }
+
+    /* ---- Production revisions ---- */
+    /* A single overlay layer mounted at the editor origin (a stable widget
+       decoration). It owns the absolutely-positioned stripe/asterisk elements
+       painted by the revisions extension's overlay renderer; their top/left/
+       size/colour are all set inline.
+
+       z-index 11 paints it above .pagination-overlay (z-index: 10), same tier as
+       .spellcheck-error below and for the same reason. It only matters where the
+       stripe is tucked INSIDE the page's left margin instead of the canvas gutter
+       — the phone's paged view, and pinched desktop windows (see the stripe
+       geometry in revisions-extension.ts) — because there it shares x-range with
+       the page chrome, which paints an opaque page background across the full
+       page width.
+
+       Most break widgets are harmless at z-index 4: content-visibility: auto
+       (containOffscreen) implies paint containment, which makes the widget a
+       stacking context and confines its overlay to the widget's own z-index:auto
+       level. MID-NODE SENTENCE SPLITS are the exception — they are deliberately
+       exempt from that containment (it would clip the overlay escaping the
+       parent <p>'s padding), so their z-index:10 overlay competes directly here
+       and used to paint its footer/gap/header band straight over the stripe of a
+       node straddling the break. Asterisks are culled to the content band, so
+       raising the layer never puts one over a header or footer. */
+    .revision-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        z-index: 11;
+        pointer-events: none;
+    }
+
+    /* Full page-height change-bar down the LEFT of the page. Its left/width are
+       set inline by the overlay renderer: normally a negative left that puts it
+       in the canvas just outside the page, but tucked inside the page's left
+       margin when the canvas is too narrow to show it (phone paged view, narrow
+       desktop windows) — see the stripe geometry in revisions-extension.ts. */
+    .revision-overlay .revision-stripe {
+        position: absolute;
+        border-radius: 1px;
+    }
+
+    /* Endless-scroll mode has no discrete pages, so the per-page change-bars
+       (positioned by page arithmetic) have nothing meaningful to span — hide
+       them. The right-margin asterisks still mark the changed visual lines and
+       stay correct, so they remain. */
+    &.endless-scroll .revision-overlay .revision-stripe {
+        display: none;
+    }
+
+    /* Right-margin asterisk on a changed visual line, vertically centred on the
+       line via translateY(-50%). Colour is set inline from the line's own
+       revision so older revisions keep their colour. */
+    .revision-overlay .revision-asterisk {
+        position: absolute;
+        transform: translateY(-50%);
+        font-family: var(--font-screenplay);
+        font-size: var(--font-size);
+        font-weight: bold;
+        line-height: 1;
+    }
+
+    /* Normal weight scene headings (when bold disabled) */
+    &.scene-heading-normal .scene {
+        font-weight: normal;
+    }
+
+    /* Double margin-top for scene headings */
+    &.scene-heading-spacing-1\.5 .scene {
+        margin-top: 1.5lh;
+    }
+    &.scene-heading-spacing-2 .scene {
+        margin-top: 2lh;
+    }
+
+    /* Dialogue */
+    .dialogue {
+        margin-top: 0;
+        font-weight: var(--dialogue-weight, normal);
+        font-style: var(--dialogue-style, normal);
+        text-decoration: var(--dialogue-decoration, none);
+        text-transform: var(--dialogue-transform, none);
+        text-align: var(--dialogue-align, left) !important;
+        padding-left: calc(var(--dialogue-l-margin) * var(--display-margin-scale)) !important;
+        padding-right: calc(var(--dialogue-r-margin) * var(--display-margin-scale)) !important;
+    }
+
+    .character {
+        font-weight: var(--character-weight, normal);
+        font-style: var(--character-style, normal);
+        text-decoration: var(--character-decoration, none);
+        text-transform: var(--character-transform, uppercase);
+        text-align: var(--character-align, left) !important;
+        padding-left: calc(var(--character-l-margin) * var(--display-margin-scale)) !important;
+        padding-right: calc(var(--character-r-margin) * var(--display-margin-scale)) !important;
+    }
+
+    .character::after {
+        text-transform: none;
+    }
+
+    .character.contd::after {
+        content: " " var(--contd-label, "(CONT'D)");
+    }
+
+    /* CONT'D on resumed dialogue turned off in the layout settings. The
+       decoration class stays on the node (the PDF exporter gates on the same
+       setting); only the rendered suffix goes away. */
+    &.hide-contd-dialogue .character.contd::after {
+        content: none;
+    }
+
+    /* Parenthetical */
+    .parenthetical {
+        position: relative;
+        margin-top: 0;
+        font-weight: var(--parenthetical-weight, normal);
+        font-style: var(--parenthetical-style, normal);
+        text-decoration: var(--parenthetical-decoration, none);
+        text-transform: var(--parenthetical-transform, none);
+        text-align: var(--parenthetical-align, left) !important;
+        padding-left: calc(var(--parenthetical-l-margin) * var(--display-margin-scale)) !important;
+        padding-right: calc(var(--parenthetical-r-margin) * var(--display-margin-scale)) !important;
+    }
+
+    .parenthetical::before {
+        content: "(" !important;
+
+        /* Shenanigans to have cursor between both parenthesis otherwise it appears before first */
+        position: absolute;
+        /*top: 0;*/
+        left: calc(var(--parenthetical-l-margin) * var(--display-margin-scale));
+        margin-left: calc(-1ch);
+        pointer-events: none;
+    }
+
+    .parenthetical::after {
+        content: ")" !important;
+    }
+
+    /* When empty, <br> creates a second line box that pushes ) to the next line.
+       Clip it with max-height (overflow: hidden already set on .is-empty),
+       and merge both parens into ::before so () appears together on the first line. */
+    .parenthetical.is-empty {
+        max-height: 1lh;
+    }
+
+    .parenthetical.is-empty::before {
+        content: "()" !important;
+    }
+
+    .parenthetical.is-empty::after {
+        content: "" !important;
+    }
+
+    /* Transition */
+    .transition {
+        position: relative;
+        text-transform: var(--transition-transform, uppercase);
+        font-weight: var(--transition-weight, normal);
+        font-style: var(--transition-style, normal);
+        text-decoration: var(--transition-decoration, none);
+        text-align: var(--transition-align, right) !important;
+        padding-left: calc(var(--transition-l-margin) * var(--display-margin-scale)) !important;
+        padding-right: calc(var(--transition-r-margin) * var(--display-margin-scale)) !important;
+    }
+
+    .transition::after {
+        content: ":" !important;
+    }
+
+    .section {
+        text-transform: var(--section-transform, uppercase);
+        counter-increment: actnumber;
+        text-align: var(--section-align, center) !important;
+        font-weight: var(--section-weight, normal);
+        font-style: var(--section-style, normal);
+        text-decoration: var(--section-decoration, underline);
+        padding-left: calc(var(--section-l-margin) * var(--display-margin-scale)) !important;
+        padding-right: calc(var(--section-r-margin) * var(--display-margin-scale)) !important;
+    }
+
+    /* Note */
+    .note {
+        box-sizing: content-box;
+        width: auto;
+        width: 100%;
+        overflow-wrap: break-word;
+        word-break: break-word;
+
+        background-color: var(--editor-notes-color); /* a: 0.226 */
+        padding-inline: 8px;
+        padding-block: 4px;
+
+        border-color: var(--editor-notes-color); /* a: 0.226 */
+        border-style: dashed;
+        border-width: 1px;
+        border-radius: 10px;
+    }
+
+    /* Collaboration */
+
+    /* The presence of collab-caret at the end of a node forces a trailing break behind */
+    /* We disable its rendering to prevent text line stutters or ::after layout breaks */
+    .collab-caret ~ br.ProseMirror-trailingBreak {
+        display: none;
+    }
+
+    .collab-caret {
+        position: absolute;
+        z-index: 100;
+        height: 1em;
+        width: 0 !important;
+        margin-left: -1px;
+
+        vertical-align: top;
+
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+    }
+
+    /* Username label rendered as a pseudo-element rather than a child <div>.
+       Pseudo-elements aren't in the DOM, so they cannot host a text cursor;
+       this prevents Firefox from placing the local HTML caret into the
+       label's text node when the local user clicks an empty node hosting a
+       remote caret. The color and name come from custom properties set
+       inline by the cursor render function. */
+    .collab-caret::before {
+        content: var(--collab-caret-name, "");
+        background-color: var(--collab-caret-color, currentColor);
+
+        position: absolute;
+        top: -1.8em;
+        left: -0.5em;
+        padding: 3px 12px;
+        color: white;
+        font-size: 0.75em;
+        white-space: nowrap;
+        border-radius: 1em;
+        line-height: normal;
+
+        /* Prevent inheritance of parent styles (scene headings are uppercase & bold). */
+        text-transform: none !important;
+        font-weight: 400 !important;
+        font-style: normal !important;
+
+        pointer-events: none !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+
+        /* Fix for Firefox selection glitch */
+        display: block;
+        width: max-content;
+    }
+
+    /* Character dialogue highlighting - gradient confined to page content area (between page margins) */
+    .character-highlight {
+        background: linear-gradient(
+            to right,
+            transparent calc(var(--page-margin-left) * var(--display-margin-scale)),
+            var(--highlight-color) calc(var(--page-margin-left) * var(--display-margin-scale)),
+            var(--highlight-color) calc(calc(var(--page-margin-left) * var(--display-margin-scale)) + 3px),
+            var(--highlight-bg) calc(calc(var(--page-margin-left) * var(--display-margin-scale)) + 3px),
+            var(--highlight-bg) calc(100% - calc(var(--page-margin-right) * var(--display-margin-scale))),
+            transparent calc(100% - calc(var(--page-margin-right) * var(--display-margin-scale)))
+        );
+    }
+
+    /* Search highlighting */
+    .search-highlight {
+        background-color: rgba(255, 213, 0, 0.3);
+        border-radius: 2px;
+    }
+
+    .search-highlight-current {
+        background-color: rgba(255, 213, 0, 0.6);
+        box-shadow: 0 0 0 2px rgba(255, 213, 0, 0.8);
+    }
+
+    /* Read-aloud focus mode: while a session runs, .read-aloud-active is toggled
+       on the editor DOM by the highlight extension, which also sets --ra-center
+       to the current line's vertical position (in the editor's own coordinate
+       space, so it tracks the content, not the viewport).
+
+       Rather than dimming per node, a soft vertical mask lights the script
+       around --ra-center and fades everything else toward --ra-floor. The
+       falloff is therefore purely spatial: it grades continuously over the page
+       regardless of node boundaries — a tall paragraph fades across its own
+       height, a short one barely at all — instead of every neighbour getting a
+       flat opacity. --ra-center is a registered <length> (see @property above)
+       so the band glides smoothly as the highlight moves line to line. */
+    &.read-aloud-active {
+        --ra-center: 0px;
+        --ra-radius: 220px;
+        --ra-floor: 0.22;
+        transition: --ra-center 0.25s ease;
+        /* An eased (S-curve) falloff rather than a straight ramp: extra stops
+           round off the corners where the light core meets the ramp and where
+           the ramp meets the dim floor, so there's no visible hard edge / Mach
+           band. Kept symmetric above and below --ra-center. */
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, var(--ra-floor)) 0,
+            rgba(0, 0, 0, var(--ra-floor)) calc(var(--ra-center) - var(--ra-radius)),
+            rgba(0, 0, 0, 0.3) calc(var(--ra-center) - var(--ra-radius) * 0.72),
+            rgba(0, 0, 0, 0.48) calc(var(--ra-center) - var(--ra-radius) * 0.5),
+            rgba(0, 0, 0, 0.72) calc(var(--ra-center) - var(--ra-radius) * 0.28),
+            rgba(0, 0, 0, 0.92) calc(var(--ra-center) - var(--ra-radius) * 0.12),
+            rgba(0, 0, 0, 1) var(--ra-center),
+            rgba(0, 0, 0, 0.92) calc(var(--ra-center) + var(--ra-radius) * 0.12),
+            rgba(0, 0, 0, 0.72) calc(var(--ra-center) + var(--ra-radius) * 0.28),
+            rgba(0, 0, 0, 0.48) calc(var(--ra-center) + var(--ra-radius) * 0.5),
+            rgba(0, 0, 0, 0.3) calc(var(--ra-center) + var(--ra-radius) * 0.72),
+            rgba(0, 0, 0, var(--ra-floor)) calc(var(--ra-center) + var(--ra-radius)),
+            rgba(0, 0, 0, var(--ra-floor)) 100%
+        );
+        mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, var(--ra-floor)) 0,
+            rgba(0, 0, 0, var(--ra-floor)) calc(var(--ra-center) - var(--ra-radius)),
+            rgba(0, 0, 0, 0.3) calc(var(--ra-center) - var(--ra-radius) * 0.72),
+            rgba(0, 0, 0, 0.48) calc(var(--ra-center) - var(--ra-radius) * 0.5),
+            rgba(0, 0, 0, 0.72) calc(var(--ra-center) - var(--ra-radius) * 0.28),
+            rgba(0, 0, 0, 0.92) calc(var(--ra-center) - var(--ra-radius) * 0.12),
+            rgba(0, 0, 0, 1) var(--ra-center),
+            rgba(0, 0, 0, 0.92) calc(var(--ra-center) + var(--ra-radius) * 0.12),
+            rgba(0, 0, 0, 0.72) calc(var(--ra-center) + var(--ra-radius) * 0.28),
+            rgba(0, 0, 0, 0.48) calc(var(--ra-center) + var(--ra-radius) * 0.5),
+            rgba(0, 0, 0, 0.3) calc(var(--ra-center) + var(--ra-radius) * 0.72),
+            rgba(0, 0, 0, var(--ra-floor)) calc(var(--ra-center) + var(--ra-radius)),
+            rgba(0, 0, 0, var(--ra-floor)) 100%
+        );
+    }
+
+    /* Spellcheck error highlighting */
+    .spellcheck-error {
+        position: relative;
+        z-index: 11; /* paint above pagination-overlay (z-index: 10) so the wavy underline isn't clipped */
+        text-decoration: underline wavy;
+        text-decoration-color: #ef4444;
+        text-decoration-skip-ink: none;
+    }
+
+    /* Words the speech recogniser is still revising (widget decoration inserted
+       by dictation-preview-extension). Dimmed to read as provisional; it sits in
+       the text flow so it inherits the element's font and casing, and is inert
+       so a tap near it still lands the caret in the real text. */
+    .dictation-preview {
+        opacity: 0.45;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    /* Scene bookmark marker (widget decoration inserted by scene-bookmark-extension) */
+    .scene-bookmark-marker {
+        position: absolute;
+        top: 0;
+        left: -4px;
+        width: 8px;
+        height: var(--line-height); /* fixed to one line — never stretches over wrapped headings */
+        background-color: var(--scene-color);
+        clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
+        border-radius: 0 0 2px 2px;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    /* Page position marker (applied by page-position-extension via DOM) */
+    /* page-last is deduced as the previous sibling of a page-first node */
+    .page-first {
+    }
+
+    /* (MORE) and (CONT'D) overlays for spanning dialogue */
+    .page-more-overlay,
+    .page-contd-overlay {
+        position: absolute;
+        z-index: 3;
+        font-family: var(--font-courier), monospace;
+        font-size: var(--font-size);
+        line-height: var(--line-height);
+        color: var(--editor-text);
+        pointer-events: none;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    .page-more-overlay {
+        bottom: calc(100% - 1lh);
+        left: 0;
+        width: 100%;
+        padding-left: calc(var(--character-l-margin) * var(--display-margin-scale));
+    }
+
+    .page-more-overlay::after {
+        content: var(--more-label, "(MORE)");
+    }
+
+    .page-contd-overlay {
+        top: calc(100% - 1lh);
+        left: 0;
+        width: 100%;
+        padding-left: calc(var(--character-l-margin) * var(--display-margin-scale));
+        text-transform: uppercase;
+    }
+
+    .page-contd-overlay::after {
+        content: " " var(--contd-label, "(CONT'D)");
+    }
+
+    /* ============================== */
+    /*        DUAL DIALOGUE           */
+    /* ============================== */
+
+    .dual_dialogue {
+        display: flex;
+        flex-direction: row;
+        padding: 0 calc(var(--page-margin-right) * var(--display-margin-scale)) 0 calc(var(--page-margin-left) * var(--display-margin-scale));
+        gap: 8px;
+    }
+
+    .dual_dialogue_column {
+        flex: 1;
+        overflow: hidden;
+    }
+
+    /* Each column occupies ~half the content area.
+       --dd-*-l-margin values are relative to the column's left edge (after page padding is applied on the container). */
+    .dual_dialogue_column p {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .dual_dialogue_column .character {
+        padding-left: var(--dd-character-l-margin, 1.2in) !important;
+        padding-right: 0 !important;
+    }
+
+    .dual_dialogue_column .dialogue {
+        padding-left: var(--dd-dialogue-l-margin, 0in) !important;
+        padding-right: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    .dual_dialogue_column .parenthetical {
+        padding-left: var(--dd-parenthetical-l-margin, 0.8in) !important;
+        padding-right: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    /* The ::before "(" is absolutely positioned using the global --parenthetical-l-margin.
+       Inside a column, override it with the column-local variable so it aligns with the text. */
+    .dual_dialogue_column .parenthetical::before {
+        left: var(--dd-parenthetical-l-margin, 0.8in);
+    }
+}
+
+/* User settings */
+/* Hover-capable pointers only — same guard, and the same reason, as .card:hover
+ * on the board (see BoardCanvas.module.css). This one sits directly on the
+ * editor's paragraphs, which is where iOS parks its emulated hover point after a
+ * tap in the script, and it recomputes a color-mix() on every re-resolution. A
+ * finger cannot hover, so on touch the rule is pure cost. */
+@media (hover: hover) {
+    .highlight-on-hover .ProseMirror > p:hover {
+        background-color: color-mix(in srgb, var(--editor-script-bg) 95%, var(--editor-text) 5%);
+        background-clip: content-box;
+    }
+}
+
+.scene-background .scene {
+    background-color: var(--editor-scene);
+}
+
+/* ============================================ */
+/*           TITLE PAGE ELEMENTS                */
+/* ============================================ */
+
+/* Base styling for all title-page text lines */
+.ProseMirror > p.tp-text {
+    font-size: var(--font-size);
+    line-height: var(--line-height) !important;
+    margin-top: 0;
+}
+
+/* Text alignment classes (shared by title page and screenplay nodes).
+   Specificity must beat .ProseMirror .element (0,2,0), so we use
+   .ProseMirror p.align-* (0,2,1) — the extra type selector wins on equal !important. */
+.ProseMirror p.align-left {
+    text-align: left !important;
+}
+
+.ProseMirror p.align-center {
+    text-align: center !important;
+}
+
+.ProseMirror p.align-right {
+    text-align: right !important;
+}
+
+/* Format atom nodes — indivisible placeholders */
+.ProseMirror .tp-format-node {
+    display: inline;
+    cursor: default;
+    user-select: all;
+}
+
+.ProseMirror .tp-format-node:not(.tp-format-placeholder) {
+    background: var(--format-node-bg, rgba(100, 150, 255, 0.08));
+    border-bottom: 1px dotted var(--format-node-border, rgba(100, 150, 255, 0.3));
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
+.ProseMirror .tp-format-node.tp-format-placeholder {
+    color: var(--secondary-text);
+    font-style: italic;
+}
+
+.ProseMirror .tp-format-node.ProseMirror-selectednode {
+    background: var(--selection-bg, rgba(100, 150, 255, 0.3));
+    border-radius: 2px;
+}

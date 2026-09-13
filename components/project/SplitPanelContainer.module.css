@@ -62,6 +62,22 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    /*
+     * Exclude the hidden panel's subtree from layout and paint entirely.
+     *
+     * Singleton panels (e.g. the screenplay editor) stay mounted when another
+     * panel is shown — with plain `visibility: hidden` the whole DOM stays in
+     * the layout tree. A 120-page screenplay is a very large ProseMirror DOM, so
+     * any forced reflow on the *visible* panel re-lays it out too. The board
+     * calls `getBoundingClientRect()` on every drag/pan frame while mutating its
+     * own DOM (which dirties layout), so each frame flushes a full-document
+     * relayout that includes the giant hidden editor — the source of the mobile
+     * lag. `content-visibility: hidden` skips the subtree's rendering and adds
+     * layout containment, isolating it from the visible panel's reflows while
+     * preserving its rendered state for an instant re-show. Falls back to plain
+     * `visibility: hidden` on browsers without support.
+     */
+    content-visibility: hidden;
 }
 
 /* Drag handle */
@@ -69,6 +85,10 @@
     width: 6px;
     height: 100%;
     cursor: col-resize;
+    /* The handle owns the horizontal drag (see DragHandle's pointer events).
+     * Without this the browser claims a finger drag as a scroll/pan of the panel
+     * underneath and swallows the pointermove stream before the resize starts. */
+    touch-action: none;
     background: var(--tertiary);
     box-shadow:
         inset 1px 0 0 rgba(0, 0, 0, 0.12),
@@ -95,6 +115,26 @@
     transition: opacity 0.15s ease;
 }
 
+/* Touch devices (tablets): a 6px divider is far below a finger-sized target, so
+ * extend the grabbable area sideways with a transparent overlay. It overflows the
+ * 6px grid column rather than widening it, so the panels either side keep their
+ * measured widths and the divider looks identical. */
+@media (pointer: coarse) {
+    .drag_handle::before {
+        content: "";
+        position: absolute;
+        /* Start below the panel-switcher row (top: 8px, up to 44px tall on touch),
+         * whose left-hand edge the overlay would otherwise clip. The visible 6px
+         * divider is still grabbable up there; only the widened margin stops
+         * short. */
+        top: 52px;
+        bottom: 0;
+        left: -11px;
+        right: -11px;
+        touch-action: none;
+    }
+}
+
 .drag_handle:hover,
 .drag_handle_active {
     background: var(--tertiary-hover);
@@ -109,11 +149,32 @@
 .panel_switcher_anchor {
     position: absolute;
     top: 8px;
-    left: 8px;
-    z-index: 4;
+    /* Distance from the panel's left edge, in one place because the off-screen
+     * slide below has to travel exactly this far plus the row's own width.
+     * Phone hugs the edge like the right-hand toggle does (ProjectWorkspace's
+     * .right_sidebar_toggle); desktop is widened below to meet the content. */
+    --switcher-inset: 8px;
+    left: var(--switcher-inset);
+    /* Above every piece of chrome a panel can float, so the menu this opens is
+     * never covered by it. The panel shell is `position: relative` with no
+     * z-index of its own, so a panel's own floating chrome competes here rather
+     * than being contained: the board's toolbar pills sit at 11 and its asset
+     * error at 12 (BoardCanvas.module.css), the comment gutter at 12
+     * (CommentGutter.module.css). Still below the drag-over drop overlay (50)
+     * and the reader's scroll track (52), which both belong on top of this. */
+    z-index: 13;
     display: flex;
     flex-direction: row;
     gap: 4px;
+    /* Slide the left edge handles off-screen tracking the reader's scroll via
+     * --chrome-hide (0 shown → 1 off-screen left). No transition so it follows
+     * the gesture; the variable stays 0 on desktop, so this is a no-op there. */
+    transform: translateX(calc(var(--chrome-hide, 0) * (-100% - var(--switcher-inset))));
+    opacity: calc(1 - var(--chrome-hide, 0));
+    /* Promoted for the same reason as the right-hand toggle: --chrome-hide is
+     * rewritten on every frame of a reader scroll, and without the hint WebKit
+     * repaints these handles per frame rather than moving a composited layer. */
+    will-change: transform;
 }
 
 .panel_switcher_btn {
@@ -127,11 +188,80 @@
     background-color: var(--secondary);
     border-radius: 16px;
     border: none;
+    /* Same edge shadow the sidebars carry (EditorSidebarNavigation's .element),
+       so these handles read as the same floating chrome. */
+    box-shadow: var(--panel-shadow);
 }
 
-.panel_switcher_btn:hover {
-    opacity: 1;
-    background-color: var(--secondary-hover);
+/* globals.css paints every `svg` with --primary-text, which outranks the colour
+   inherited from the button — so the chevron/menu glyphs are tinted directly. */
+.panel_switcher_btn svg {
+    color: var(--secondary-text);
+}
+
+/* Hover affordances only where a pointer can actually hover — the same guard,
+ * and the same reason, as .card:hover on the board (see BoardCanvas.module.css).
+ * This is the button the left drawer is driven from, so on touch it is precisely
+ * where iOS parks its emulated hover point after every toggle, and the point is
+ * then re-resolved against this rule on each following style change — restyling
+ * the handle for as long as anything on screen is moving. */
+@media (hover: hover) {
+    .panel_switcher_btn:hover {
+        opacity: 1;
+        background-color: var(--secondary-hover);
+    }
+}
+
+/* Touch devices (phone + iPad): enlarge to a comfortable tap target, matching
+ * the right-sidebar edge toggle. */
+@media (pointer: coarse) {
+    .panel_switcher_btn {
+        width: 28px;
+        height: 44px;
+    }
+}
+
+/* Desktop/tablet: at the phone's 8px the handle straddles the left edge of what
+ * the panel is showing — the index-card and page-overview grids start their
+ * content at 20px (.grid padding in SceneCardsPanel/PageOverviewPanel), leaving
+ * over half the pill hanging outside it. Line the row's left edge up with that
+ * content edge, the way the right-hand toggle lines up with the navbar's
+ * Settings button (ProjectWorkspace's .right_sidebar_toggle). */
+@media (min-width: 768px) {
+    .panel_switcher_anchor {
+        --switcher-inset: 20px;
+    }
+}
+
+/* Phone: the navbar is a fixed overlay (see ProjectNavbar), so the panel now
+ * starts at the very top under the bar. Drop the left edge handles below the bar
+ * so they aren't hidden behind it at rest (they still slide off-left as the
+ * reader scrolls via --chrome-hide). */
+@media (max-width: 767px) {
+    .panel_switcher_anchor {
+        top: calc(var(--navbar-height) + 8px);
+    }
+
+    /* Timeline open: the panel starts below the timeline strip, not behind the
+     * fixed bar, so the navbar-height clearance no longer applies — it would push
+     * the handles a bar height too far down. Pin them to the panel's own top edge,
+     * flush under the timeline. */
+    .panel_switcher_anchor.timeline_open {
+        top: 8px;
+    }
+
+    /* Phone: the handles float over the script page itself, which fills the
+     * width here, rather than the --main-bg gutter they sit in on desktop. Same
+     * fill and glyph colour as the right-hand toggle, for the same reason — see
+     * ProjectWorkspace's .right_sidebar_toggle phone rule. */
+    .panel_switcher_btn,
+    .panel_switcher_btn svg {
+        color: var(--primary-text);
+    }
+
+    .panel_switcher_btn {
+        background-color: var(--main-bg);
+    }
 }
 
 .panel_switcher_separator {
@@ -146,4 +276,15 @@
     inset: 0;
     z-index: 9999;
     cursor: col-resize;
+}
+
+/* A tap on the left-edge handles must not park a caret in the chrome — the same
+ * rule, and the same reason, as .sidebar_backdrop in ProjectWorkspace.module.css:
+ * on iOS a caret left in inert chrome makes every later scroll of an empty
+ * document recompute editor state across the whole page. */
+.panel_switcher_anchor,
+.panel_switcher_btn {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { runStoreMigrations } from "@src/lib/persistence/storage-provider/migrations/store-migration-runner";
 import {
+    CURRENT_STORE_VERSION,
     STORE_MIGRATIONS,
     STORE_NAMES,
     type StoreMigration,
@@ -11,7 +12,7 @@ import { StoreMigrationFailedError } from "@src/lib/persistence/storage-provider
 let dbName: string;
 
 function uniqueName() {
-    return `scriptio-test-${Math.random().toString(36).slice(2)}`;
+    return `scenarly-test-${Math.random().toString(36).slice(2)}`;
 }
 
 function openWithMigrations(
@@ -66,7 +67,7 @@ afterEach(async () => {
 
 describe("runStoreMigrations", () => {
     it("applies the full registry on a fresh database", async () => {
-        const db = await openWithMigrations(dbName, 2, STORE_MIGRATIONS);
+        const db = await openWithMigrations(dbName, CURRENT_STORE_VERSION, STORE_MIGRATIONS);
         expect(Array.from(db.objectStoreNames).sort()).toEqual(
             [
                 STORE_NAMES.PROJECTS,
@@ -74,6 +75,9 @@ describe("runStoreMigrations", () => {
                 STORE_NAMES.DICTIONARIES,
                 STORE_NAMES.MIGRATION_BACKUPS,
                 STORE_NAMES.ASSETS,
+                STORE_NAMES.POSTERS,
+                STORE_NAMES.SNAPSHOTS,
+                STORE_NAMES.SNAPSHOT_DATA,
             ].sort(),
         );
         db.close();

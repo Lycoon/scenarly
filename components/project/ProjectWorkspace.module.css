@@ -9,6 +9,16 @@
     overflow: hidden;
 }
 
+/* Stacks the Timeline strip above the split panels, spanning only the width
+ * between the two sidebars. */
+.center_column {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 .panel_area {
     flex: 1;
     position: relative;
@@ -19,8 +29,13 @@
 .right_sidebar_toggle {
     position: absolute;
     top: 8px;
-    right: 30px;
-    z-index: 5;
+    /* Phone: near the edge (the native scrollbar is hidden there, so no overlap).
+     * Desktop offset is bumped below to clear the scrollbar gutter. */
+    right: 8px;
+    /* Same level as the left edge handles (SplitPanelContainer's panel switcher):
+       above the scene-cards grid (12), which covers the panel opaquely — the
+       toggle has to stay reachable while the cards are up. */
+    z-index: 13;
     width: 20px;
     height: 36px;
     display: flex;
@@ -30,9 +45,225 @@
     color: var(--secondary-text);
     background-color: var(--secondary);
     border-radius: 16px;
+    /* Same edge shadow the sidebars carry (EditorSidebarNavigation's .element),
+       so this handle reads as the same floating chrome. */
+    box-shadow: var(--panel-shadow);
+    /* A tap here must not park a caret in the chrome — see .sidebar_backdrop. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.right_sidebar_toggle:hover {
+/* globals.css paints every `svg` with --primary-text, which outranks the colour
+   inherited from the button — so the chevron glyph is tinted directly. */
+.right_sidebar_toggle svg {
+    color: var(--secondary-text);
+}
+
+/* Desktop/tablet: the editor scroll container reserves a scrollbar gutter
+ * (scrollbar-gutter: stable), so an 8px offset sits under the scrollbar. Pull the
+ * handle in to 30px so it clears the gutter and lines up with the same distance
+ * from the right border as the navbar's Settings button (.right_btns margin). */
+@media (min-width: 768px) {
+    .right_sidebar_toggle {
+        right: 30px;
+    }
+}
+
+/* Phone: the navbar is a fixed overlay (see ProjectNavbar), so panel_area now
+ * starts at the very top under the bar. Drop the edge toggle below the bar so it
+ * isn't hidden behind it at rest (it still slides off-right as the reader scrolls
+ * via --chrome-hide). */
+@media (max-width: 767px) {
+    .right_sidebar_toggle {
+        top: calc(var(--navbar-height) + 8px);
+    }
+
+    /* Timeline open: panel_area starts below the timeline strip rather than behind
+     * the fixed bar, so the navbar-height clearance would push the handle a bar
+     * height too far down. Pin it to panel_area's own top, flush under the
+     * timeline (matches the left edge handles and the editor shadow). */
+    .right_sidebar_toggle.timeline_open {
+        top: 8px;
+    }
+
+    /* Phone: the handle floats over the script page itself — the page fills the
+     * width here (see EditorPanel's phone rules) — not the --main-bg gutter it
+     * sits in on desktop. --secondary is white, or a hair off it, in every light
+     * theme, and the page is white, so the pill vanished into it with only the 6%
+     * panel shadow to mark it (the themed editor is no better: its page IS
+     * --secondary). Paint it the project navbar's own colour instead (ProjectNavbar
+     * .container is --main-bg): a shade under the page in every light theme, and
+     * the same surface the bar right above it already shows, so the handle reads
+     * as a piece of that chrome. --tertiary was tried first and was too heavy.
+     * The glyph follows the bar's icons (--primary-text, via the global svg
+     * rule) rather than --secondary-text, which sits under 2.5:1 on the latte and
+     * mint tints. Mirrored by the left edge handles (SplitPanelContainer's
+     * .panel_switcher_btn). */
+    .right_sidebar_toggle,
+    .right_sidebar_toggle svg {
+        color: var(--primary-text);
+    }
+
+    .right_sidebar_toggle {
+        background-color: var(--main-bg);
+    }
+}
+
+/* Hover affordances only where a pointer can actually hover — same guard and
+ * same reason as .card:hover on the board (see BoardCanvas.module.css).
+ *
+ * This toggle is the single most-tapped control on the phone, so it is where iOS
+ * leaves its emulated hover point after every open/close. Unguarded, the stale
+ * point keeps this rule matched: `opacity: 1` then also outranks the
+ * --chrome-hide opacity below (`:hover` is the more specific selector), so the
+ * handle is repainted against a variable it is no longer allowed to follow on
+ * every frame of a scroll. */
+@media (hover: hover) {
+    .right_sidebar_toggle:hover {
+        opacity: 1;
+        background-color: var(--secondary-hover);
+    }
+}
+
+/* Dim + tap-to-close layer behind the phone sidebar drawers. Sits above the
+ * editor but below the drawers (z-index 60). Always mounted AND always rendered
+ * on phone — it fades with the drawer slide and goes inert, but never leaves
+ * hit-testing (see .sidebar_backdrop_hidden for why that distinction matters).
+ * A childless solid-colour div at opacity 0 costs nothing to keep around:
+ * WebKit draws solid-colour layers without a backing store. */
+.sidebar_backdrop {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 55;
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Matches the drawers' 0.25s transform slide. */
+    transition: opacity 0.25s ease;
+
+    /* Never let the closing tap take the DOM selection.
+     *
+     * WebKit's default action for a mouse-down on ordinary content is to place a
+     * collapsed selection at the nearest position, and on iOS every tap is a
+     * synthetic mouse-down. Without this, the tap that closes a drawer parks a
+     * caret inside this fixed, invisible, inert element — outside any editable
+     * root — for the rest of the session. On iOS that caret is not free: after
+     * every layout and every overflow scroll WebKit recomputes selection-dependent
+     * editor state from it, and with no word anywhere in the document for its text
+     * searches to stop at, each recomputation walks the whole document. Measured
+     * on-device as a 0.7–1.8s main-thread block per scroll gesture on an empty
+     * screenplay, and gone the moment one character exists. user-select: none
+     * makes WebKit leave the selection untouched on mouse-down; the edge toggles
+     * and the pen button carry the same rule, and the phone drawers below it.
+     * ViewContext also drops any stray chrome selection when a drawer toggles, as
+     * a safety net for controls this does not cover. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Faded out and inert — but deliberately still RENDERED, no `visibility: hidden`.
+ *
+ * This layer is what a tap-outside lands on, and that tap's own handler closes
+ * the drawers and so applies this class. On iOS, when the element under a tap
+ * stops being rendered, WebKit re-resolves its remembered pointer position onto
+ * whatever now sits beneath the point and re-runs that hit-test and hover chain
+ * on every subsequent layout or style change — restyling anything
+ * hover-sensitive underneath frame after frame. That was originally diagnosed
+ * here as board cards freezing drags at ~8fps, and it is why this element is
+ * kept mounted rather than conditionally rendered (see ProjectWorkspace.tsx).
+ *
+ * `visibility: hidden` takes an element out of rendering just as unmounting
+ * does, so adding it put that bug straight back: closing a drawer by tapping
+ * outside measurably drops frames, while closing the same drawer from its
+ * button — where no element disappears under the point — does not.
+ *
+ * `pointer-events: none` is a different thing and stays: it keeps the layer from
+ * swallowing taps meant for the editor, without removing it from rendering.
+ *
+ * The cost of keeping it is a full-viewport fixed layer at opacity 0. That is
+ * cheap here — a childless solid-colour div, which WebKit draws without a
+ * backing store — and cheaper than the repaint storm hiding it causes.
+ */
+.sidebar_backdrop_hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Touch devices (phone + iPad): enlarge the sidebar toggle to a comfortable tap
+ * target while keeping the desktop pointer size for mouse users. */
+@media (pointer: coarse) {
+    .right_sidebar_toggle {
+        width: 28px;
+        height: 44px;
+    }
+}
+
+/* Slide the edge handle off to the right, tracking the reader's scroll via
+ * --chrome-hide (0 shown → 1 off-screen). Translate rather than collapse so it
+ * never reflows the editor; no transition on the hide so it follows the gesture
+ * (background-color still eases on hover). On desktop the variable stays 0, so
+ * this is a no-op there. */
+.right_sidebar_toggle {
+    transform: translateX(calc(var(--chrome-hide, 0) * (100% + 8px)));
+    opacity: calc(1 - var(--chrome-hide, 0));
+    transition: background-color 0.15s ease;
+    /* --chrome-hide is rewritten every frame of a reader scroll, so this handle
+     * moves and fades on every one of them. Promote it, exactly as the two other
+     * elements driven by the same variable already are (.editor_shadow and
+     * .viewOnlyBanner in EditorPanel.module.css) — without the hint WebKit
+     * repaints it per frame instead of moving a composited layer. */
+    will-change: transform;
+}
+
+/* Phone-only pen button to enter edit mode from the reader. A clean, high-
+ * contrast circle in the bottom-right corner (the design system is monochrome,
+ * so the button borrows the text colour, inverted). Sits above the editor and
+ * clears the home indicator via the safe-area inset. */
+.edit_fab {
+    position: fixed;
+    /* Anchored bottom-LEFT: the right edge is the scroll drag-handle's travel
+     * path, so a right-side FAB would sit under the thumb. */
+    left: calc(20px + var(--safe-left));
+    bottom: calc(20px + var(--safe-bottom));
+    z-index: 55;
+
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+    background-color: var(--primary-text);
+    color: var(--main-bg);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    /* A tap here must not park a caret in the chrome — see .sidebar_backdrop. */
+    -webkit-user-select: none;
+    user-select: none;
+
+    /* Slide down out of view as the reader scrolls into the script, tracking
+     * --chrome-hide 1:1 so only the scroll drag-handle stays visible. No
+     * transition — it follows the gesture rather than easing after it. */
+    opacity: calc(1 - var(--chrome-hide, 0));
+    transform: translateY(calc(var(--chrome-hide, 0) * (100% + 20px + var(--safe-bottom))));
+}
+
+/* The global `svg { color: var(--primary-text) }` rule targets the icon element
+ * directly and would otherwise override the inverted `color` set above, painting
+ * the pen the same shade as the button background (all white in dark mode).
+ * Re-inherit the button's colour so the icon stays legible. */
+.edit_fab svg {
+    color: inherit;
+}
+
+.edit_fab:active {
     opacity: 1;
-    background-color: var(--tertiary-hover);
+    transform: scale(0.94);
 }

@@ -1,0 +1,162 @@
+/* Starts below the navbar so it lines up with the left/right sidebar drawers
+ * rather than covering the bar. Sits above them (z 60) so it overlays an
+ * already-open sidebar. */
+.backdrop {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 70;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.drawer {
+    position: fixed;
+    top: var(--navbar-height);
+    right: 0;
+    bottom: 0;
+    z-index: 71;
+    width: var(--mobile-drawer-width);
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* Same horizontal gutter as the dashboard drawer's --drawer-gutter: picking a
+     * section swaps that drawer in for this one in place, so the close button and
+     * the row labels must land on the same lines on both screens or they visibly
+     * jump across the swap. */
+    padding: 12px calc(16px + var(--safe-right)) calc(20px + var(--safe-bottom)) 16px;
+    overflow-y: auto;
+
+    background-color: var(--main-bg);
+    /* No shadow. Its top edge butts against the navbar, and any blurred shadow
+     * bleeds up over the bar (the drawer sits above it in z-order) as a visible
+     * seam — negative spread only shrinks that bleed, it can't cancel the blur's
+     * tail. Nothing is lost: the drawer always opens over a dimmed backdrop, so a
+     * side shadow against a 40%-black scrim was invisible anyway. */
+
+    transform: translateX(0);
+    transition: transform 0.25s ease;
+}
+
+/* Also how this drawer hands over to (or takes it back from) the dashboard drawer,
+ * which covers this exact rect: this one slides out on the same frame that one
+ * slides in, so the pair reads as a single swipe closing the screen the user is on
+ * and opening the next. See [DashboardContext].swapDrawerScreen. */
+.drawer_closed {
+    transform: translateX(100%);
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    /* Match the left inset of the group labels / items / title row below (all
+     * padding-left: 12px) so the "Menu" title lines up with them. */
+    padding-left: 12px;
+}
+
+/* Same type as the other phone drawer titles (DashboardModal .sidebarTitle,
+ * ProjectPageContainer .sidebar_title) — the drawers swap in for each other in
+ * place, so their headers must read as one. The element carries the face: like
+ * those two this is an <h2>, which is what globals.css gives Josefin. Weight
+ * stays 600 here rather than the heading rule's bold. */
+.header_title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-text);
+}
+
+/* Shared drawer close-button look — kept identical to the dashboard drawer's
+ * .sidebarClose / .close_btn and the project sidebar's .sidebar_close so every
+ * drawer's close button reads the same. */
+.close_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+}
+
+.close_btn:hover {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}
+
+/* One tappable row in the menu. Its position:relative anchors the dropdown panels
+ * (saves/production/read-aloud) that render inside it. */
+.item {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 9px 12px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: var(--primary-text);
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.item:hover,
+.item_active {
+    background-color: var(--secondary-hover);
+}
+
+/* Group heading above a run of dashboard tabs (Project / Preferences / Account). */
+.group_label {
+    padding: 10px 12px 2px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--secondary-text);
+    opacity: 0.7;
+}
+
+/* Anchors the dropdown panels (saves/production/read-aloud) rendered as siblings
+ * of their trigger row. */
+.section {
+    position: relative;
+}
+
+.separator {
+    height: 1px;
+    background-color: var(--separator);
+    margin: 8px 0;
+}
+
+/* Editable title row at the top of the menu. The field is the row's only child —
+ * the desktop's save glyph beside it would only summarise the target rows sitting
+ * right below it here — so it takes the full width, on the same 12px inset as the
+ * items and group labels under it. */
+.title_row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 12px 12px;
+}
+
+.title_input {
+    flex: 1;
+    min-width: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background-color: var(--secondary);
+    color: var(--primary-text);
+}

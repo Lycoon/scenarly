@@ -7,6 +7,34 @@ import { TITLEPAGE_BASE_EXTENSIONS } from "@src/lib/titlepage/editor";
 
 export type PaginationMode = "screenplay" | "titlepage";
 
+/**
+ * DOM attributes applied to every editor's ProseMirror contenteditable element.
+ *
+ * `autocorrect: "on"` maps to iOS `UITextInputTraits.autocorrectionType = .yes`
+ * in the WKWebView, giving writers the same automatic typo correction they get
+ * in every other editor on the platform. This was previously "off" to suppress
+ * the native QuickType bar, but that trait is all-or-nothing: turning off the
+ * bar also turns off correction itself. The bar is the accepted cost — it is
+ * included in the visual-viewport inset, so MobileFormatToolbar rides above it
+ * rather than being overlapped (see useKeyboardInset).
+ *
+ * `writingsuggestions: "false"` disables Apple Intelligence inline writing
+ * suggestions on newer iOS; that is a distinct trait from autocorrection and
+ * does not affect it. `spellcheck: "false"` turns off the browser's native
+ * red-squiggle spellcheck — we ship our own spellcheck engine (see
+ * SpellcheckContext), so the native one is redundant and its long-press menu
+ * adds more unwanted Apple UI. Spell checking and autocorrection are separate
+ * `UITextInputTraits`, so suppressing the squiggles keeps correction working.
+ * Autocapitalize is intentionally left at the default so sentence-case
+ * capitalization still works while typing.
+ */
+export const EDITOR_INPUT_ATTRIBUTES: Record<string, string> = {
+    autocorrect: "on",
+    autocomplete: "off",
+    spellcheck: "false",
+    writingsuggestions: "false",
+};
+
 export interface DocumentEditorFeatures {
     /** Whether comments are enabled (node-anchored comments + margin gutter). */
     comments: boolean;
@@ -20,14 +48,14 @@ export interface DocumentEditorFeatures {
     sceneBookmarks: boolean;
     /** Production-mode scene labels + OMITTED placeholders. */
     sceneLocking: boolean;
+    /** Production revisions: per-line change stamping + gutter stripe + margin asterisks. */
+    revisions: boolean;
     /** Prevent duplicate data-ids on paste. */
     nodeIdDedup: boolean;
     /** Character / location autocomplete menus. */
     suggestions: boolean;
     /** CONT'D / MORE orphan prevention. */
     orphanPrevention: boolean;
-    /** User-configurable keybind actions. */
-    keybinds: boolean;
     /** Fountain auto-format extension. */
     fountain: boolean;
     /** CONT'D extension. */
@@ -78,10 +106,10 @@ export const SCREENPLAY_EDITOR_CONFIG: DocumentEditorConfig = {
         searchHighlights: true,
         sceneBookmarks: true,
         sceneLocking: true,
+        revisions: true,
         nodeIdDedup: true,
         suggestions: true,
         orphanPrevention: true,
-        keybinds: true,
         fountain: true,
         contd: true,
         spellcheck: true,
@@ -101,10 +129,10 @@ export const TITLEPAGE_EDITOR_CONFIG: DocumentEditorConfig = {
         searchHighlights: false,
         sceneBookmarks: false,
         sceneLocking: false,
+        revisions: false,
         nodeIdDedup: false,
         suggestions: false,
         orphanPrevention: false,
-        keybinds: false,
         fountain: false,
         contd: false,
         spellcheck: false,

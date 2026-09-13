@@ -1,0 +1,383 @@
+/* The format pill: one item in the bottom chrome row, which positions it (see
+ * EditorBottomBar.module.css). A rounded island rather than a full-width docked
+ * bar, so it echoes the iOS keyboard's rounded shape and reads as part of the
+ * same floating chrome instead of a hard-edged bar butted against it. */
+.toolbar {
+    /* Anchor for the spelling panel and the element menu, both of which hang off
+     * the pill's own edges — without this they would resolve against the row,
+     * which is the full width of the screen. */
+    position: relative;
+    /* The row is click-through so its gaps don't swallow taps meant for the
+     * script; each island opts back in for itself. */
+    pointer-events: auto;
+
+    /* Metrics of the controls, kept here rather than inlined at each rule so the
+     * width below can be *derived* from them and stays true if a control is
+     * resized. Consumed by .btn, .group, .separator, .element_trigger and
+     * .format_group — all inside this pill. The row's own islands deliberately do
+     * not read them: they are a separate stylesheet and match the 40px button size
+     * by hand rather than reaching across for a private custom property. */
+    --tb-btn-size: 40px;
+    --tb-btn-gap: 4px;
+    --tb-group-gap: 6px;
+    --tb-bar-gap: 8px;
+    --tb-bar-padding: 8px;
+    --tb-element-width: 128px;
+    --tb-separator-margin: 4px;
+    /* One trio of buttons: B/I/U, and likewise the alignment group. */
+    --tb-group-width: calc(3 * var(--tb-btn-size) + 2 * var(--tb-btn-gap));
+    /* The 1px rule plus the margins holding it off its neighbours. */
+    --tb-separator-width: calc(1px + 2 * var(--tb-separator-margin));
+    /* Exactly the width of everything that is *always* in the bar: the element
+     * picker, then the two button trios with a separator between them. Sizes as
+     * border-box (globals.css), hence the two 1px borders. Terms in layout order:
+     * borders, padding, picker, bar gap, the two trios, the gaps around the
+     * separator, the separator. Currently 431px. */
+    --tb-base-width: calc(
+        2px + (2 * var(--tb-bar-padding)) + var(--tb-element-width) + var(--tb-bar-gap) +
+            (2 * var(--tb-group-width)) + (2 * var(--tb-group-gap)) + var(--tb-separator-width)
+    );
+
+    /* Basis rather than a width: on a tablet the bar shrink-wraps to
+     * --tb-base-width, which is the width of the *always-present* controls, so
+     * the advanced actions land past the edge of .format_group and are reached by
+     * scrolling the row rather than by widening the bar to hold them. Sizing off
+     * the constant set also keeps the width from twitching as the caret moves in
+     * and out of the contexts those actions apply to. On a phone the row is
+     * narrower than that basis, so the bar shrinks to the available width instead
+     * and the controls scroll — hence min-width: 0, without which a flex item
+     * refuses to shrink below its content. */
+    flex: 0 1 var(--tb-base-width);
+    min-width: 0;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--tb-bar-gap);
+
+    padding: 6px var(--tb-bar-padding);
+
+    background-color: var(--secondary);
+    border: 1px solid var(--separator);
+    /* Fully rounded ends — the bar reads as a floating pill above the keyboard.
+     * ~half the bar height (40px controls + 6px padding) gives clean pill caps. */
+    border-radius: 26px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+
+    user-select: none;
+    -webkit-user-select: none;
+    /* Belt-and-braces with the pointer-down preventDefault: never let a tap here
+     * steal focus / dismiss the keyboard. */
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Transparent full-screen shield raised for a beat after an element pick. Sits
+ * under the toolbar (z 60) but over everything else, so the tap iOS synthesizes
+ * at touch-end lands here — never on the editor, where it would move the caret. */
+.tap_guard {
+    position: fixed;
+    inset: 0;
+    z-index: 59;
+    background: transparent;
+}
+
+.group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--tb-btn-gap);
+    /* Don't compress inside the scrollable row — overflow and scroll instead. */
+    flex-shrink: 0;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tb-btn-size);
+    height: var(--tb-btn-size);
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--secondary-text);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.btn:active {
+    background-color: var(--secondary-hover);
+}
+
+.btn.active {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}
+
+.separator {
+    width: 1px;
+    height: 22px;
+    flex-shrink: 0;
+    background-color: var(--separator);
+    margin-inline: var(--tb-separator-margin);
+}
+
+/* Holds the scrolling row and its edge fades. The fades can't live inside the
+ * row — they would slide away with the buttons they mark — so they anchor here
+ * instead, and the wrapper takes over the row's flex sizing (the row then fills
+ * it). Not a clipping context: the spelling panel hangs off the bar itself. */
+.format_wrap {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Grouped B/I/U + alignment, then the advanced actions. Takes the width left of
+ * the pinned element selector and scrolls horizontally when it doesn't fit, so
+ * the controls are never clipped on a narrow phone — and, since the bar is
+ * capped at the width of the always-present controls (see --tb-base-width), so
+ * the advanced actions are always a sideways drag away rather than stretching
+ * the bar. Scrollbar hidden — it's a touch-drag surface. */
+.format_group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--tb-group-gap);
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Stop at this row's own ends: without it, a drag that runs past the last
+     * control chains out to the document, and since the bar is fixed chrome that
+     * pans it clean off the screen. The vertical half of the same gesture is
+     * refused outright by the row's pan lock (see usePagePanLock). */
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+
+.format_group::-webkit-scrollbar {
+    display: none;
+}
+
+/* Edge cue that the row continues that way: with the bar sized to the
+ * always-present controls the advanced actions sit exactly past the right edge,
+ * and on a phone even the alignment group is cut off — so without one, a control
+ * the user saw a moment ago reads as having vanished.
+ *
+ * Paints the bar's own background over the row rather than masking the row out.
+ * A mask only *removes* paint, and the row and its buttons are already
+ * transparent over that same background, so masking the edge changed nothing
+ * except where a glyph happened to fall under it — which is why the mask-image
+ * this replaces was invisible on device.
+ *
+ * pointer-events: none so the fade never swallows the drag that scrolls the row:
+ * the edges are exactly where that gesture tends to start. */
+.fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+}
+
+.fade_start {
+    left: 0;
+    background: linear-gradient(to right, var(--secondary), transparent);
+}
+
+.fade_end {
+    right: 0;
+    background: linear-gradient(to left, var(--secondary), transparent);
+}
+
+/* Element-type selector (Scene, Action, Character, …). Pinned (never scrolls)
+ * so its upward menu is never clipped by the scroll container, and the primary
+ * control stays put. */
+.element {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+}
+
+.element_trigger {
+    display: flex;
+    align-items: center;
+    /* Push the label to the left and pin the chevron to the right edge so the
+     * fixed width stays stable regardless of label length. */
+    justify-content: space-between;
+    gap: 4px;
+    /* Fixed width so the bar's layout never reflows when the selected element
+     * (and thus its label length, "Scene" vs "Parenthetical") changes. */
+    width: var(--tb-element-width);
+    flex-shrink: 0;
+    height: var(--tb-btn-size);
+    padding: 0 12px;
+    border: none;
+    /* Fully rounded pill, echoing the parent toolbar's rounded ends. */
+    border-radius: 20px;
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.element_label {
+    /* Courier Prime, matching the menu items (.element_item) and the desktop
+     * dropdown, so the selected element reads in the screenplay font too. */
+    font-family: var(--font-courier);
+    /* Truncate rather than grow — the trigger width is fixed. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chevron {
+    flex-shrink: 0;
+    color: var(--secondary-text);
+    transition: transform 0.15s ease;
+}
+
+.chevron_open {
+    transform: rotate(180deg);
+}
+
+/* Menu opens upward, above the toolbar, since the bar sits on the keyboard. */
+.element_menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 10;
+
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    min-width: 180px;
+    max-height: 260px;
+    overflow-y: auto;
+    /* Keep a flick through the list from chaining to the document once it hits
+     * either end — that pan takes the whole bar off screen (see .format_group). */
+    overscroll-behavior: contain;
+    padding: 6px;
+
+    background-color: var(--secondary);
+    border: 1px solid var(--separator);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.element_item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--primary-text);
+    /* Courier Prime, matching the desktop element dropdown (.dropdown_item). */
+    font-family: var(--font-courier);
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    white-space: nowrap;
+}
+
+.element_item:active {
+    background-color: var(--secondary-hover);
+}
+
+.element_item_active {
+    background-color: var(--secondary-hover);
+    font-weight: 600;
+}
+
+/* Spelling suggestions for the word under the caret. Opens upward like the
+ * element menu, but anchored to the bar's right edge rather than to its button:
+ * that button rides the scrolling row, so anchoring to it would both clip the
+ * panel and slide it off with the buttons. The advanced controls sit at the end
+ * of the row, so the right edge is where the finger already is. */
+.spell_menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    min-width: 180px;
+    /* Never wider than the bar it hangs off — the suggestions are single words. */
+    max-width: min(280px, 100%);
+    max-height: 260px;
+    overflow-y: auto;
+    /* As with .element_menu — the suggestions must not chain their scroll out. */
+    overscroll-behavior: contain;
+    padding: 6px;
+
+    background-color: var(--secondary);
+    border: 1px solid var(--separator);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.spell_item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--primary-text);
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    /* Long words wrap rather than widening the panel past its cap. */
+    overflow-wrap: anywhere;
+}
+
+.spell_item:active {
+    background-color: var(--secondary-hover);
+}
+
+/* "Add to dictionary" — an action rather than a correction, so it's set apart
+ * from the suggestions above it. */
+.spell_dictionary {
+    margin-top: 2px;
+    border-top: 1px solid var(--separator);
+    border-radius: 0 0 8px 8px;
+    padding-top: 12px;
+    color: var(--secondary-text);
+    font-size: 14px;
+}
+
+/* Placeholder row while the worker is thinking / when it comes back empty. */
+.spell_status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    color: var(--secondary-text);
+    font-size: 14px;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

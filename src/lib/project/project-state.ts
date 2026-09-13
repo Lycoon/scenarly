@@ -11,6 +11,7 @@ import { ScreenplaySchema } from "../screenplay/editor";
 import { TitlePageSchema } from "../titlepage/editor";
 import { prosemirrorJSONToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from "y-prosemirror";
 import type { YjsLocalProvider } from "../persistence/y-local-provider";
+import { recordProjectUpdate } from "../persistence/update-log";
 import type { ProjectMigrationOutcome } from "./migrations/project-migration-runner";
 
 import { ProjectState } from "./project-doc";
@@ -42,8 +43,9 @@ export type {
     BoardData,
     DocumentNode,
     DocumentNodeType,
-    OutlineItem,
-    OutlineItemSource,
+    TimelineLayer,
+    TimelineClip,
+    TimelineClipSource,
     ProjectData,
     TypedMap,
 } from "./project-doc";
@@ -86,6 +88,16 @@ export interface ProjectYjsState {
     ydoc: ProjectState | null;
     provider: ThrottledWebsocketProvider | null;
     status: ProjectStatus;
+    /**
+     * True once the doc holds everything it is going to get before the user
+     * touches it: the local cache has loaded *and* the cloud has synced (or is
+     * known not to apply — local-only project, no token, offline, init error).
+     *
+     * `status.kind === "ready"` only covers the local half, so anything that
+     * writes to the doc based on what is *missing* from it must wait for this
+     * instead; see `seedTitlePage`.
+     */
+    isSynced: boolean;
     connectionStatus: ConnectionStatus;
     users: CollaboratorInfo[];
 }
@@ -195,7 +207,8 @@ export const projectDataOf = (ydoc: ProjectState): ProjectData => ({
     production: ydoc.production().toJSON(),
     comments: ydoc.comments().toJSON(),
     documents: ydoc.documents().toJSON(),
-    outline: ydoc.outline().toJSON(),
+    timelineLayers: ydoc.timelineLayers().toJSON(),
+    timelineClips: ydoc.timelineClips().toJSON(),
     shelf: ydoc.shelf().toJSON(),
     dictionary: ydoc.dictionary().toJSON(),
     documentContent: documentContentOf(ydoc),
@@ -243,7 +256,8 @@ export const applyProjectData = (ydoc: ProjectState, data: Partial<ProjectData>)
         fillMap(asMap(ydoc.production()), data.production);
         fillMap(asMap(ydoc.comments()), data.comments);
         fillMap(asMap(ydoc.documents()), data.documents);
-        fillMap(asMap(ydoc.outline()), data.outline);
+        fillMap(asMap(ydoc.timelineLayers()), data.timelineLayers);
+        fillMap(asMap(ydoc.timelineClips()), data.timelineClips);
         fillMap(asMap(ydoc.shelf()), data.shelf);
         fillMap(asMap(ydoc.dictionary()), data.dictionary);
 
@@ -315,7 +329,8 @@ export const clearProjectData = (ydoc: ProjectState): void => {
         ydoc.production().clear();
         ydoc.comments().clear();
         ydoc.documents().clear();
-        ydoc.outline().clear();
+        ydoc.timelineLayers().clear();
+        ydoc.timelineClips().clear();
         ydoc.shelf().clear();
         ydoc.dictionary().clear();
     });
@@ -352,9 +367,60 @@ type SessionEntry = {
     refCount: number;
     disposeTimer: ReturnType<typeof setTimeout> | null;
     subscribers: Set<() => void>;
+    // Timestamp of the last cached-updatedAt bump, to throttle them (see the
+    // "update" observer in acquireSession).
+    lastLocalEditTouchAt: number;
 };
 
 const sessionCache = new Map<string, SessionEntry>();
+
+/**
+ * The Y.Doc the editor session is holding for `projectId`, or null when the
+ * project isn't open.
+ *
+ * Exposed so out-of-band writers (the `.scenarly` merge, the file-binding
+ * write-back) act on the document the user is actually looking at rather than
+ * on a second replica loaded beside it. Both would converge through IndexedDB
+ * eventually, but only this one shows up on screen without a reload.
+ */
+export const getLiveProjectDoc = (projectId: string): ProjectState | null =>
+    sessionCache.get(projectId)?.state ?? null;
+
+/**
+ * Run `fn` against a project's Yjs document — the live session doc when the
+ * project is open, a temporary local replica otherwise.
+ *
+ * The rule this encodes is {@link getLiveProjectDoc}'s: act on the document the
+ * user is looking at, and only load a second replica when there is no session.
+ * It lives here, beside the cache it consults, because both out-of-band callers
+ * need it — the `.scenarly` merge and the file-binding writer — and a second
+ * copy of the rule is a second thing to keep in step.
+ *
+ * `flushMs` is for callers whose `fn` *writes*: a replica's provider is torn
+ * down as soon as this returns, and IndexedDB needs a moment to flush first
+ * (matching `writeYjsDocumentLocally`). Readers leave it at zero and pay
+ * nothing. It never applies to the live doc, which nobody here owns.
+ */
+export async function withProjectDoc<T>(
+    projectId: string,
+    fn: (doc: ProjectState) => Promise<T> | T,
+    { flushMs = 0 }: { flushMs?: number } = {},
+): Promise<T> {
+    const live = getLiveProjectDoc(projectId);
+    if (live) return fn(live);
+
+    const { createLocalYjsProvider } = await import("../persistence/y-local-provider");
+    const doc = new ProjectState();
+    const provider = await createLocalYjsProvider(projectId, doc);
+    try {
+        await new Promise<void>((resolve) => provider.on("synced", () => resolve()));
+        return await fn(doc);
+    } finally {
+        if (flushMs > 0) await new Promise((resolve) => setTimeout(resolve, flushMs));
+        provider.destroy();
+        doc.destroy();
+    }
+}
 
 const notifySubscribers = (entry: SessionEntry): void => {
     entry.subscribers.forEach((cb) => cb());
@@ -365,6 +431,169 @@ const notifySubscribers = (entry: SessionEntry): void => {
  * of async init paths whose entry was disposed before they completed.
  */
 const isLive = (entry: SessionEntry): boolean => sessionCache.get(entry.projectId) === entry;
+
+// Minimum gap between cached-updatedAt bumps while editing. The screenplay content
+// lives in this Yjs doc, separate from the cached project metadata, so a local
+// edit is the only signal that "last edited" should move — but the projects list
+// renders that at day-level granularity, so a coarse throttle is plenty and avoids
+// an IndexedDB write per keystroke.
+const PROJECT_TOUCH_THROTTLE_MS = 30_000;
+
+/**
+ * File-binding hooks, reached through dynamic imports.
+ *
+ * That module imports the `.scenarly` open flow, which imports this one, so a
+ * static import here would close a cycle. Deferring also keeps the Tauri fs
+ * plugin out of the initial graph on web, where no project is ever file-backed.
+ *
+ * The module handle is cached because the edit hook below runs on every
+ * keystroke: after the first load this is a synchronous call, not an await per
+ * character.
+ */
+let fileBindingModule: typeof import("../persistence/file-binding") | null = null;
+
+const getFileBinding = async (): Promise<typeof import("../persistence/file-binding")> => {
+    if (!fileBindingModule) fileBindingModule = await import("../persistence/file-binding");
+    return fileBindingModule;
+};
+
+/**
+ * Recording is statically imported, unlike the rest of the file-binding hooks:
+ * `update-log` depends on nothing but yjs, so there is no cycle to break and no
+ * Tauri plugin to keep out of the web bundle — and this runs on every keystroke,
+ * where even a resolved dynamic import is a hop worth not taking.
+ */
+const notifyFileBindingEdit = (projectId: string): void => {
+    // Deliberately does not load the module: this runs on every keystroke, and
+    // an await there would put a microtask (and, the first time, a chunk fetch)
+    // in the editor's update path. `loadFileBindingFor` loads it once when the
+    // session becomes ready, which is before any edit can happen; until then
+    // there is no binding to notify anyway.
+    fileBindingModule?.scheduleFileWrite(projectId);
+};
+
+/**
+ * Device-local version history, reached the same way and for the same reasons:
+ * the module pulls in the storage provider and the retention machinery, and the
+ * edit hook below runs on every keystroke — so the handle is cached and the
+ * notify is synchronous.
+ */
+let localSnapshotsModule: typeof import("../saves/local-snapshots") | null = null;
+
+const getLocalSnapshots = async (): Promise<typeof import("../saves/local-snapshots")> => {
+    if (!localSnapshotsModule) localSnapshotsModule = await import("../saves/local-snapshots");
+    return localSnapshotsModule;
+};
+
+/** Same rule as {@link notifyFileBindingEdit}: no await on the typing path. The
+ *  scheduler is started on `synced`, before any edit can reach this, and a
+ *  project it never started for is one this is a no-op for anyway. */
+const notifyLocalSnapshotEdit = (projectId: string): void => {
+    localSnapshotsModule?.notifyLocalSnapshotEdit(projectId);
+};
+
+/**
+ * Start snapshotting — local-only projects only, since a cloud project's history
+ * is the DurableObject's to keep.
+ *
+ * A cloud project is not simply skipped: it may still be carrying snapshots from
+ * before it was promoted, and this is the one moment anything looks. See
+ * `discardLocalSnapshots` for how they get stranded and why nothing else would
+ * ever collect them. Same shape as the cloud asset reconcile — a sweep on open,
+ * not on every edit.
+ */
+const startLocalSnapshotsFor = async (projectId: string): Promise<void> => {
+    try {
+        const { isLocalOnlyProject } = await import("../persistence/storage-provider/local-persistence");
+        const snapshots = await getLocalSnapshots();
+        if (await isLocalOnlyProject(projectId)) snapshots.startLocalSnapshots(projectId);
+        else await snapshots.discardLocalSnapshots(projectId);
+    } catch (e) {
+        console.warn("[project-state] failed to start local snapshots:", e);
+    }
+};
+
+/** Last chance to capture the final minute of work before the session goes. */
+const releaseLocalSnapshotsFor = async (projectId: string): Promise<void> => {
+    // Nothing was ever scheduled if the module never loaded, so don't load it
+    // now just to tear down state that doesn't exist.
+    if (!localSnapshotsModule) return;
+    try {
+        await localSnapshotsModule.flushLocalSnapshots(projectId);
+        localSnapshotsModule.releaseLocalSnapshots(projectId);
+    } catch (e) {
+        console.warn("[project-state] failed to flush local snapshots:", e);
+    }
+};
+
+const loadFileBindingFor = async (projectId: string): Promise<void> => {
+    try {
+        await (await getFileBinding()).loadFileBinding(projectId);
+    } catch (e) {
+        console.warn("[project-state] failed to load file binding:", e);
+    }
+};
+
+/** Last chance to get the project's file up to date before the session goes. */
+const releaseFileBindingFor = async (projectId: string): Promise<void> => {
+    try {
+        const { flushNow, releaseFileBinding } = await getFileBinding();
+        await flushNow(projectId);
+        releaseFileBinding(projectId);
+    } catch (e) {
+        console.warn("[project-state] failed to flush file binding:", e);
+    }
+};
+
+const bumpProjectUpdatedAt = async (projectId: string): Promise<void> => {
+    try {
+        const { touchCachedProject } = await import("../persistence/storage-provider/local-persistence");
+        await touchCachedProject(projectId);
+    } catch (e) {
+        console.warn("[project-state] failed to bump project updatedAt:", e);
+    }
+};
+
+/**
+ * Stamp the doc's `lineageId` if it has none yet — the "doc creation" moment for
+ * a project whose Y.Doc is built lazily on first open rather than at the moment
+ * its library row is written.
+ *
+ * Waits for the cloud half of sync, not just the local cache, for the same
+ * reason `seedTitlePage` does: readiness only means IndexedDB has loaded, so a
+ * second device would otherwise decide "this project has no lineage" while the
+ * real doc — carrying the stamp the first device wrote — is still in flight, and
+ * mint a competing one. `lineageId` is write-once by design
+ * (`ProjectRepository.ensureLineageId`), so the guard here is about not racing
+ * the value in, not about repeating the write.
+ *
+ * Read-only replicas are skipped by the repository's own write guard: a viewer
+ * must not author ops, and the owner's stamp reaches them through sync anyway.
+ */
+const ensureDocLineage = async (entry: SessionEntry): Promise<void> => {
+    // Cheap pre-check on the hot path — this runs from every cloud-sync
+    // transition, and the overwhelming majority of them are on a stamped doc.
+    if (entry.state.metadata().get("lineageId")) return;
+
+    try {
+        const { createProjectRepository } = await import("./project-repository");
+        if (!isLive(entry)) return;
+        createProjectRepository(entry.state)?.ensureLineageId();
+    } catch (e) {
+        console.warn("[project-state] failed to stamp project lineage:", e);
+    }
+};
+
+/**
+ * The cloud side has given us everything it is going to. Single chokepoint so
+ * the lineage stamp above can hang off it rather than being repeated at each of
+ * the five paths that reach this state (synced, local-only, no token, offline,
+ * init error).
+ */
+const markCloudSynced = (entry: SessionEntry): void => {
+    entry.isCloudSynced = true;
+    void ensureDocLineage(entry);
+};
 
 const initLocalProvider = async (entry: SessionEntry): Promise<void> => {
     const { createLocalYjsProvider } = await import("../persistence/y-local-provider");
@@ -388,6 +617,8 @@ const initLocalProvider = async (entry: SessionEntry): Promise<void> => {
         }
         entry.isLocalReady = true;
         notifySubscribers(entry);
+        void loadFileBindingFor(entry.projectId);
+        void startLocalSnapshotsFor(entry.projectId);
         void initCloudProvider(entry);
     });
 };
@@ -406,7 +637,7 @@ const initCloudProvider = async (entry: SessionEntry): Promise<void> => {
         if (await isLocalOnlyProject(entry.projectId)) {
             if (!isLive(entry)) return;
             entry.connectionStatus = "disconnected";
-            entry.isCloudSynced = true;
+            markCloudSynced(entry);
             notifySubscribers(entry);
             return;
         }
@@ -415,7 +646,7 @@ const initCloudProvider = async (entry: SessionEntry): Promise<void> => {
         if (!isLive(entry)) return;
         if (!token) {
             entry.connectionStatus = "disconnected";
-            entry.isCloudSynced = true;
+            markCloudSynced(entry);
             // 403 means the cloud project was deleted or the user was removed.
             // Surface the recovery dialog on both desktop and web — the local
             // cache is still valid and the user should choose what to do with it.
@@ -481,13 +712,13 @@ const initCloudProvider = async (entry: SessionEntry): Promise<void> => {
 
         cloudProvider.on("status", (e: { status: string }) => {
             entry.connectionStatus = e.status as ConnectionStatus;
-            if (e.status === "connected" && cloudProvider.synced) entry.isCloudSynced = true;
+            if (e.status === "connected" && cloudProvider.synced) markCloudSynced(entry);
             notifySubscribers(entry);
         });
 
         cloudProvider.on("sync", (isSynced: boolean) => {
             if (isSynced) {
-                entry.isCloudSynced = true;
+                markCloudSynced(entry);
                 notifySubscribers(entry);
             }
         });
@@ -528,7 +759,7 @@ const initCloudProvider = async (entry: SessionEntry): Promise<void> => {
         console.error("[ProjectYjs] Failed to initialize provider:", e);
         if (!isLive(entry)) return;
         entry.connectionStatus = "disconnected";
-        entry.isCloudSynced = true;
+        markCloudSynced(entry);
         notifySubscribers(entry);
     }
 };
@@ -565,8 +796,40 @@ const acquireSession = (projectId: string, userInfo: UserInfo): SessionEntry => 
         refCount: 1,
         disposeTimer: null,
         subscribers: new Set(),
+        lastLocalEditTouchAt: 0,
     };
     sessionCache.set(projectId, entry);
+
+    // Bump the project's cached "last edited" on local edits. The content is in
+    // this doc, not the cached project row, so nothing else moves updatedAt. Only
+    // local transactions count (tr.local ignores remote/collab sync and the initial
+    // IndexedDB load), and only once the doc is ready (isLocalReady ignores the
+    // load/migration writes that run before it flips). The doc's own destroy() on
+    // session dispose removes this observer.
+    entry.state.on("update", (update: Uint8Array, _origin: unknown, _doc: Y.Doc, tr: Y.Transaction) => {
+        if (!entry.isLocalReady) return;
+
+        // Every update reaching the document goes into the bound file's log,
+        // local or remote alike: the log's job is to reproduce this document, and
+        // a collaborator's edit is content the file would otherwise never carry.
+        // Only the scheduling below is local-only. A no-op unless the project has
+        // a file bound and its log is armed (see update-log).
+        recordProjectUpdate(entry.projectId, update);
+
+        if (!tr.local) return;
+
+        // Restart the bound file's idle timer on every edit. Unthrottled, unlike
+        // the updatedAt bump below: this only resets a timer, and throttling it
+        // would let a burst of typing start a write mid-burst.
+        notifyFileBindingEdit(entry.projectId);
+        notifyLocalSnapshotEdit(entry.projectId);
+
+        const now = Date.now();
+        if (now - entry.lastLocalEditTouchAt < PROJECT_TOUCH_THROTTLE_MS) return;
+        entry.lastLocalEditTouchAt = now;
+        void bumpProjectUpdatedAt(entry.projectId);
+    });
+
     void initLocalProvider(entry);
     return entry;
 };
@@ -590,11 +853,81 @@ const releaseSession = (projectId: string): void => {
             } catch {}
             entry.cloudProvider.destroy();
         }
+        // Before the doc goes: the debounce may still be pending, and closing a
+        // project is exactly when the file must be current.
+        await releaseFileBindingFor(projectId);
+        await releaseLocalSnapshotsFor(projectId);
+
         entry.localProvider?.destroy();
         entry.state.destroy();
         sessionCache.delete(projectId);
     }, 0);
 };
+
+/**
+ * Tear a session down now, regardless of who is still holding it.
+ *
+ * Only for the restore below, where the live doc has become a liability: it
+ * holds the pre-restore content, and Yjs is additive, so there is no way to walk
+ * it back. Leaving it in the cache would make it the answer `withProjectDoc`
+ * gives every out-of-band writer that runs before the reload — which is exactly
+ * how the restored document would get written back over the bound file.
+ */
+const discardSession = (projectId: string): void => {
+    const entry = sessionCache.get(projectId);
+    if (!entry) return;
+    sessionCache.delete(projectId);
+    if (entry.disposeTimer) {
+        clearTimeout(entry.disposeTimer);
+        entry.disposeTimer = null;
+    }
+    entry.cloudProvider?.destroy();
+    entry.localProvider?.destroy();
+    entry.state.destroy();
+};
+
+/**
+ * Replace a local project's document with a stored version.
+ *
+ * The local twin of the `document-restored` handler above, and it works the same
+ * way, because it has to: a CRDT only ever grows, so "restore" cannot mean
+ * applying an old update to the current doc — it means throwing the current doc
+ * away and rebuilding from the snapshot. Hence clearing IndexedDB rather than
+ * writing over it, and a reload (the caller's) rather than a re-render.
+ *
+ * The restored bytes may be from any past version of the schema; nothing here
+ * migrates them, because the reload's `synced` handler runs `migrateProjectDoc`
+ * on whatever it loads — the same job the Worker does inline after its restore,
+ * where there is no reload to do it.
+ *
+ * Does not reload the page itself: the caller has a bound file to rewrite from
+ * the restored document first, and navigation would take the page away
+ * mid-write. See `restoreLocalSnapshot`.
+ */
+export async function restoreLocalDocument(projectId: string, update: Uint8Array): Promise<void> {
+    const entry = sessionCache.get(projectId);
+    try {
+        if (entry?.localProvider?.clearData) {
+            await entry.localProvider.clearData();
+            // clearData destroys the provider on its way out; forget it here so
+            // the teardown below doesn't destroy it a second time.
+            entry.localProvider = null;
+        } else {
+            const { clearYjsData } = await import("../persistence/storage-provider/local-persistence");
+            await clearYjsData(projectId);
+        }
+    } catch (e) {
+        console.warn("[project-state] failed to clear local cache before restore:", e);
+    }
+
+    const restored = new ProjectState();
+    Y.applyUpdate(restored, update);
+    const { writeYjsDocumentLocally } = await import("../persistence/y-local-provider");
+    await writeYjsDocumentLocally(projectId, restored);
+    restored.destroy();
+
+    discardSession(projectId);
+}
 
 // -------------------------------- //
 //          MAIN HOOK               //
@@ -708,6 +1041,7 @@ export const useProjectYjs = ({
         ydoc: entry?.state ?? null,
         provider: entry?.cloudProvider ?? null,
         status: computeStatus(entry),
+        isSynced: !!entry && entry.isLocalReady && entry.isCloudSynced,
         connectionStatus: entry?.connectionStatus ?? "disconnected",
         users: entry?.users ?? [],
         refreshAndReconnect,

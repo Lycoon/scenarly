@@ -14,13 +14,15 @@ import {
     ShelfEntryType,
     ShelfVersionMeta,
     DocumentNode,
-    OutlineItem,
+    TimelineLayer,
+    TimelineClip,
     screenplayOf,
 } from "./project-state";
 import { CharacterMap } from "../screenplay/characters";
 import { LocationMap } from "../screenplay/locations";
 import { computeSceneItems, PersistentScene, PersistentSceneMap, TransientScene } from "../screenplay/scenes";
 import { PersistentPage, PersistentPageMap } from "../screenplay/page-locking";
+import { RevisionBaseEntry, RevisionBaseline, RevisionDisplayMode } from "../screenplay/revisions";
 import { PageFormat } from "../utils/enums";
 import { generateNodeId } from "../screenplay/nodes";
 import { JSONContent } from "@tiptap/react";
@@ -145,6 +147,52 @@ export class ProjectRepository {
     setAuthor(author: string): void {
         if (this.guardWrite("setAuthor")) return;
         this.ydoc.metadata().set("author", author);
+    }
+
+    /** Target feature length in minutes (defaults to 90 when unset). */
+    getFeatureLength(): number {
+        return this.ydoc.metadata().get("featureLength") ?? 90;
+    }
+
+    setFeatureLength(minutes: number): void {
+        if (this.guardWrite("setFeatureLength")) return;
+        this.ydoc.metadata().set("featureLength", minutes);
+    }
+
+    /**
+     * The doc's lineage stamp, or `undefined` on a doc that was never stamped
+     * (a read-only replica whose owner predates the stamp, or a doc rebuilt from
+     * a flat format before `ensureLineageId` ran). Callers must treat absence as
+     * "not mergeable", never as "matches".
+     */
+    getLineageId(): string | undefined {
+        return this.ydoc.metadata().get("lineageId");
+    }
+
+    /**
+     * Stamp this doc's lineage — the single write path for {@link ProjectMetadata.lineageId}.
+     *
+     * Write-once by construction: an existing value is returned untouched and
+     * never replaced. That guard is the whole point of routing through here.
+     * `lineageId` is an ordinary Y.Map key, so two clients setting different
+     * values would merge last-writer-wins and leave a doc claiming a history it
+     * does not have — which is worse than no lineage at all, because the merge
+     * planner would then happily duplicate a screenplay into itself.
+     *
+     * Pass `lineageId` to adopt a lineage the caller already knows (a replica
+     * built from someone else's binary export, where preserving it is what makes
+     * the next file from that sender merge). Omit it to mint a fresh one, which
+     * is what a genuinely new document — including one rebuilt from a flat
+     * format — must get.
+     */
+    ensureLineageId(lineageId?: string): string | undefined {
+        const existing = this.getLineageId();
+        if (existing) return existing;
+        if (this.guardWrite("ensureLineageId")) return undefined;
+
+        const next = lineageId ?? uuidv7();
+        this.ydoc.metadata().set("lineageId", next);
+        return next;
     }
 
     observeMetadata(callback: (metadata: Partial<ProjectMetadata>) => void): () => void {
@@ -369,6 +417,46 @@ export class ProjectRepository {
         if (this.guardWrite("setMoreLabel")) return;
         this.ydoc.layout().set("moreLabel", label);
     }
+    setShowContdDialogue(show: boolean) {
+        if (this.guardWrite("setShowContdDialogue")) return;
+        this.ydoc.layout().set("showContdDialogue", show);
+    }
+    setShowContdPageBreak(show: boolean) {
+        if (this.guardWrite("setShowContdPageBreak")) return;
+        this.ydoc.layout().set("showContdPageBreak", show);
+    }
+    setHeaderLeft(template: string) {
+        if (this.guardWrite("setHeaderLeft")) return;
+        this.ydoc.layout().set("headerLeft", template);
+    }
+    setHeaderMiddle(template: string) {
+        if (this.guardWrite("setHeaderMiddle")) return;
+        this.ydoc.layout().set("headerMiddle", template);
+    }
+    setHeaderRight(template: string) {
+        if (this.guardWrite("setHeaderRight")) return;
+        this.ydoc.layout().set("headerRight", template);
+    }
+    setShowFirstPageHeader(show: boolean) {
+        if (this.guardWrite("setShowFirstPageHeader")) return;
+        this.ydoc.layout().set("showFirstPageHeader", show);
+    }
+    setFooterLeft(template: string) {
+        if (this.guardWrite("setFooterLeft")) return;
+        this.ydoc.layout().set("footerLeft", template);
+    }
+    setFooterMiddle(template: string) {
+        if (this.guardWrite("setFooterMiddle")) return;
+        this.ydoc.layout().set("footerMiddle", template);
+    }
+    setFooterRight(template: string) {
+        if (this.guardWrite("setFooterRight")) return;
+        this.ydoc.layout().set("footerRight", template);
+    }
+    setShowFirstPageFooter(show: boolean) {
+        if (this.guardWrite("setShowFirstPageFooter")) return;
+        this.ydoc.layout().set("showFirstPageFooter", show);
+    }
     setElementMargins(margins: Record<string, { left: number; right: number }>) {
         if (this.guardWrite("setElementMargins")) return;
         this.ydoc.layout().set("elementMargins", margins);
@@ -400,6 +488,46 @@ export class ProjectRepository {
     setPageLocking(locked: boolean) {
         if (this.guardWrite("setPageLocking")) return;
         this.ydoc.production().set("pageLocking", locked);
+    }
+    setRevisionsEnabled(enabled: boolean) {
+        if (this.guardWrite("setRevisionsEnabled")) return;
+        this.ydoc.production().set("revisionsEnabled", enabled);
+    }
+    setCurrentRevision(index: number) {
+        if (this.guardWrite("setCurrentRevision")) return;
+        this.ydoc.production().set("currentRevision", index);
+    }
+    setRevisionDisplayMode(mode: RevisionDisplayMode) {
+        if (this.guardWrite("setRevisionDisplayMode")) return;
+        this.ydoc.production().set("revisionDisplayMode", mode);
+    }
+
+    /**
+     * Replace the per-line revision baseline and tag it with the revision it was
+     * captured for. One transaction so a peer never observes a half-written
+     * baseline — an intermediate state would let the flush clear marks against a
+     * partially-populated map, where an absent line reads as "new".
+     */
+    captureRevisionBase(index: number, entries: Map<string, RevisionBaseEntry>) {
+        if (this.guardWrite("captureRevisionBase")) return;
+        const map = this.ydoc.revisionBase();
+        this.ydoc.transact(() => {
+            map.clear();
+            entries.forEach((text, id) => map.set(id, text));
+            this.ydoc.production().set("revisionBaseIndex", index);
+        });
+    }
+
+    /**
+     * Baseline lookup for the revision it was captured for, or null when there is
+     * none — which puts revision stamping back on the event-based path. Reads are
+     * O(1) Y.Map lookups, so the flush can call `get` per touched line.
+     */
+    getRevisionBaseline(): RevisionBaseline | null {
+        const index = this.ydoc.production().get("revisionBaseIndex");
+        if (typeof index !== "number") return null;
+        const map = this.ydoc.revisionBase();
+        return { index, get: (dataId: string) => map.get(dataId) };
     }
     setSceneNumberingStyle(style: "suffix" | "prefix") {
         if (this.guardWrite("setSceneNumberingStyle")) return;
@@ -860,59 +988,139 @@ export class ProjectRepository {
     }
 
     // -------------------------------- //
-    //            OUTLINE               //
+    //            TIMELINE             //
     // -------------------------------- //
 
-    /** All outline blocks keyed by block id. */
-    get outlineItems(): Record<string, OutlineItem> {
-        return this.ydoc.outline().toJSON() as Record<string, OutlineItem>;
+    /** All timeline layers keyed by layer id. */
+    get timelineLayers(): Record<string, TimelineLayer> {
+        return this.ydoc.timelineLayers().toJSON() as Record<string, TimelineLayer>;
     }
 
-    observeOutline(callback: (outline: Record<string, OutlineItem>) => void): () => void {
-        const map = this.ydoc.outline();
-        const observer = () => callback(map.toJSON() as Record<string, OutlineItem>);
+    /** All timeline clips keyed by clip id. */
+    get timelineClips(): Record<string, TimelineClip> {
+        return this.ydoc.timelineClips().toJSON() as Record<string, TimelineClip>;
+    }
+
+    observeTimelineLayers(callback: (layers: Record<string, TimelineLayer>) => void): () => void {
+        const map = this.ydoc.timelineLayers();
+        const observer = () => callback(map.toJSON() as Record<string, TimelineLayer>);
         map.observe(observer);
         return () => map.unobserve(observer);
     }
 
-    /** Append position = one past the greatest order among the parent's children. */
-    private nextOutlineOrder(parentId: string | null): number {
+    observeTimelineClips(callback: (clips: Record<string, TimelineClip>) => void): () => void {
+        const map = this.ydoc.timelineClips();
+        const observer = () => callback(map.toJSON() as Record<string, TimelineClip>);
+        map.observe(observer);
+        return () => map.unobserve(observer);
+    }
+
+    /** Append order = one past the greatest order among the parent's children. */
+    private nextLayerOrder(parentId: string | null): number {
         let max = -1;
-        this.ydoc.outline().forEach((item) => {
-            if (item.parentId === parentId && item.order > max) max = item.order;
+        this.ydoc.timelineLayers().forEach((layer) => {
+            if ((layer.parentId ?? null) === parentId && layer.order > max) max = layer.order;
         });
         return max + 1;
     }
 
-    /** Is `ancestorId` an ancestor of `itemId`? Used to block cyclic moves. */
-    private isOutlineAncestor(itemId: string, ancestorId: string): boolean {
-        const map = this.ydoc.outline();
+    /** Is `ancestorId` an ancestor of `layerId`? Blocks cyclic nesting. */
+    private isLayerAncestor(layerId: string, ancestorId: string): boolean {
+        const map = this.ydoc.timelineLayers();
         const seen = new Set<string>();
-        let cur = map.get(itemId) as OutlineItem | undefined;
+        let cur = map.get(layerId) as TimelineLayer | undefined;
         while (cur && cur.parentId) {
             if (seen.has(cur.id)) break;
             seen.add(cur.id);
             if (cur.parentId === ancestorId) return true;
-            cur = map.get(cur.parentId) as OutlineItem | undefined;
+            cur = map.get(cur.parentId) as TimelineLayer | undefined;
         }
         return false;
     }
 
     /**
-     * Add a block to the outline at the end of the root (or a given parent).
-     * De-duplicates: if a block already references the same source element, the
-     * existing block's id is returned and nothing is added.
+     * Ensure the timeline has at least `count` layers, creating "Layer N" lanes
+     * as needed. Returns the layers ordered by `order`. Used to seed the two
+     * default lanes the first time the timeline is opened.
      */
-    addOutlineItem(item: Omit<OutlineItem, "id" | "order">): string {
-        if (this.guardWrite("addOutlineItem")) return "";
-        const map = this.ydoc.outline();
+    ensureTimelineLayers(count: number, defaultName: (index: number) => string): TimelineLayer[] {
+        if (!this.guardWrite("ensureTimelineLayers")) {
+            const existing = Object.values(this.timelineLayers).length;
+            if (existing < count) {
+                this.ydoc.transact(() => {
+                    for (let i = existing; i < count; i++) this.addTimelineLayer(defaultName(i));
+                });
+            }
+        }
+        return Object.values(this.timelineLayers).sort((a, b) => a.order - b.order);
+    }
+
+    /** Append a new layer under `parentId` (root by default). Returns its id. */
+    addTimelineLayer(name: string, parentId: string | null = null): string {
+        if (this.guardWrite("addTimelineLayer")) return "";
+        const id = uuidv7();
+        this.ydoc.timelineLayers().set(id, { id, name, parentId, order: this.nextLayerOrder(parentId) });
+        return id;
+    }
+
+    renameTimelineLayer(id: string, name: string): void {
+        if (this.guardWrite("renameTimelineLayer")) return;
+        const map = this.ydoc.timelineLayers();
+        const layer = map.get(id) as TimelineLayer | undefined;
+        if (!layer) return;
+        map.set(id, { ...layer, name });
+    }
+
+    /**
+     * Re-nest a layer under a new parent at the given fractional order. No-ops on
+     * a move that would create a cycle (into itself or one of its descendants).
+     */
+    moveTimelineLayer(id: string, newParentId: string | null, order: number): void {
+        if (this.guardWrite("moveTimelineLayer")) return;
+        const map = this.ydoc.timelineLayers();
+        const layer = map.get(id) as TimelineLayer | undefined;
+        if (!layer) return;
+        if (newParentId !== null && (newParentId === id || this.isLayerAncestor(newParentId, id))) return;
+        map.set(id, { ...layer, parentId: newParentId, order });
+    }
+
+    /**
+     * Delete a layer and the clips that live on it. Child layers are promoted to
+     * the deleted layer's parent so nested lanes aren't destroyed with it.
+     */
+    deleteTimelineLayer(id: string): void {
+        if (this.guardWrite("deleteTimelineLayer")) return;
+        const map = this.ydoc.timelineLayers();
+        const target = map.get(id) as TimelineLayer | undefined;
+        if (!target) return;
+        this.ydoc.transact(() => {
+            map.forEach((child) => {
+                if ((child.parentId ?? null) === id) {
+                    map.set(child.id, { ...child, parentId: target.parentId ?? null });
+                }
+            });
+            map.delete(id);
+            const clips = this.ydoc.timelineClips();
+            clips.forEach((clip) => {
+                if (clip.layerId === id) clips.delete(clip.id);
+            });
+        });
+    }
+
+    /**
+     * Add a clip to the timeline. De-duplicates: if a clip already references the
+     * same source element, the existing clip's id is returned and nothing added.
+     */
+    addTimelineClip(clip: Omit<TimelineClip, "id">): string {
+        if (this.guardWrite("addTimelineClip")) return "";
+        const map = this.ydoc.timelineClips();
 
         let existingId = "";
         map.forEach((existing) => {
             if (
-                existing.source === item.source &&
-                existing.refDocId === item.refDocId &&
-                existing.refId === item.refId
+                existing.source === clip.source &&
+                existing.refDocId === clip.refDocId &&
+                existing.refId === clip.refId
             ) {
                 existingId = existing.id;
             }
@@ -920,57 +1128,68 @@ export class ProjectRepository {
         if (existingId) return existingId;
 
         const id = uuidv7();
-        map.set(id, { ...item, id, order: this.nextOutlineOrder(item.parentId ?? null) });
+        map.set(id, { ...clip, id });
         return id;
     }
 
     /**
-     * Move a block under a new parent at the given fractional order. No-ops on a
-     * move that would create a cycle (into itself or one of its descendants).
+     * "Send to timeline" helper: ensure the default lanes exist, then append a
+     * clip to a layer just after its last clip. De-duplicates via
+     * `addTimelineClip`, so sending the same source twice is a no-op.
+     *
+     * Targets `targetLayerId` when given (and still present); otherwise falls
+     * back to the first root lane.
      */
-    moveOutlineItem(id: string, newParentId: string | null, order: number): void {
-        if (this.guardWrite("moveOutlineItem")) return;
-        const map = this.ydoc.outline();
-        const item = map.get(id) as OutlineItem | undefined;
-        if (!item) return;
-        if (newParentId !== null && (newParentId === id || this.isOutlineAncestor(newParentId, id))) {
-            return;
-        }
-        map.set(id, { ...item, parentId: newParentId, order });
-    }
-
-    /** Patch the cached display snapshot of a block (title/preview/color). */
-    refreshOutlineSnapshot(id: string, snapshot: Pick<OutlineItem, "title" | "preview" | "color">): void {
-        if (this.guardWrite("refreshOutlineSnapshot")) return;
-        const map = this.ydoc.outline();
-        const item = map.get(id) as OutlineItem | undefined;
-        if (!item) return;
-        map.set(id, { ...item, ...snapshot });
-    }
-
-    /**
-     * Remove a block from the outline. Its children are promoted to the removed
-     * block's parent so other referenced beats are not destroyed.
-     */
-    deleteOutlineItem(id: string): void {
-        if (this.guardWrite("deleteOutlineItem")) return;
-        const map = this.ydoc.outline();
-        const target = map.get(id) as OutlineItem | undefined;
-        if (!target) return;
-
+    appendTimelineClip(
+        fields: Pick<TimelineClip, "source" | "refDocId" | "refId" | "title" | "preview" | "color">,
+        durationMinutes = 2,
+        targetLayerId?: string,
+    ): string {
+        if (this.guardWrite("appendTimelineClip")) return "";
+        let id = "";
         this.ydoc.transact(() => {
-            map.forEach((child) => {
-                if (child.parentId === id) {
-                    map.set(child.id, { ...child, parentId: target.parentId });
-                }
+            const layers = this.ensureTimelineLayers(2, (i) => `Layer ${i + 1}`);
+            // Use the requested lane when it exists; otherwise prefer the first
+            // root lane, falling back to the first layer overall.
+            const roots = layers.filter((l) => (l.parentId ?? null) === null);
+            const layerId =
+                (targetLayerId && layers.find((l) => l.id === targetLayerId)?.id) ||
+                (roots[0] ?? layers[0]).id;
+            let end = 0;
+            this.ydoc.timelineClips().forEach((c) => {
+                if (c.layerId === layerId) end = Math.max(end, c.start + c.duration);
             });
-            map.delete(id);
+            id = this.addTimelineClip({ ...fields, layerId, start: end, duration: durationMinutes });
         });
+        return id;
+    }
+
+    /** Patch a clip's placement (layer / start / duration). */
+    updateTimelineClip(id: string, patch: Partial<Pick<TimelineClip, "layerId" | "start" | "duration">>): void {
+        if (this.guardWrite("updateTimelineClip")) return;
+        const map = this.ydoc.timelineClips();
+        const clip = map.get(id) as TimelineClip | undefined;
+        if (!clip) return;
+        map.set(id, { ...clip, ...patch });
+    }
+
+    /** Patch the cached display snapshot of a clip (title/preview/color). */
+    refreshTimelineClipSnapshot(id: string, snapshot: Pick<TimelineClip, "title" | "preview" | "color">): void {
+        if (this.guardWrite("refreshTimelineClipSnapshot")) return;
+        const map = this.ydoc.timelineClips();
+        const clip = map.get(id) as TimelineClip | undefined;
+        if (!clip) return;
+        map.set(id, { ...clip, ...snapshot });
+    }
+
+    deleteTimelineClip(id: string): void {
+        if (this.guardWrite("deleteTimelineClip")) return;
+        this.ydoc.timelineClips().delete(id);
     }
 
     /**
      * Parse an `editor` document's content into transient scenes (heading text +
-     * preview + position), so the outline can resolve scene references that live
+     * preview + position), so the timeline can resolve scene references that live
      * in document-tree editor docs rather than the main screenplay.
      */
     getEditorDocumentScenes(docId: string): TransientScene[] {

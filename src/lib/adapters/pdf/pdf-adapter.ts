@@ -1,11 +1,12 @@
 
 import { BaseExportOptions, ProjectAdapter } from "../screenplay-adapter";
 import { ProjectData, ProjectState } from "@src/lib/project/project-state";
-import { PageFormat } from "@src/lib/utils/enums";
+import { ExportFormat, PageFormat } from "@src/lib/utils/enums";
 import { getFontForCodePoint, ScriptFont } from "./pdf-utils";
 import type { TextRun } from "./pdf.worker";
 import { BASE_URL } from "@src/lib/utils/constants";
 import { PAGE_SIZES } from "@src/lib/screenplay/extensions/pagination-extension";
+import { revisionColor } from "@src/lib/screenplay/revisions";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -19,11 +20,39 @@ export type PDFExportOptions = BaseExportOptions & {
     sceneNumberOnRight?: boolean;
     contdLabel?: string;
     moreLabel?: string;
+    /** Append the CONT'D label to a character cue resuming after an
+     *  interruption. Defaults to on when omitted. */
+    showContdDialogue?: boolean;
+    /** Draw the MORE / CONT'D pair around dialogue split by a page break.
+     *  Defaults to on when omitted. */
+    showContdPageBreak?: boolean;
     editorElement?: HTMLElement;
     titlePageElement?: HTMLElement;
+    /** How production revisions are rendered into the PDF (see {@link RevisionExportMode}). */
+    revisionExport?: RevisionExportMode;
+    /** Which pages to export. Absent (or omitted) means every page.
+     *  - `ranges`: keep pages whose 1-based ordinal falls in any [start, end].
+     *  - `revisions`: keep pages that carry a change stamped with one of the
+     *     given revision indices (a production "revised pages" distribution). */
+    pageSelection?: PageSelection;
 };
 
-import type { WorkerMessage, WorkerPayload, VisualLine } from "./pdf.worker";
+export type PageSelection =
+    | { mode: "ranges"; ranges: Array<[number, number]> }
+    | { mode: "revisions"; revisions: number[] };
+
+/**
+ * What of the production revisions ends up in an exported PDF:
+ *  - `none`    — a clean shooting script: no asterisks and no revision tinting,
+ *                whatever the editor currently displays.
+ *  - `colored` — changed text in its revision colour + a matching coloured
+ *                right-margin asterisk on every revised visual line.
+ *  - `bw`      — the same revision marks (asterisks + the changed runs) but all
+ *                in black, for a black & white revised distribution.
+ */
+export type RevisionExportMode = "none" | "colored" | "bw";
+
+import type { WorkerMessage, WorkerPayload, VisualLine, PageHeader, PageFooter } from "./pdf.worker";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -35,6 +64,10 @@ const PDF_PAGE_SIZES: Record<PageFormat, { width: number; height: number }> = {
     LETTER: { width: PAGE_SIZES.LETTER.pageWidth * PX_TO_PT, height: PAGE_SIZES.LETTER.pageHeight * PX_TO_PT },
     A4: { width: PAGE_SIZES.A4.pageWidth * PX_TO_PT, height: PAGE_SIZES.A4.pageHeight * PX_TO_PT },
 };
+
+/** Display-only declarations the measurement pass overrides on each editor and
+ *  restores afterwards — see {@link PDFAdapter.withCanonicalLayout}. */
+const CANONICAL_PINNED_PROPERTIES = ["transform", "width", "--display-margin-scale"] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -86,7 +119,11 @@ const getMarksFromComputedStyle = (textNode: Text): { bold: boolean; italic: boo
 
 export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
     label = "PDF";
-    extension = "pdf";
+    exportTarget = { format: ExportFormat.PDF, extension: "pdf" };
+
+    // Export-only: a PDF carries no recoverable screenplay structure, so nothing
+    // routes `.pdf` files here (`convertFrom` throws).
+    importExtensions = [];
 
     async convertTo(_project: ProjectState, options: PDFExportOptions): Promise<Blob> {
         const editorEl = options.editorElement;
@@ -103,11 +140,68 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
         // ── Collect all visual lines from the browser DOM ───────────────────
         const titlePageEl = options.titlePageElement;
 
-        const titlePageLines = titlePageEl ? this.collectLines(titlePageEl, options) : [];
-        const titlePageLeftPx = titlePageEl ? this.getPageLeftPx(titlePageEl) : 0;
+        // Every coordinate below comes from the live DOM, so the whole geometry
+        // pass runs with the editor's display-only layout neutralised — see
+        // `withCanonicalLayout`. Keeping it in a single closure means the layout
+        // is pinned (and restored) exactly once per export.
+        const measured = this.withCanonicalLayout([editorEl, titlePageEl], () => {
+            // Header/footer columns are laid out within the configured page
+            // margins: the editor's `.pagination-header-area` /
+            // `.pagination-footer-area` are padded by
+            // --page-margin-left/right. Read those margins (px) off the editor
+            // DOM and convert to PDF points so the export reproduces the same
+            // horizontal bounds instead of a hard-coded 1-inch margin.
+            const editorStyle = getComputedStyle(editorEl);
+            const readMarginPt = (name: string, fallbackPx: number): number => {
+                const px = parseFloat(editorStyle.getPropertyValue(name));
+                return (Number.isFinite(px) ? px : fallbackPx) * PX_TO_PT;
+            };
 
-        const screenplayLines = this.collectLines(editorEl, options);
-        const screenplayLeftPx = this.getPageLeftPx(editorEl);
+            // Footer of the final page: it has no trailing page-break sentinel
+            // to carry it, so it is read from the dedicated last-page widget.
+            // Page filtering below re-derives it from the last surviving page.
+            const lastPageWidget = editorEl.querySelector(".pagination-last-page") as HTMLElement | null;
+            // Header of the (otherwise unnumbered) first page, read from the
+            // first-page pagination widget. Blank unless "Show first page
+            // header" is on, in which case its spans carry the expanded
+            // templates.
+            const firstPageWidget = editorEl.querySelector(".pagination-first-page") as HTMLElement | null;
+
+            return {
+                titlePageLines: titlePageEl ? this.collectLines(titlePageEl, options) : [],
+                titlePageLeftPx: titlePageEl ? this.getPageLeftPx(titlePageEl) : 0,
+                screenplayLines: this.collectLines(editorEl, options),
+                screenplayLeftPx: this.getPageLeftPx(editorEl),
+                screenplayLastFooter: lastPageWidget ? this.extractFooter(lastPageWidget) : undefined,
+                screenplayFirstHeader: firstPageWidget ? this.extractHeader(firstPageWidget) : undefined,
+                pageMarginLeft: readMarginPt("--page-margin-left", 96),
+                pageMarginRight: readMarginPt("--page-margin-right", 96),
+            };
+        });
+
+        const { titlePageLines, titlePageLeftPx, screenplayLeftPx, screenplayFirstHeader, pageMarginLeft, pageMarginRight } =
+            measured;
+        let screenplayLines = measured.screenplayLines;
+        let screenplayLastFooter = measured.screenplayLastFooter;
+
+        // Page selection: keep only the chosen pages (by range or by revision).
+        const sel = options.pageSelection;
+        if (sel?.mode === "ranges" && sel.ranges.length > 0) {
+            const kept = this.keepPages(screenplayLines, screenplayLastFooter, (_page, ordinal) =>
+                sel.ranges.some(([start, end]) => ordinal >= start && ordinal <= end),
+            );
+            screenplayLines = kept.lines;
+            screenplayLastFooter = kept.lastFooter;
+        } else if (sel?.mode === "revisions" && sel.revisions.length > 0) {
+            const wanted = new Set(sel.revisions);
+            const kept = this.keepPages(screenplayLines, screenplayLastFooter, (page) => {
+                for (const r of page.revisions) if (wanted.has(r)) return true;
+                return false;
+            });
+            screenplayLines = kept.lines;
+            screenplayLastFooter = kept.lastFooter;
+        }
+        this.applyRevisionStyling(screenplayLines, options.revisionExport ?? "colored");
 
         return new Promise((resolve, reject) => {
             const worker = new Worker(new URL("./pdf.worker.ts", import.meta.url));
@@ -141,8 +235,13 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                 titlePageLeftPx,
                 screenplayLines,
                 screenplayLeftPx,
+                screenplayFirstHeader,
+                screenplayLastFooter,
+                pageMarginLeft,
+                pageMarginRight,
                 contdLabel: options.contdLabel ?? "(CONT'D)",
                 moreLabel: options.moreLabel ?? "(MORE)",
+                showContdPageBreak: options.showContdPageBreak !== false,
             };
 
             worker.postMessage({ type: "START", payload });
@@ -152,6 +251,108 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     convertFrom(_: ArrayBuffer): Partial<ProjectData> {
         throw new Error("Method not implemented.");
+    }
+
+    // ── Canonical (page-shaped) measurement ─────────────────────────────────
+
+    /**
+     * Run `measure` with the editors' display-only layout pinned to the
+     * canonical page, so every DOM coordinate it reads is the real page
+     * geometry rather than whatever the current screen renders.
+     *
+     * Two phone view modes deform that geometry, and both feed straight into
+     * `getBoundingClientRect()` / `Range.getClientRects()`, the only source of
+     * coordinates in this exporter:
+     *
+     *  - PAGED: the page is scaled to fit the viewport — `transform:
+     *    scale(var(--editor-zoom))`. Left in place, a 0.48× fit shrinks every X
+     *    offset and line gap by half while the PDF still draws a fixed 12pt
+     *    font.
+     *  - ENDLESS: there is no page rectangle at all — the editor is widened to
+     *    the viewport (`width: 100%`) and the screenplay margins are compressed
+     *    to `--display-margin-scale: 0.3` so text reflows large on a narrow
+     *    screen (see EditorPanel.module.css). Left in place, the export keeps
+     *    those compressed margins and the viewport's much earlier line wrapping
+     *    — the layout of the PDF is then the phone's, not the page's.
+     *
+     * So both are neutralised here: the scale is dropped, the margins go back
+     * to 1×, and the editor is widened back to `--page-width` (the same custom
+     * property the pagination stylesheet sizes the page from, left untouched by
+     * either mode; skipped if it isn't set, rather than collapsing the element
+     * to `width: auto`).
+     *
+     * Pinning the layout is preferred over correcting the measurements after
+     * the fact: `getComputedStyle` lengths (which this pass also reads) don't
+     * follow the transform, so scale and margins would need opposite
+     * corrections. Overrides are set `!important` so no stylesheet rule can
+     * outvote them, and the original inline declarations are restored
+     * afterwards.
+     *
+     * The hidden page-break widgets of endless mode need no such treatment:
+     * `collectLines` finds them by class whatever their `display`, and the
+     * worker resets its Y cursor to the top of the page on every break, so the
+     * gap those widgets would have occupied is never read.
+     *
+     * Nothing here yields to the event loop, so the browser never paints the
+     * pinned state — the export is invisible to the user. Scroll offsets are
+     * restored explicitly, since re-shaping the page changes the layout box and
+     * can clamp the scroll position of every scrollable ancestor.
+     */
+    private withCanonicalLayout<T>(elements: (HTMLElement | undefined)[], measure: () => T): T {
+        const targets = elements.filter((el): el is HTMLElement => !!el);
+        const savedStyles = targets.map((el) => ({
+            el,
+            declarations: CANONICAL_PINNED_PROPERTIES.map((name) => ({
+                name,
+                value: el.style.getPropertyValue(name),
+                priority: el.style.getPropertyPriority(name),
+            })),
+        }));
+
+        const savedScroll = new Map<Element, { top: number; left: number }>();
+        for (const el of targets) {
+            let node: Element | null = el;
+            while (node) {
+                if (!savedScroll.has(node)) savedScroll.set(node, { top: node.scrollTop, left: node.scrollLeft });
+                node = node.parentElement;
+            }
+        }
+
+        try {
+            for (const el of targets) {
+                // Both writers of --page-width (the pagination extension's
+                // syncVars and the editor wrapper's inline style) emit px, so
+                // anything else is not a length to pin to — leave the width as
+                // it is rather than guess at it.
+                const rawPageWidth = getComputedStyle(el).getPropertyValue("--page-width").trim();
+                const pageWidthPx = rawPageWidth.endsWith("px") ? parseFloat(rawPageWidth) : NaN;
+                el.style.setProperty("transform", "none", "important");
+                el.style.setProperty("--display-margin-scale", "1", "important");
+                if (Number.isFinite(pageWidthPx) && pageWidthPx > 0) {
+                    el.style.setProperty("width", `${pageWidthPx}px`, "important");
+                }
+            }
+            // No explicit reflow needed: the first geometry read inside
+            // `measure` flushes the pending layout for us.
+            return measure();
+        } finally {
+            for (const saved of savedStyles) {
+                for (const { name, value, priority } of saved.declarations) {
+                    // Always clear first: WebKit ignores a `setProperty` that
+                    // lowers a custom property's priority, so overwriting the
+                    // `!important` pin in place would leave the editor stuck at
+                    // the canonical value (a 1× margin scale on a phone).
+                    saved.el.style.removeProperty(name);
+                    if (value) saved.el.style.setProperty(name, value, priority);
+                }
+            }
+            // Assigning scroll offsets flushes the restored layout first, so
+            // these land against the on-screen extents they were taken from.
+            for (const [node, pos] of savedScroll) {
+                node.scrollTop = pos.top;
+                node.scrollLeft = pos.left;
+            }
+        }
     }
 
     // ── DOM → VisualLine[] ───────────────────────────────────────────────────
@@ -181,13 +382,18 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                     y: 0,
                     type: "__page_break__",
                     pageLabel: this.extractPageLabel(el),
+                    header: this.extractHeader(el),
+                    footer: this.extractFooter(el),
                 });
                 continue;
             }
 
             // ── Dual dialogue container ──
             if (el.classList.contains("dual_dialogue")) {
+                // Each column paragraph stamps its own revised lines; the
+                // container only carries the fallback attribute.
                 const ddLines = this.collectDualDialogueLines(el, options, yOffset);
+                this.stampNodeRevision(el, [ddLines]);
                 allLines.push(...ddLines);
                 continue;
             }
@@ -256,6 +462,7 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                     y: 0,
                     type: "__page_break__",
                     pageLabel: this.extractPageLabel(splitWidget),
+                    header: this.extractHeader(splitWidget),
                 });
 
                 // Collect lines AFTER the split widget
@@ -266,6 +473,11 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                     }
                     allLines.push(...afterLines);
                 }
+
+                // Both halves are already in `allLines`, but they are the same
+                // objects — the attribute fallback can still stamp the node's
+                // first line whichever side of the break it fell on.
+                this.stampNodeRevision(el, [beforeLines, afterLines]);
             } else {
                 const paragraphLines = this.collectParagraphLines(el, nodeType);
 
@@ -276,6 +488,7 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                     }
                     // ── Pseudo-element content (not captured by TreeWalker) ──
                     this.injectPseudoContent(el, paragraphLines, options, sceneInfo);
+                    this.stampNodeRevision(el, [paragraphLines]);
                     allLines.push(...paragraphLines);
                 } else {
                     // Empty paragraph — no text nodes, so collectParagraphLines
@@ -285,7 +498,9 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                     // misinterpret the accumulated gap as a page break.
                     const rect = el.getBoundingClientRect();
                     if (rect.height > 0) {
-                        allLines.push({ runs: [], y: rect.top - yOffset, type: nodeType });
+                        const emptyLine: VisualLine = { runs: [], y: rect.top - yOffset, type: nodeType };
+                        this.stampNodeRevision(el, [[emptyLine]]);
+                        allLines.push(emptyLine);
                     }
                 }
             }
@@ -332,12 +547,15 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                         for (const line of paragraphLines) line.y -= yOffset;
                     }
                     this.injectPseudoContent(p, paragraphLines, options);
+                    this.stampNodeRevision(p, [paragraphLines]);
                     columnLines.push(...paragraphLines);
                 } else {
                     // Empty paragraph — emit a spacer line so Y advances correctly.
                     const rect = p.getBoundingClientRect();
                     if (rect.height > 0) {
-                        columnLines.push({ runs: [], y: rect.top - yOffset, type: nodeType });
+                        const emptyLine: VisualLine = { runs: [], y: rect.top - yOffset, type: nodeType };
+                        this.stampNodeRevision(p, [[emptyLine]]);
+                        columnLines.push(emptyLine);
                     }
                 }
             }
@@ -404,6 +622,15 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
 
             // Resolve marks once per text node (they don't change mid-node)
             const marks = getMarksFromComputedStyle(textNode);
+            // Revision mark covering this text node, if any — read straight from
+            // the `revision` mark span so it's independent of the editor's
+            // current display mode (which only tints, it never removes the
+            // attribute). `lineRevision` marks the visual line the characters
+            // land on (asterisk); `revision` additionally tints the run, so a
+            // deletion anchor — an invisible marker riding a surviving
+            // character — is excluded from it.
+            const { index: lineRevision, isDel } = this.readRevisionMark(textNode, el);
+            const revision = isDel ? 0 : lineRevision;
 
             for (let ci = 0; ci < text.length; ci++) {
                 const rawChar = text[ci];
@@ -416,7 +643,8 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                     currentRun.fontFamily === font &&
                     currentRun.bold === marks.bold &&
                     currentRun.italic === marks.italic &&
-                    currentRun.underline === marks.underline;
+                    currentRun.underline === marks.underline &&
+                    currentRun.revision === revision;
 
                 // ── Measure position ─────────────────────────────────────
                 range.setStart(textNode, ci);
@@ -457,6 +685,7 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                                 bold: marks.bold,
                                 italic: marks.italic,
                                 underline: marks.underline,
+                                revision,
                             };
                         }
                     }
@@ -479,6 +708,16 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                     currentLine = { runs: [], y: rect.top, type };
                 }
 
+                // Asterisk stamping: only the visual lines a revision mark
+                // actually lands on are revised — matching the editor overlay,
+                // which measures the marked range's client rects line by line.
+                // Zero-height chars (trailing wrapped spaces) never get here, so
+                // they can't stamp the line they were laid out on, exactly as
+                // the overlay skips their empty rects.
+                if (lineRevision >= 1 && lineRevision > (currentLine.revision ?? 0)) {
+                    currentLine.revision = lineRevision;
+                }
+
                 // ── Update or start run ──────────────────────────────────
                 if (isSameRun()) {
                     currentRun!.text += char;
@@ -491,6 +730,7 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
                         bold: marks.bold,
                         italic: marks.italic,
                         underline: marks.underline,
+                        revision,
                     };
                 }
 
@@ -597,7 +837,7 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
             }
         }
 
-        if (el.classList.contains("contd")) {
+        if (el.classList.contains("contd") && options.showContdDialogue !== false) {
             const label = options.contdLabel ?? "(CONT'D)";
             if (lastLine.runs.length > 0) {
                 const tailRun = lastLine.runs[lastLine.runs.length - 1];
@@ -624,6 +864,46 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
         return right.textContent?.trim() ?? undefined;
     }
 
+    /**
+     * Read the page's three header columns (left / middle / right) out of a
+     * `.pagination-page-break` widget's header area. The editor has already
+     * expanded the `#`/`@`/`*` placeholders into these spans for this exact
+     * page, so the PDF reproduces the same header. Returns undefined when the
+     * widget has no header area (e.g. an entirely blank page-1 override).
+     */
+    private extractHeader(widget: HTMLElement): PageHeader | undefined {
+        const area = widget.querySelector(".pagination-header-area");
+        if (!area) return undefined;
+        const read = (cls: string) =>
+            (area.querySelector(`.${cls}`) as HTMLElement | null)?.textContent ?? "";
+        return {
+            left: read("pagination-header-left"),
+            middle: read("pagination-header-middle"),
+            right: read("pagination-header-right"),
+        };
+    }
+
+    /**
+     * Read the page's three footer columns (left / middle / right) out of a
+     * `.pagination-page-break` or `.pagination-last-page` widget's footer area.
+     * The editor has already expanded the `#`/`@`/`*` placeholders into these
+     * spans, so the PDF reproduces the same footer. On a page-break widget the
+     * footer belongs to the page ENDING before the break; on the last-page
+     * widget it belongs to the final page. Returns undefined when the widget
+     * has no footer area.
+     */
+    private extractFooter(widget: HTMLElement): PageFooter | undefined {
+        const area = widget.querySelector(".pagination-footer-area");
+        if (!area) return undefined;
+        const read = (cls: string) =>
+            (area.querySelector(`.${cls}`) as HTMLElement | null)?.textContent ?? "";
+        return {
+            left: read("pagination-footer-left"),
+            middle: read("pagination-footer-middle"),
+            right: read("pagination-footer-right"),
+        };
+    }
+
     // ── VisualLine[] → PDF ───────────────────────────────────────────────────
 
     /**
@@ -647,5 +927,152 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
             }
         }
         return 0;
+    }
+
+    // ── Revision filtering ───────────────────────────────────────────────────
+
+    /**
+     * Stamp a top-level node's collected lines, mirroring the editor overlay
+     * (`computeNodeLines` in revisions-extension) so the PDF's asterisks land on
+     * exactly the lines the screenplay shows them on:
+     *  - when the node's text carries inline `revision` marks, only the visual
+     *    lines those marks actually land on are revised. `collectParagraphLines`
+     *    has already stamped them character by character, so there is nothing
+     *    left to do — stamping the whole node here would print a column of
+     *    asterisks down a paragraph where a single word changed.
+     *  - otherwise the node-level `data-revision-line` attribute (an empty or
+     *    emptied line, which has no character to anchor a mark on) stamps the
+     *    node's FIRST line, like the overlay's single entry at `lineHeight / 2`.
+     *
+     * `lineGroups` are the node's line runs in document order — more than one
+     * only when a page break splits the node, in which case the attribute
+     * belongs to the first half that produced any line.
+     */
+    private stampNodeRevision(el: HTMLElement, lineGroups: VisualLine[][]): void {
+        if (el.querySelector("[data-revision]")) return;
+        const attr = parseInt(el.getAttribute("data-revision-line") || "", 10);
+        if (!(attr >= 1)) return;
+        for (const lines of lineGroups) {
+            if (lines.length > 0) {
+                lines[0].revision = attr;
+                return;
+            }
+        }
+    }
+
+    /**
+     * The inline `revision` mark covering a text node, or index 0 when it
+     * carries none. Walks up to the paragraph looking for the mark span
+     * (`data-revision`); reading the attribute rather than the computed colour
+     * keeps the export independent of the editor's current display mode.
+     *
+     * `isDel` flags a deletion anchor (`data-revision-kind="del"`): an invisible
+     * marker pinned to a character that SURVIVED the deletion, so the asterisk
+     * lands on the line the text was removed from. It marks the line but must
+     * never tint the character it rides on.
+     */
+    private readRevisionMark(textNode: Text, stopEl: HTMLElement): { index: number; isDel: boolean } {
+        let node = textNode.parentElement;
+        while (node && node !== stopEl.parentElement) {
+            const raw = node.getAttribute("data-revision");
+            if (raw !== null) {
+                const v = parseInt(raw, 10);
+                if (!(v >= 1)) return { index: 0, isDel: false };
+                return { index: v, isDel: node.getAttribute("data-revision-kind") === "del" };
+            }
+            if (node === stopEl) break;
+            node = node.parentElement;
+        }
+        return { index: 0, isDel: false };
+    }
+
+    /**
+     * Apply the chosen {@link RevisionExportMode} to already-collected lines:
+     *  - `none`    — strip any per-run revision colour so the script prints clean
+     *                and draws no asterisks.
+     *  - `colored` — tint each revised run in its revision colour and give every
+     *                revised line a matching coloured right-margin asterisk.
+     *  - `bw`      — keep the asterisks (in black) but leave the text uncoloured.
+     * The asterisk itself is drawn by the worker from `line.asteriskColor`.
+     */
+    private applyRevisionStyling(lines: VisualLine[], mode: RevisionExportMode): void {
+        for (const line of lines) {
+            if (line.type === "__page_break__") continue;
+            if (mode !== "none" && line.revision) {
+                line.asteriskColor = mode === "colored" ? revisionColor(line.revision) ?? "#000000" : "#000000";
+            }
+            if (mode === "colored") {
+                for (const run of line.runs) {
+                    if (run.revision) run.color = revisionColor(run.revision);
+                }
+            }
+        }
+    }
+
+    /**
+     * Drop the pages the caller doesn't want and re-stitch the rest. Lines are
+     * grouped into pages by the `__page_break__` sentinels; `keep` is called with
+     * each page (its lines + the set of revisions stamped on it) and its 1-based
+     * ordinal. Surviving pages are re-emitted preceded by a sentinel carrying
+     * their ORIGINAL label, so page numbers stay correct even though the dropped
+     * pages leave gaps. The first kept page keeps no leading sentinel when it is
+     * the original page 1 (which has no header); otherwise its label is emitted
+     * as a leading sentinel that the worker draws in place (see renderLines).
+     */
+    private keepPages(
+        lines: VisualLine[],
+        lastPageFooter: PageFooter | undefined,
+        keep: (page: { lines: VisualLine[]; revisions: Set<number> }, ordinal: number) => boolean,
+    ): { lines: VisualLine[]; lastFooter: PageFooter | undefined } {
+        type Page = {
+            label?: string;
+            header?: PageHeader;
+            footer?: PageFooter;
+            lines: VisualLine[];
+            revisions: Set<number>;
+        };
+        const pages: Page[] = [{ lines: [], revisions: new Set() }];
+        for (const line of lines) {
+            if (line.type === "__page_break__") {
+                // A break sentinel carries the footer of the page that just
+                // ended and the header of the page about to begin.
+                pages[pages.length - 1].footer = line.footer;
+                pages.push({ label: line.pageLabel, header: line.header, lines: [], revisions: new Set() });
+                continue;
+            }
+            const page = pages[pages.length - 1];
+            page.lines.push(line);
+            if (line.revision) page.revisions.add(line.revision);
+        }
+        // The final page has no trailing sentinel; its footer comes from the
+        // dedicated last-page widget.
+        pages[pages.length - 1].footer = lastPageFooter;
+
+        const out: VisualLine[] = [];
+        let first = true;
+        // Footer of the previously kept page — the worker draws it at the bottom
+        // of that page just before the break that begins the current one.
+        let prevKeptFooter: PageFooter | undefined = undefined;
+        let lastFooter: PageFooter | undefined = undefined;
+        pages.forEach((page, idx) => {
+            if (!keep(page, idx + 1)) return;
+            // A break sentinel before every kept page except an original-page-1
+            // first page (it renders as page 1 with no header).
+            if (!first || page.label !== undefined) {
+                out.push({
+                    runs: [],
+                    y: 0,
+                    type: "__page_break__",
+                    pageLabel: page.label,
+                    header: page.header,
+                    footer: prevKeptFooter,
+                });
+            }
+            out.push(...page.lines);
+            prevKeptFooter = page.footer;
+            lastFooter = page.footer;
+            first = false;
+        });
+        return { lines: out, lastFooter };
     }
 }

@@ -1,7 +1,7 @@
 import { DOMSerializer } from "@node_modules/prosemirror-model/dist";
 import { ScreenplayElement } from "@src/lib/utils/enums";
 import { Editor, Extension } from "@tiptap/core";
-import { Node } from "@tiptap/pm/model";
+import { Node, Schema } from "@tiptap/pm/model";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { ySyncPluginKey } from "@tiptap/y-tiptap";
@@ -15,14 +15,15 @@ import {
     SceneToken,
 } from "@src/lib/screenplay/scene-locking";
 import { PAGE_COLLAPSE_META, PAGE_ONE_KEY, PersistentPageMap, SCENE_OMIT_META } from "@src/lib/screenplay/page-locking";
+import { REVISION_COLORS, REVISION_STAMP_META } from "@src/lib/screenplay/revisions";
 import { generateNodeId } from "@src/lib/screenplay/nodes";
-import { timeApply } from "./apply-timing";
+import { recordTiming, timeApply } from "./apply-timing";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Matches --line-height in scriptio.css. Used for split thresholds. */
+/** Matches --line-height in scenarly.css. Used for split thresholds. */
 const LINE_HEIGHT = 16; // px
 
 /** Minimum freespace (in px) on the current page to even attempt a sentence split.
@@ -96,10 +97,14 @@ export type PageNumber = number;
 
 export interface HeaderOptions {
     headerLeft: string;
+    /** Optional centred column; falls back to the global `headerMiddle`. */
+    headerMiddle?: string;
     headerRight: string;
 }
 export interface FooterOptions {
     footerLeft: string;
+    /** Optional centred column; falls back to the global `footerMiddle`. */
+    footerMiddle?: string;
     footerRight: string;
 }
 
@@ -115,13 +120,19 @@ export interface PaginationOptions {
     marginLeft: number; // page margin left in px (used for header/footer alignment)
     marginRight: number; // page margin right in px (used for header/footer alignment)
     headerLeft: string;
+    headerMiddle: string;
     headerRight: string;
     footerLeft: string;
+    footerMiddle: string;
     footerRight: string;
     customHeader: Record<PageNumber, HeaderOptions>;
     customFooter: Record<PageNumber, FooterOptions>;
     /** Element types that force a page break before them. */
     startNewPageTypes: Set<string>;
+    /** Draw (MORE) / CHARACTER (CONT'D) around dialogue split by a page break.
+     *  Off suppresses the overlays only — the break itself is unaffected, since
+     *  they are absolutely positioned and never consume content space. */
+    showContdPageBreak: boolean;
     /**
      * Production page-lock getters. When the editor is wired with page
      * locking, these expose the live toggle and lock map. Optional so test
@@ -180,10 +191,11 @@ declare module "@tiptap/core" {
             updatePageWidth: (width: number) => ReturnType;
             updatePageGap: (gap: number) => ReturnType;
             updateMargins: (margins: { top: number; bottom: number; left: number; right: number }) => ReturnType;
-            updateHeaderContent: (left: string, right: string, pageNumber?: PageNumber) => ReturnType;
-            updateFooterContent: (left: string, right: string, pageNumber?: PageNumber) => ReturnType;
+            updateHeaderContent: (left: string, middle: string, right: string, pageNumber?: PageNumber) => ReturnType;
+            updateFooterContent: (left: string, middle: string, right: string, pageNumber?: PageNumber) => ReturnType;
             updatePageBreakBackground: (color: string) => ReturnType;
             updateStartNewPageTypes: (types: Set<string>) => ReturnType;
+            updateShowContdPageBreak: (show: boolean) => ReturnType;
             refreshPagination: () => ReturnType;
             /** Toggle the manual page-break flag on the top-level node at `pos`.
              *  When set, pagination forces a new page that begins with that node. */
@@ -208,12 +220,15 @@ const defaultOptions: PaginationOptions = {
     marginLeft: 144, // 1.5in
     marginRight: 96, // 1in
     headerLeft: "",
+    headerMiddle: "",
     headerRight: "",
     footerLeft: "",
+    footerMiddle: "",
     footerRight: "{page}",
     customHeader: {},
     customFooter: {},
     startNewPageTypes: new Set<string>(),
+    showContdPageBreak: true,
 };
 
 // ---------------------------------------------------------------------------
@@ -234,6 +249,27 @@ function syncVars(dom: HTMLElement, o: PaginationOptions) {
         "page-break-background": o.pageBreakBackground,
     };
     Object.entries(vars).forEach(([k, v]) => dom.style.setProperty(`--${k}`, v));
+}
+
+/**
+ * Per-editor clone backing `storage.live` — the mutable options object shared by
+ * the commands, the plugin and the lifecycle hooks.
+ *
+ * Do NOT swap this back to `this.options`: tiptap's `options` is a getter that
+ * returns a fresh shallow clone on every access, so a command's mutation is
+ * invisible to the clone the plugin captured. `storage` is cloned once per
+ * editor, which makes it the only shared channel between them.
+ *
+ * The nested containers are cloned too — tiptap's shallow spread shares them
+ * with the module-level `defaultOptions`, and so with every other editor.
+ */
+function cloneLiveOptions(o: PaginationOptions): PaginationOptions {
+    return {
+        ...o,
+        startNewPageTypes: new Set(o.startNewPageTypes),
+        customHeader: { ...o.customHeader },
+        customFooter: { ...o.customFooter },
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -310,31 +346,125 @@ function makeAreaSpan(className: string, html: string): HTMLSpanElement {
     if (!tpl) {
         tpl = document.createElement("span");
         tpl.className = className;
-        tpl.innerHTML = html;
+        tpl.textContent = html;
         if (areaSpanCache.size > 2000) areaSpanCache.clear();
         areaSpanCache.set(key, tpl);
     }
     return tpl.cloneNode(true) as HTMLSpanElement;
 }
 
-function appendAreaSpans(area: HTMLElement, kind: "header" | "footer", left: string, right: string): void {
-    if (!left && !right) return;
+function appendAreaSpans(
+    area: HTMLElement,
+    kind: "header" | "footer",
+    left: string,
+    middle: string,
+    right: string,
+): void {
+    if (!left && !middle && !right) return;
     area.appendChild(makeAreaSpan(`pagination-${kind}-left`, left));
+    area.appendChild(makeAreaSpan(`pagination-${kind}-middle`, middle));
     area.appendChild(makeAreaSpan(`pagination-${kind}-right`, right));
 }
 
-function fillHeader(area: HTMLElement, pagenum: number, label: string, options: PaginationOptions): void {
+/** Today's date as a locale-aware short date (e.g. "6/25/2026"), for `@`. */
+const todayShortDate = (): string => new Date().toLocaleDateString();
+
+/**
+ * Expand a header template's placeholders for one page:
+ *  - `#` -> the page label (number, "4A", or absorbed range like "14-16");
+ *  - `@` -> today's date (locale short date);
+ *  - `*` -> the page's revision colour name ("Blue", "Pink", ...), or empty when
+ *          the page carries no revision (White / base).
+ * `{page}` stays supported as a legacy alias for `#`. Empty template -> "".
+ */
+function expandHeaderTemplate(tpl: string, label: string, revision: number): string {
+    if (!tpl) return "";
+    let out = tpl;
+    if (out.includes("{page}")) out = out.split("{page}").join(label);
+    if (out.includes("#")) out = out.split("#").join(label);
+    if (out.includes("@")) out = out.split("@").join(todayShortDate());
+    if (out.includes("*")) {
+        const name = revision >= 1 && revision < REVISION_COLORS.length ? REVISION_COLORS[revision].name : "";
+        out = out.split("*").join(name);
+    }
+    return out;
+}
+
+/** Whether any header template (global or per-page) uses the `*` revision
+ *  placeholder. Gates the per-page revision scan so the common case pays nothing. */
+function headerUsesRevision(options: PaginationOptions): boolean {
+    const has = (s: string | undefined) => !!s && s.includes("*");
+    if (has(options.headerLeft) || has(options.headerMiddle) || has(options.headerRight)) return true;
+    for (const k in options.customHeader) {
+        const c = options.customHeader[k];
+        if (has(c.headerLeft) || has(c.headerMiddle) || has(c.headerRight)) return true;
+    }
+    return false;
+}
+
+/**
+ * Highest revision index appearing on any top-level node, including its inline
+ * `revision` marks (changed text) and its `revision` node attribute (empty /
+ * deleted lines). 0 when the node carries no revision.
+ */
+function nodeMaxRevision(node: Node): number {
+    let max = typeof node.attrs.revision === "number" ? node.attrs.revision : 0;
+    node.descendants((child) => {
+        if (child.isText) {
+            for (const m of child.marks) {
+                if (m.type.name === "revision") {
+                    const idx = m.attrs.index as number;
+                    if (idx > max) max = idx;
+                }
+            }
+        }
+        return true;
+    });
+    return max;
+}
+
+/**
+ * Max revision index per page (index 0 = page 1), used to expand the `*` header
+ * placeholder. Walks top-level nodes once, advancing the page counter as each
+ * break position is crossed — the same incremental scheme the revision overlay
+ * uses. Only called when a header template actually uses `*`.
+ */
+function computePageRevisions(doc: Node, breaks: PageBreakInfo[]): number[] {
+    const pageRev: number[] = [0];
+    let page = 0;
+    let bp = 0;
+    doc.forEach((node, offset) => {
+        while (bp < breaks.length && breaks[bp].pos <= offset) {
+            page++;
+            bp++;
+            if (pageRev[page] === undefined) pageRev[page] = 0;
+        }
+        const r = nodeMaxRevision(node);
+        if (r > (pageRev[page] ?? 0)) pageRev[page] = r;
+    });
+    return pageRev;
+}
+
+function fillHeader(
+    area: HTMLElement,
+    pagenum: number,
+    label: string,
+    options: PaginationOptions,
+    revision: number,
+): void {
     const custom = options.customHeader[pagenum];
-    const left = custom?.headerLeft ?? options.headerLeft;
-    const right = (custom?.headerRight ?? options.headerRight).replace("{page}", label);
-    appendAreaSpans(area, "header", left, right);
+    const left = expandHeaderTemplate(custom?.headerLeft ?? options.headerLeft, label, revision);
+    const middle = expandHeaderTemplate(custom?.headerMiddle ?? options.headerMiddle, label, revision);
+    const right = expandHeaderTemplate(custom?.headerRight ?? options.headerRight, label, revision);
+    appendAreaSpans(area, "header", left, middle, right);
 }
 
 function fillFooter(area: HTMLElement, pagenum: number, label: string, options: PaginationOptions): void {
     const custom = options.customFooter[pagenum];
-    const left = custom?.footerLeft ?? options.footerLeft;
-    const right = (custom?.footerRight ?? options.footerRight).replace("{page}", label);
-    appendAreaSpans(area, "footer", left, right);
+    const left = expandHeaderTemplate(custom?.footerLeft ?? options.footerLeft, label, 0);
+    const middle = expandHeaderTemplate(custom?.footerMiddle ?? options.footerMiddle, label, 0);
+    const right = expandHeaderTemplate(custom?.footerRight ?? options.footerRight, label, 0);
+    appendAreaSpans(area, "footer", left, middle, right);
 }
 
 /**
@@ -356,7 +486,7 @@ function containOffscreen(container: HTMLElement, intrinsicHeight: number): void
     container.style.setProperty("contain-intrinsic-size", `none ${intrinsicHeight}px`);
 }
 
-function createFirstPageWidget(firstPageLabel: string, options: PaginationOptions): HTMLElement {
+function createFirstPageWidget(firstPageLabel: string, options: PaginationOptions, revision: number): HTMLElement {
     const container = document.createElement("div");
     container.className = "pagination-first-page";
     container.contentEditable = "false";
@@ -373,7 +503,7 @@ function createFirstPageWidget(firstPageLabel: string, options: PaginationOption
     const headerArea = document.createElement("div");
     headerArea.className = "pagination-header-area";
     headerArea.style.height = `${options.marginTop}px`;
-    fillHeader(headerArea, 1, firstPageLabel, options);
+    fillHeader(headerArea, 1, firstPageLabel, options, revision);
     // Page 1's lock badge is mounted on its first paragraph (see
     // pushPageLockBadge) — not here — because this widget carries
     // content-visibility, whose paint containment would hide it.
@@ -449,7 +579,7 @@ function getPageBreakSkeleton(): HTMLDivElement {
     return container;
 }
 
-function createPageBreakWidget(breakInfo: PageBreakInfo, options: PaginationOptions): HTMLElement {
+function createPageBreakWidget(breakInfo: PageBreakInfo, options: PaginationOptions, revision: number): HTMLElement {
     const container = getPageBreakSkeleton().cloneNode(true) as HTMLDivElement;
     const spacer = container.children[0] as HTMLElement;
     const overlay = container.children[1] as HTMLElement;
@@ -488,8 +618,12 @@ function createPageBreakWidget(breakInfo: PageBreakInfo, options: PaginationOpti
     // variables that define the node type's padding, restoring full-page coverage.
     if (breakInfo.splitNodeType !== null) {
         const [leftVar, rightVar] = getSplitPaddingVars(breakInfo.splitNodeType);
-        overlay.style.left = `calc(-1 * ${leftVar})`;
-        overlay.style.right = `calc(-1 * ${rightVar})`;
+        // Multiply by --display-margin-scale so the escape tracks the parent <p>'s
+        // padding, which is itself scaled (calc(var(--x-margin) * scale)). On desktop
+        // the scale is 1, so this is identical to negating the raw padding; on the
+        // phone reading layout it keeps the header/footer band aligned to the page.
+        overlay.style.left = `calc(-1 * ${leftVar} * var(--display-margin-scale))`;
+        overlay.style.right = `calc(-1 * ${rightVar} * var(--display-margin-scale))`;
     }
 
     // Labels for the surrounding pages. Defaults preserve legacy behavior
@@ -505,20 +639,27 @@ function createPageBreakWidget(breakInfo: PageBreakInfo, options: PaginationOpti
     divider.style.height = `${options.pageGap}px`;
 
     // Manual page break: hint the user that this boundary was forced from the
-    // context menu (vs a natural overflow break). A dashed line spans the gap
-    // with a centred "page break" pill; the label text comes from the
-    // --page-break-label CSS variable (set per-locale by the editor panel),
-    // matching how the (MORE)/(CONT'D) labels are localised.
+    // context menu (vs a natural overflow break). Rather than a faint mark
+    // buried in the inter-page gap (easy to miss), the affordance is a line
+    // spanning the full page width at the very top of the new page, sitting just
+    // above the first line of the node that begins the page. The overlay's
+    // bottom edge aligns with the page's content-top (the node's top), so
+    // anchoring the marker there (CSS bottom:0) places it exactly at the node's
+    // top. Absolute positioning keeps it out of the overlay's flex flow, so it
+    // never disturbs the footer/divider/header layout.
     if (breakInfo.manual) {
         container.classList.add("pagination-manual-break");
         const marker = document.createElement("div");
-        marker.className = "pagination-manual-break-label";
-        divider.appendChild(marker);
+        marker.className = "pagination-manual-break-marker";
+        const line = document.createElement("div");
+        line.className = "pagination-manual-break-line";
+        marker.appendChild(line);
+        overlay.appendChild(marker);
     }
 
     // Header area of the new page (fixed size = marginTop)
     headerArea.style.height = `${options.marginTop}px`;
-    fillHeader(headerArea, breakInfo.pagenum, thisLabel, options);
+    fillHeader(headerArea, breakInfo.pagenum, thisLabel, options, revision);
     // Only mid-node split pages render the lock badge in the header area: their
     // widget is exempt from content-visibility (its overlay escapes the box), so
     // the badge actually paints. Whole-node pages would have it clipped by this
@@ -609,7 +750,7 @@ function createLastPageWidget(
 function widgetOptionsFingerprint(options: PaginationOptions): string {
     const src =
         `${options.pageHeight}|${options.pageGap}|${options.marginTop}|${options.marginBottom}|` +
-        `${options.headerLeft}|${options.headerRight}|${options.footerLeft}|${options.footerRight}|` +
+        `${options.headerLeft}|${options.headerMiddle}|${options.headerRight}|${options.footerLeft}|${options.footerMiddle}|${options.footerRight}|` +
         `${JSON.stringify(options.customHeader)}|${JSON.stringify(options.customFooter)}`;
     // djb2 — collisions are vanishingly unlikely across the handful of option
     // states a session sees, and a false match only delays a redraw until the
@@ -653,6 +794,7 @@ function buildDecorations(
     firstPageLabel: string,
     firstPageLocked: boolean,
     options: PaginationOptions,
+    pageRevisions: number[],
     reuse?: Map<string, Decoration>,
 ): DecorationSet {
     const decorations: Decoration[] = [];
@@ -681,9 +823,16 @@ function buildDecorations(
     // "Recalculate Style" seen while typing). A plain class selector carries no
     // sibling dependency, so only the handful of nodes whose first-of-page
     // status actually changed get restyled.
-    const markPageStart = (pos: number, cls: string) => {
+    const markPageStart = (pos: number, cls: string, pageLabel?: string) => {
         const node = doc.resolve(pos).nodeAfter;
-        if (node) decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: cls }));
+        if (!node) return;
+        // pageLabel drives the phone-only slim "Page N" divider rendered via CSS
+        // ::before on the page's first node (see the max-width:767px block in
+        // scenarly.css). It is a plain DOM attribute on the node decoration, so it
+        // never reaches the offscreen measurement div — page counts stay canonical.
+        const attrs: Record<string, string> = { class: cls };
+        if (pageLabel != null) attrs["data-page-label"] = pageLabel;
+        decorations.push(Decoration.node(pos, pos + node.nodeSize, attrs));
     };
 
     // Mount the lock badge for a locked, whole-node page as its own standalone
@@ -700,7 +849,10 @@ function buildDecorations(
     };
 
     // First page top margin / header
-    pushWidget(0, `page-1-header-${firstPageLabel}-${fp}`, -1, () => createFirstPageWidget(firstPageLabel, options));
+    const firstPageRev = pageRevisions[0] ?? 0;
+    pushWidget(0, `page-1-header-${firstPageLabel}-${firstPageRev}-${fp}`, -1, () =>
+        createFirstPageWidget(firstPageLabel, options, firstPageRev),
+    );
     markPageStart(0, "pagination-doc-start");
     if (firstPageLocked) pushPageLockBadge(0);
 
@@ -710,14 +862,15 @@ function buildDecorations(
     // pagenum. A matching key keeps the previously drawn DOM, so a key that
     // omits e.g. freespace causes stale spacer heights after content edits.
     for (const b of breaks) {
-        const key = `pb-${b.pagenum}-${b.freespace}-${b.contdName}-${b.splitNodeType}-${b.label ?? ""}-${b.prevLabel ?? ""}-${b.isEmpty ? "E" : ""}-${b.locked ? "L" : ""}-${b.manual ? "M" : ""}-${fp}`;
-        pushWidget(b.pos, key, -1, () => createPageBreakWidget(b, options));
+        const bRev = pageRevisions[b.pagenum - 1] ?? 0;
+        const key = `pb-${b.pagenum}-${b.freespace}-${b.contdName}-${b.splitNodeType}-${b.label ?? ""}-${b.prevLabel ?? ""}-${b.isEmpty ? "E" : ""}-${b.locked ? "L" : ""}-${b.manual ? "M" : ""}-${bRev}-${fp}`;
+        pushWidget(b.pos, key, -1, () => createPageBreakWidget(b, options, bRev));
         // Only whole-node breaks start a fresh node; mid-node sentence splits
         // (splitNodeType !== null) keep the straddling node, which never had a
         // margin to reset — the old `> .pagination-page-break + p` rule didn't
         // match inside-<p> widgets either.
         if (b.splitNodeType === null) {
-            markPageStart(b.pos, "pagination-break-start");
+            markPageStart(b.pos, "pagination-break-start", b.label ?? String(b.pagenum));
             // Whole-node locked page → mount its badge on the new page's first
             // paragraph (split locked pages render it in the header area above).
             if (b.locked) pushPageLockBadge(b.pos);
@@ -742,6 +895,40 @@ function buildDecorations(
 
 const heightCache = new Map<string, number>();
 
+/**
+ * Bumped whenever previously measured geometry becomes invalid (page format /
+ * margin changes). Entries in `nodeHeightCache` stamped with an older
+ * generation are ignored.
+ */
+let measureGeneration = 0;
+
+/**
+ * First-level height cache keyed by node IDENTITY. ProseMirror shares the
+ * same immutable node objects for unchanged content across transactions, so a
+ * hit here means "this node is byte-identical to last pass" — skipping the
+ * `node.textContent` read and the full-text string key construction that
+ * `heightCache` needs. Without this, every keystroke re-walked the text of
+ * every top-level node in the document just to build cache keys (O(doc text)
+ * per keystroke on the typing hot path).
+ */
+const nodeHeightCache = new WeakMap<Node, { gen: number; height: number }>();
+
+/**
+ * DOMSerializer is derived from the (immutable) schema — build it once per
+ * schema instead of on every `apply` (fromSchema re-walks every node/mark
+ * spec, allocating a fresh serializer per keystroke).
+ */
+const serializerCache = new WeakMap<Schema, DOMSerializer>();
+
+function getSerializer(schema: Schema): DOMSerializer {
+    let s = serializerCache.get(schema);
+    if (!s) {
+        s = DOMSerializer.fromSchema(schema);
+        serializerCache.set(schema, s);
+    }
+    return s;
+}
+
 const getHTMLHeight = (
     domNode: HTMLElement,
     editorDom: HTMLElement,
@@ -757,11 +944,18 @@ const getHTMLHeight = (
         return heightCache.get(cacheKey)!;
     }
 
+    const t0 = performance.now();
     const testDiv = setupTestDiv(editorDom, options);
-    testDiv.innerHTML = domNode.outerHTML;
+    // Insert the (detached) element directly — serializing to an HTML string
+    // and re-parsing it via innerHTML did the same thing at ~3x the cost.
+    testDiv.replaceChildren(domNode);
 
     const rect = testDiv.getBoundingClientRect();
     const height = Math.round(rect.height);
+    // Dev-only stat (compiled out of production): the getBoundingClientRect
+    // above is the typing hot path's only forced layout — it flushes any
+    // pending document layout, so it's the number to watch in the debug panel.
+    recordTiming("pagination:measure", performance.now() - t0);
 
     if (heightCache.size > 10000) heightCache.clear();
     heightCache.set(cacheKey, height);
@@ -794,14 +988,27 @@ const ZERO_TOP_MARGIN_TYPES = new Set<ScreenplayElement>([
  * `scene-heading-spacing-*` multipliers live only in the print CSS and are never
  * applied to the editor DOM, so there is no per-instance variation to measure —
  * a constant keeps this off the layout path entirely, the same way LINE_HEIGHT
- * mirrors --line-height. Keep in sync with the margin-top rules in scriptio.css.
+ * mirrors --line-height. Keep in sync with the margin-top rules in scenarly.css.
  */
 const nodeTopMargin = (nodeType: ScreenplayElement): number => (ZERO_TOP_MARGIN_TYPES.has(nodeType) ? 0 : LINE_HEIGHT);
+
+/**
+ * Memo for setupTestDiv: the last test div element and the editor signature
+ * (className + inline style attribute) it was synced against. The sync work —
+ * className assignment and copying every CSS variable — invalidates the test
+ * div's style and runs for EVERY height measurement otherwise (a straddling
+ * node's sentence split alone measures the node several times per keystroke).
+ * The signature covers everything the sync reads, so a memo hit is exact.
+ */
+let testDivSyncedTo: HTMLElement | null = null;
+let testDivSyncKey: string | null = null;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const setupTestDiv = (editorDom: HTMLElement, _: PaginationOptions): HTMLElement => {
     let testDiv = document.getElementById("pagination-test-div");
     if (!testDiv) {
+        testDivSyncedTo = null;
+        testDivSyncKey = null;
         testDiv = document.createElement("div");
         testDiv.id = "pagination-test-div";
         testDiv.className = "ProseMirror pagination";
@@ -824,15 +1031,22 @@ const setupTestDiv = (editorDom: HTMLElement, _: PaginationOptions): HTMLElement
         document.body.appendChild(testDiv);
     }
 
+    // Skip the (invalidating) sync below when nothing it depends on changed
+    // since the last call — the common case for every measurement after the
+    // first in a pass, and for every pass while the page format is stable.
+    const syncKey = `${editorDom.className}|${editorDom.getAttribute("style") ?? ""}`;
+    if (testDiv === testDivSyncedTo && syncKey === testDivSyncKey) {
+        return testDiv;
+    }
+
     // Sync classes and CSS variables that affect layout from editor to test div.
     // testDiv lives in <body>, not inside the editor, so it doesn't inherit the editor's CSS vars.
     testDiv.className = editorDom.className;
 
     // Copy all CSS variables from the live editor DOM to the test div. This includes
-    // both element margin/style vars (set by DocumentEditorPanel) and page dimension
-    // vars (set by syncVars inside each command before the transaction is dispatched).
-    // Reading from editorDom rather than from options avoids the stale-options problem:
-    // extension.options in apply() may lag behind the mutation done by the command.
+    // both element margin/style vars (set by DocumentEditorPanel, which exist ONLY
+    // on the DOM — they are not pagination options) and page dimension vars (set by
+    // syncVars inside each command before the transaction is dispatched).
     for (let i = 0; i < editorDom.style.length; i++) {
         const prop = editorDom.style[i];
         if (prop.startsWith("--")) {
@@ -845,6 +1059,9 @@ const setupTestDiv = (editorDom: HTMLElement, _: PaginationOptions): HTMLElement
     // syncVars already wrote to editorDom (guaranteed current for this transaction).
     testDiv.classList.remove("pagination");
     testDiv.style.width = editorDom.style.getPropertyValue("--page-width");
+
+    testDivSyncedTo = testDiv;
+    testDivSyncKey = syncKey;
 
     return testDiv;
 };
@@ -971,6 +1188,9 @@ interface PaginationState {
     firstPageLabel: string;
     /** Whether page 1 carries a frozen page-lock token (drives its lock badge). */
     firstPageLocked: boolean;
+    /** Max revision index per page (index 0 = page 1), for the `*` header
+     *  placeholder. Empty unless a header template uses `*`. */
+    pageRevisions: number[];
 }
 
 /**
@@ -1000,9 +1220,8 @@ function computePageLabels(
 }
 
 const createPaginationPlugin = (extension: {
-    options: PaginationOptions;
     editor: Editor;
-    storage: { fontsReady: boolean };
+    storage: { fontsReady: boolean; live: PaginationOptions };
 }) =>
     new Plugin({
         key: paginationKey,
@@ -1013,6 +1232,7 @@ const createPaginationPlugin = (extension: {
                 lastPageFreespace: 0,
                 firstPageLabel: "1",
                 firstPageLocked: false,
+                pageRevisions: [],
             }),
             apply: timeApply("pagination", (tr, value: PaginationState, oldState, newState): PaginationState => {
                 // Wait for the screenplay fonts to finish loading before doing
@@ -1023,7 +1243,10 @@ const createPaginationPlugin = (extension: {
                 // what eventually pulls us past this guard.
                 if (!extension.storage.fontsReady) return value;
 
-                const options = extension.options as PaginationOptions;
+                // storage.live is the per-editor mutable options object every
+                // command writes to synchronously before dispatch — see
+                // cloneLiveOptions for why extension.options can't be used.
+                const options = extension.storage.live;
                 const formatUpdate = tr.getMeta("pageFormatUpdate");
                 const forceUpdate = tr.getMeta("forcePaginationUpdate");
 
@@ -1033,6 +1256,8 @@ const createPaginationPlugin = (extension: {
                 // layout but not node heights — the cached measurements stay valid.
                 if (formatUpdate) {
                     heightCache.clear();
+                    // Invalidate the node-identity cache too — same geometry change.
+                    measureGeneration++;
                 }
 
                 // Nothing pagination-related changed
@@ -1040,6 +1265,12 @@ const createPaginationPlugin = (extension: {
 
                 // UUID assignment by nodeIdDedup only changes data-id attrs — no layout impact
                 if (tr.getMeta("nodeDedupId")) return value;
+
+                // Revision stamping only writes revision marks/attrs — no layout
+                // impact, so normally skip it. But when a header template uses the
+                // `*` page-revision placeholder, a stamp can change what a page's
+                // header reads, so let it through to recompute the header content.
+                if (tr.getMeta(REVISION_STAMP_META) && !headerUsesRevision(options)) return value;
 
                 const fullRemeasure = forceUpdate || formatUpdate;
 
@@ -1067,26 +1298,7 @@ const createPaginationPlugin = (extension: {
 
                 const editorDOM = extension.editor.view.dom as HTMLElement;
 
-                // extension.options may lag behind the synchronous mutations done by the
-                // commands (Tiptap options-object identity issue). editorDOM's inline style
-                // is always current because syncVars writes to it inside every command,
-                // before the transaction is dispatched. Override the stale option fields.
-                const _ph = editorDOM.style.getPropertyValue("--page-height");
-                const _pw = editorDOM.style.getPropertyValue("--page-width");
-                const _mt = editorDOM.style.getPropertyValue("--page-margin-top");
-                const _mb = editorDOM.style.getPropertyValue("--page-margin-bottom");
-                const _ml = editorDOM.style.getPropertyValue("--page-margin-left");
-                const _mr = editorDOM.style.getPropertyValue("--page-margin-right");
-                if (_ph) options.pageHeight = parseFloat(_ph);
-                if (_pw) options.pageWidth = parseFloat(_pw);
-                if (_mt) options.marginTop = parseFloat(_mt);
-                if (_mb) options.marginBottom = parseFloat(_mb);
-                if (_ml) options.marginLeft = parseFloat(_ml);
-                if (_mr) options.marginRight = parseFloat(_mr);
-                const _snp = editorDOM.dataset.startNewPageTypes;
-                if (_snp) options.startNewPageTypes = new Set(JSON.parse(_snp));
-
-                const serializer = DOMSerializer.fromSchema(newState.schema);
+                const serializer = getSerializer(newState.schema);
 
                 // --- Page-lock setup ---
                 // Hot-path discipline: when locking is off (the common case),
@@ -1151,20 +1363,30 @@ const createPaginationPlugin = (extension: {
                     const nodeType = node.type.name as ScreenplayElement;
                     const logic = BREAK_LOGIC[nodeType];
 
-                    // Use the module-level heightCache (keyed by content) to avoid re-serializing
-                    // unchanged nodes. Cache misses (new/edited content) trigger serialization.
+                    // Two-level height cache. Level 1: node identity (WeakMap) —
+                    // unchanged nodes are the same object across transactions, so a
+                    // hit costs one map lookup and skips reading the node's text
+                    // entirely. Level 2: the content-keyed string cache, which
+                    // survives node-identity churn (undo/redo, remote sync, reload).
+                    // Only a miss on both levels serializes + measures.
                     // element is hoisted so the split block can reuse it without a second serialize.
-                    const textContent = node.textContent || "";
-                    const cacheKey = `${node.type.name}:${options.pageWidth}:${options.marginLeft}:${options.marginRight}:${node.content.size}:${textContent}`;
-                    let height = heightCache.get(cacheKey) ?? null;
                     let element: HTMLElement | null = null;
+                    let height: number;
+                    const identityHit = nodeHeightCache.get(node);
+                    if (identityHit !== undefined && identityHit.gen === measureGeneration) {
+                        height = identityHit.height;
+                    } else {
+                        const textContent = node.textContent || "";
+                        const cacheKey = `${node.type.name}:${options.pageWidth}:${options.marginLeft}:${options.marginRight}:${node.content.size}:${textContent}`;
+                        let measured = heightCache.get(cacheKey) ?? null;
 
-                    if (height === null) {
-                        element = serializer.serializeNode(node) as HTMLElement;
-                        height = getHTMLHeight(element, editorDOM, node.type.name, options, node.content.size);
+                        if (measured === null) {
+                            element = serializer.serializeNode(node) as HTMLElement;
+                            measured = getHTMLHeight(element, editorDOM, node.type.name, options, node.content.size);
+                        }
+                        height = measured;
+                        nodeHeightCache.set(node, { gen: measureGeneration, height });
                     }
-
-                    if (height == null) continue;
 
                     // Track the most recent Character name for CONT'D labels.
                     if (nodeType === ScreenplayElement.Character) {
@@ -1247,7 +1469,7 @@ const createPaginationPlugin = (extension: {
                                 pagenum: ++pagenum,
                                 // + pageStartMargin: the ending page's first node was margin-stripped.
                                 freespace: Math.max(0, freespace + pageStartMargin),
-                                contdName: logic?.showMoreContd ? lastCharName : "",
+                                contdName: options.showContdPageBreak && logic?.showMoreContd ? lastCharName : "",
                                 splitNodeType: nodeType,
                                 anchorId: dataId,
                                 splitOffset,
@@ -1339,7 +1561,7 @@ const createPaginationPlugin = (extension: {
                                     // + pageStartMargin: the ending page's first node was margin-stripped.
                                     freespace: Math.max(0, freespaceBeforeNode - split.topHeight + pageStartMargin),
                                     // contdName non-empty for dialogue: triggers (MORE)/(CONT'D) labels.
-                                    contdName: logic.showMoreContd ? lastCharName : "",
+                                    contdName: options.showContdPageBreak && logic.showMoreContd ? lastCharName : "",
                                     // splitNodeType drives the overlay padding-escape in createPageBreakWidget.
                                     splitNodeType: nodeType,
                                     // Anchor for page locking: the node being split owns both halves.
@@ -1413,6 +1635,7 @@ const createPaginationPlugin = (extension: {
                         // double-orphan), the whole block starts fresh — no labels needed.
                         const firstMovingType = firstMovingNode?.type;
                         const isDialogueSplit =
+                            options.showContdPageBreak &&
                             lastCharName !== "" &&
                             (firstMovingType === ScreenplayElement.Dialogue ||
                                 firstMovingType === ScreenplayElement.Parenthetical);
@@ -1651,6 +1874,15 @@ const createPaginationPlugin = (extension: {
                     }
                 }
 
+                // Per-page revision (only when a header uses the `*` placeholder);
+                // a change here re-renders headers even when the breaks are identical.
+                const usesRevision = headerUsesRevision(options);
+                const pageRevisions = usesRevision ? computePageRevisions(newState.doc, breaks) : [];
+                const revisionsChanged =
+                    usesRevision &&
+                    (pageRevisions.length !== value.pageRevisions.length ||
+                        pageRevisions.some((r, i) => r !== value.pageRevisions[i]));
+
                 // Check if breaks actually changed compared to mapped old breaks.
                 const breaksChanged =
                     fullRemeasure ||
@@ -1676,7 +1908,7 @@ const createPaginationPlugin = (extension: {
                 const mapped = value.decset.map(tr.mapping, tr.doc);
 
                 let decset: DecorationSet;
-                if (breaksChanged) {
+                if (breaksChanged || revisionsChanged) {
                     // Rebuild, but reuse the previous Decoration instance for every
                     // widget whose position+key is unchanged. On a typical edit only
                     // the last-page widget (or a break near the edit) actually
@@ -1689,6 +1921,7 @@ const createPaginationPlugin = (extension: {
                         firstPageLabel,
                         firstPageLocked,
                         options,
+                        pageRevisions,
                         buildReuseMap(mapped),
                     );
                 } else {
@@ -1713,11 +1946,12 @@ const createPaginationPlugin = (extension: {
                                   firstPageLabel,
                                   firstPageLocked,
                                   options,
+                                  pageRevisions,
                                   buildReuseMap(mapped),
                               );
                 }
 
-                return { decset, breaks, lastPageFreespace, firstPageLabel, firstPageLocked };
+                return { decset, breaks, lastPageFreespace, firstPageLabel, firstPageLocked, pageRevisions };
             }),
         },
         appendTransaction() {
@@ -1749,11 +1983,30 @@ const createPaginationPlugin = (extension: {
             // page. See PAGE_COLLAPSE_META and the Backspace handler.
             if (tr.getMeta(PAGE_COLLAPSE_META)) return true;
 
-            const opts = extension.options as PaginationOptions;
+            // Revision stamping only adds marks / the revision attribute; it never
+            // removes a locked anchor's data-id, so it is exempt from the spill
+            // guard — and skipping the O(doc) scan keeps it off the hot path.
+            if (tr.getMeta(REVISION_STAMP_META)) return true;
+
+            const opts = extension.storage.live;
             if (!opts.getPageLocking?.()) return true;
 
             const pageLocks = opts.getPageLocks?.();
             if (!pageLocks) return true;
+
+            // Only a step that REMOVES content (or replaces a node wrapper —
+            // setNodeMarkup) can make a locked anchor's data-id disappear.
+            // Pure insertions — typing, Enter splits, mark changes — map every
+            // old range to itself (oldStart === oldEnd), so skip the two O(doc)
+            // before/after scans below on the common keystroke.
+            let removesContent = false;
+            for (const step of tr.steps) {
+                step.getMap().forEach((oldStart: number, oldEnd: number) => {
+                    if (oldEnd > oldStart) removesContent = true;
+                });
+                if (removesContent) break;
+            }
+            if (!removesContent) return true;
 
             // PAGE_ONE_KEY has no node to defend — page 1 can't lose its
             // lock through doc edits.
@@ -1818,12 +2071,12 @@ const createPaginationPlugin = (extension: {
 /**
  * Declares the `pageBreak` block attribute that drives manual page breaks.
  *
- * Kept SEPARATE from ScriptioPagination on purpose: this extension is part of
+ * Kept SEPARATE from ScenarlyPagination on purpose: this extension is part of
  * BASE_EXTENSIONS, so the attribute lives in ScreenplaySchema and survives the
- * full-project `.scriptio` (de)serialization paths (screenplayOf /
+ * full-project `.scenarly` (de)serialization paths (screenplayOf /
  * applyProjectData), which build nodes from BASE_EXTENSIONS alone — without the
  * pagination plugin. The pagination *logic*, the toggle command, and the visual
- * hint stay in ScriptioPagination; only the schema-level attribute lives here.
+ * hint stay in ScenarlyPagination; only the schema-level attribute lives here.
  *
  * Only meaningful on top-level blocks (the pagination loop walks doc children),
  * so it is limited to those types — off text/marks and the inner dual-dialogue
@@ -1860,7 +2113,7 @@ export const PageBreakAttribute = Extension.create({
     },
 });
 
-export const ScriptioPagination = Extension.create<PaginationOptions>({
+export const ScenarlyPagination = Extension.create<PaginationOptions>({
     name: "Pagination",
 
     addOptions() {
@@ -1876,6 +2129,11 @@ export const ScriptioPagination = Extension.create<PaginationOptions>({
              *  with a fallback monospace font (Consolas etc.) that produces a
              *  different line-wrap from CourierPrime. */
             fontsReady: false,
+            /** The per-editor mutable options object. Commands write here (and
+             *  mirror geometry to CSS vars via syncVars for rendering); the
+             *  plugin's `apply` reads from here. See cloneLiveOptions for why
+             *  `extension.options` cannot carry live mutations. */
+            live: cloneLiveOptions(this.options),
         };
     },
 
@@ -1883,7 +2141,7 @@ export const ScriptioPagination = Extension.create<PaginationOptions>({
         const editorDOM = this.editor.view.dom;
 
         editorDOM.classList.add("pagination");
-        syncVars(editorDOM, this.options);
+        syncVars(editorDOM, this.storage.live);
 
         let style = document.getElementById("pagination-style");
         if (!style) {
@@ -1946,8 +2204,29 @@ export const ScriptioPagination = Extension.create<PaginationOptions>({
                 }
 
                 .pagination-header-left,
+                .pagination-header-middle,
+                .pagination-header-right,
+                .pagination-footer-left,
+                .pagination-footer-middle,
+                .pagination-footer-right {
+                    flex: 1 1 0;
+                    min-width: 0;
+                    color: var(--editor-text);
+                    font-family: var(--font-screenplay);
+                    line-height: var(--line-height);
+                    white-space: pre;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .pagination-header-left,
                 .pagination-footer-left {
                     text-align: left;
+                }
+
+                .pagination-header-middle,
+                .pagination-footer-middle {
+                    text-align: center;
                 }
 
                 .pagination-header-right,
@@ -2006,43 +2285,33 @@ export const ScriptioPagination = Extension.create<PaginationOptions>({
                     transform: translateX(calc(100% + 8px));
                 }
 
-                /* Manual (context-menu) page break hint: a dashed line across the
-                   inter-page gap with a centred "page break" pill. Scoped to manual
-                   breaks so natural breaks keep their plain divider. The label text
-                   is supplied per-locale via --page-break-label (set by the editor
-                   panel), mirroring how (MORE)/(CONT'D) are localised. */
-                .pagination-manual-break .pagination-divider {
-                    position: relative;
-                }
-                .pagination-manual-break-label {
+                /* Manual (context-menu) page break hint. Instead of a faint mark
+                   buried in the inter-page gap, the affordance is drawn at the
+                   very top of the new page: a line across the full page width,
+                   sitting just above the node that begins the page. The marker is
+                   anchored to the overlay's bottom edge, which aligns with the
+                   page's content-top (the node's top); absolute positioning keeps
+                   it out of the overlay's flex flow. */
+                .pagination-manual-break-marker {
                     position: absolute;
                     left: 0;
                     right: 0;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    border-top: 1px dashed var(--secondary-text);
-                    opacity: 0.55;
+                    bottom: 4px;
+                    z-index: 2;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
                     pointer-events: none;
+                    user-select: none;
                 }
-                .pagination-manual-break-label::after {
-                    content: var(--page-break-label, "Page break");
-                    position: absolute;
-                    left: 50%;
-                    top: 50%;
-                    transform: translate(-50%, -50%);
-                    background: var(--main-bg);
-                    color: var(--secondary-text);
-                    padding: 1px 10px;
-                    border-radius: 999px;
-                    font-size: 0.68rem;
-                    font-weight: 600;
-                    letter-spacing: 0.06em;
-                    text-transform: uppercase;
-                    white-space: nowrap;
+                .pagination-manual-break-line {
+                    align-self: stretch;
+                    border-top: 1px solid var(--secondary-text);
+                    opacity: 0.45;
                 }
             `;
 
-        setupTestDiv(editorDOM, this.options);
+        setupTestDiv(editorDOM, this.storage.live);
 
         // The screenplay @font-face fonts (CourierPrime + fallbacks) load
         // asynchronously. Until the real font is applied, the test div lays
@@ -2146,7 +2415,7 @@ export const ScriptioPagination = Extension.create<PaginationOptions>({
                 const { $from, empty } = state.selection;
                 if (!empty || $from.parentOffset !== 0) return false;
 
-                const opts = this.options as PaginationOptions;
+                const opts = this.storage.live;
                 if (!opts.getPageLocking?.()) return false;
                 const pageLocks = opts.getPageLocks?.();
                 if (!pageLocks) return false;
@@ -2232,7 +2501,7 @@ export const ScriptioPagination = Extension.create<PaginationOptions>({
                 if (!empty || $from.parentOffset !== 0) return false;
                 if ($from.parent.textContent.length === 0) return false; // nothing to push down
 
-                const opts = this.options as PaginationOptions;
+                const opts = this.storage.live;
                 if (!opts.getPageLocking?.()) return false;
                 const pageLocks = opts.getPageLocks?.();
                 if (!pageLocks) return false;
@@ -2254,69 +2523,78 @@ export const ScriptioPagination = Extension.create<PaginationOptions>({
     },
 
     addCommands() {
+        // Every command mutates `this.storage.live` — the per-editor shared
+        // options object the plugin's `apply` reads — never `this.options`,
+        // whose mutations are invisible outside this context (see
+        // cloneLiveOptions). Geometry changes are mirrored to CSS vars with
+        // syncVars because the stylesheet consumes them.
         return {
             updatePageSize:
                 (size) =>
                 ({ tr }) => {
-                    Object.assign(this.options, size);
-                    syncVars(this.editor.view.dom, this.options);
+                    Object.assign(this.storage.live, size);
+                    syncVars(this.editor.view.dom, this.storage.live);
                     tr.setMeta("pageFormatUpdate", true);
                     return true;
                 },
             updatePageHeight:
                 (h) =>
                 ({ tr }) => {
-                    this.options.pageHeight = h;
-                    syncVars(this.editor.view.dom, this.options);
+                    this.storage.live.pageHeight = h;
+                    syncVars(this.editor.view.dom, this.storage.live);
                     tr.setMeta("pageFormatUpdate", true);
                     return true;
                 },
             updatePageWidth:
                 (w) =>
                 ({ tr }) => {
-                    this.options.pageWidth = w;
-                    syncVars(this.editor.view.dom, this.options);
+                    this.storage.live.pageWidth = w;
+                    syncVars(this.editor.view.dom, this.storage.live);
                     tr.setMeta("pageFormatUpdate", true);
                     return true;
                 },
             updatePageGap:
                 (g) =>
                 ({ tr }) => {
-                    this.options.pageGap = g;
+                    this.storage.live.pageGap = g;
                     tr.setMeta("forcePaginationUpdate", true);
                     return true;
                 },
             updateMargins:
                 (m) =>
                 ({ tr }) => {
-                    Object.assign(this.options, {
+                    Object.assign(this.storage.live, {
                         marginTop: m.top,
                         marginBottom: m.bottom,
                         marginLeft: m.left,
                         marginRight: m.right,
                     });
-                    syncVars(this.editor.view.dom, this.options);
+                    syncVars(this.editor.view.dom, this.storage.live);
                     tr.setMeta("pageFormatUpdate", true);
                     return true;
                 },
             updateHeaderContent:
-                (l, r, p) =>
+                (l, m, r, p) =>
                 ({ tr }) => {
-                    if (p !== undefined) this.options.customHeader[p] = { headerLeft: l, headerRight: r };
+                    const live = this.storage.live;
+                    if (p !== undefined) live.customHeader[p] = { headerLeft: l, headerMiddle: m, headerRight: r };
                     else {
-                        this.options.headerLeft = l;
-                        this.options.headerRight = r;
+                        live.headerLeft = l;
+                        live.headerMiddle = m;
+                        live.headerRight = r;
                     }
                     tr.setMeta("forcePaginationUpdate", true);
                     return true;
                 },
             updateFooterContent:
-                (l, r, p) =>
+                (l, m, r, p) =>
                 ({ tr }) => {
-                    if (p !== undefined) this.options.customFooter[p] = { footerLeft: l, footerRight: r };
+                    const live = this.storage.live;
+                    if (p !== undefined) live.customFooter[p] = { footerLeft: l, footerMiddle: m, footerRight: r };
                     else {
-                        this.options.footerLeft = l;
-                        this.options.footerRight = r;
+                        live.footerLeft = l;
+                        live.footerMiddle = m;
+                        live.footerRight = r;
                     }
                     tr.setMeta("forcePaginationUpdate", true);
                     return true;
@@ -2324,15 +2602,21 @@ export const ScriptioPagination = Extension.create<PaginationOptions>({
             updatePageBreakBackground:
                 (c) =>
                 ({ tr }) => {
-                    this.options.pageBreakBackground = c;
+                    this.storage.live.pageBreakBackground = c;
                     tr.setMeta("forcePaginationUpdate", true);
                     return true;
                 },
             updateStartNewPageTypes:
                 (types) =>
                 ({ tr }) => {
-                    this.options.startNewPageTypes = types;
-                    this.editor.view.dom.dataset.startNewPageTypes = JSON.stringify([...types]);
+                    this.storage.live.startNewPageTypes = types;
+                    tr.setMeta("forcePaginationUpdate", true);
+                    return true;
+                },
+            updateShowContdPageBreak:
+                (show) =>
+                ({ tr }) => {
+                    this.storage.live.showContdPageBreak = show;
                     tr.setMeta("forcePaginationUpdate", true);
                     return true;
                 },

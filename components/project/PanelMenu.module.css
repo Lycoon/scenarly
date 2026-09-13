@@ -1,0 +1,168 @@
+/* The menu the panel switcher opens (SplitPanelContainer's PanelSwitcherMenu)
+   and the controls inside it. */
+
+.dropdown_menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 200px;
+    padding: 6px;
+    background-color: var(--secondary);
+    border: 1px solid var(--separator);
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 1;
+}
+
+.dropdown_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+    color: var(--secondary-text);
+    background-color: transparent;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.dropdown_item:hover:not(:disabled) {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}
+
+.dropdown_item:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.dropdown_item_active {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}
+
+.item_label {
+    flex: 1;
+}
+
+/* The display-zoom stepper. Laid out on .dropdown_item's grid — same padding,
+   same icon-then-label columns — so its icon and text line up with the toggles
+   above it; it just carries a value on the right instead of being clickable
+   itself. Not a button: only the three controls inside it are. */
+.zoom_row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+}
+
+.zoom_stepper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    /* Pulled into the row's right padding so the + button's hover box ends flush
+       with the menu's inner edge, the way a full-width item's does. */
+    margin-right: -6px;
+}
+
+.zoom_btn,
+.zoom_value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background-color: transparent;
+    color: var(--secondary-text);
+    font-family: inherit;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.zoom_btn {
+    width: 24px;
+}
+
+.zoom_value {
+    /* Fixed width + tabular figures so stepping 75 → 100 → 125 doesn't jog the
+       − and + buttons sideways as the digit count changes. */
+    width: 46px;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.zoom_btn:hover:not(:disabled),
+.zoom_value:hover {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}
+
+/* At either end of the range the button stays in place but stops responding —
+   removing it would shuffle the stepper sideways under the pointer that is
+   repeatedly clicking it. */
+.zoom_btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* Row of icon-only, mutually exclusive toggles (see ScreenplayViewSwitcher).
+   Left-aligned rather than stretched, so the menu keeps one left edge. The
+   buttons are square, and the row carries a 3px left inset so a 32px square
+   still centres its 14px glyph on .dropdown_item's icon column (12px inset +
+   half the glyph); without it the glyphs would sit 3px left of the labelled
+   items' icons. The bottom margin keeps the row off the item below it. */
+.icon_row {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 4px;
+    width: 100%;
+    padding: 0 0 0 3px;
+    margin-bottom: 6px;
+}
+
+.icon_btn {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--secondary-text);
+    background-color: transparent;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.icon_btn:hover:not(:disabled) {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}
+
+.icon_btn_active {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}

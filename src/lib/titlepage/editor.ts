@@ -6,7 +6,7 @@ import Document from "@tiptap/extension-document";
 import Text from "@tiptap/extension-text";
 
 import { TitlePageExtensions } from "./nodes";
-import { ScriptioBold, ScriptioItalic, ScriptioUnderline } from "../screenplay/nodes";
+import { ScenarlyBold, ScenarlyItalic, ScenarlyUnderline } from "../screenplay/nodes";
 import { Placeholder } from "../screenplay/extensions/placeholder-extension";
 
 const TitlePageMetadata = Extension.create({
@@ -93,10 +93,13 @@ function isFormatNode(name: string): boolean {
     return name === TitlePageElement.Title || name === TitlePageElement.Author || name === TitlePageElement.Date;
 }
 
-export const applyTitlePageMarkToggle = (editor: Editor, style: Style) => {
-    if (style & Style.Bold) editor.chain().toggleBold().focus().run();
-    if (style & Style.Italic) editor.chain().toggleItalic().focus().run();
-    if (style & Style.Underline) editor.chain().toggleUnderline().focus().run();
+// See applyMarkToggle in screenplay/editor.ts for the `refocus` rationale: mobile
+// passes false so the extra view.dom.focus() doesn't drop the iOS keyboard.
+export const applyTitlePageMarkToggle = (editor: Editor, style: Style, refocus = true) => {
+    const chain = () => (refocus ? editor.chain().focus() : editor.chain());
+    if (style & Style.Bold) chain().toggleBold().run();
+    if (style & Style.Italic) chain().toggleItalic().run();
+    if (style & Style.Underline) chain().toggleUnderline().run();
 };
 
 /**
@@ -134,9 +137,9 @@ export const TITLEPAGE_BASE_EXTENSIONS = [
     ...TitlePageExtensions,
 
     // Reuse mark extensions from screenplay
-    ScriptioBold,
-    ScriptioItalic,
-    ScriptioUnderline,
+    ScenarlyBold,
+    ScenarlyItalic,
+    ScenarlyUnderline,
 
     Placeholder.configure({
         placeholder: "",

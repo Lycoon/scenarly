@@ -7,6 +7,9 @@
 }
 
 .sidebar_content {
+    /* Containing block for the marker gutter, which is positioned into the right
+       padding below. */
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -43,6 +46,79 @@
     display: flex;
     flex-direction: row;
     gap: 10px;
+}
+
+/* Phone: the navigation sidebar becomes a left overlay drawer that slides over
+ * the editor instead of an inline column. position: fixed takes it out of the
+ * workspace flex row, so the editor fills the width; a translateX hides it when
+ * closed while keeping it mounted for the slide animation. */
+@media (max-width: 767px) {
+    .container {
+        position: fixed;
+        top: var(--navbar-height);
+        left: 0;
+        bottom: 0;
+        z-index: 60;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .sidebar_content {
+        width: var(--mobile-drawer-width);
+        height: 100%;
+        padding: 12px 12px calc(20px + var(--safe-bottom)) calc(12px + var(--safe-left));
+        /* No drawer background — only the rounded .element panel shows, floating
+         * over the (backdrop-dimmed) editor, matching the desktop look. */
+        transform: translateX(0);
+        /* visibility flips back with no delay on the way in: the drawer has to be
+         * rendered before it can slide into view. */
+        transition:
+            transform 0.25s ease,
+            visibility 0s;
+        pointer-events: auto;
+    }
+
+    .collapsed {
+        width: var(--mobile-drawer-width);
+        padding: 12px;
+        transform: translateX(-100%);
+        pointer-events: none;
+        /*
+         * Stop rendering the drawer once it has finished sliding out.
+         *
+         * Translating it off-screen is not enough on iOS. Running the transform
+         * transition promotes this fixed, full-height element to its own
+         * compositing layer with a real backing store (the panel, its text, its
+         * box-shadow), and WebKit keeps that layer after the transition ends —
+         * a `position: fixed` element with a non-identity transform and a
+         * declared transition is exactly what it holds on to. From then on the
+         * layer sits permanently over the panel area at z-index 60, so every
+         * pan of the board and every scroll of the editor has to recomposite
+         * against it: smooth until the drawer is first opened, unusable after.
+         *
+         * `visibility: hidden` drops it out of rendering entirely and the layer
+         * with it, while leaving the subtree laid out — the marker gutter is
+         * measured against the scene list with getBoundingClientRect (see
+         * EditorSidebarNavigation), which `display: none` would zero.
+         *
+         * The 0.25s delay is what lets the slide-out still be seen: visibility
+         * is not interpolated, so it simply holds `visible` for the length of the
+         * transform and then flips. The format drawer on the right needs the same
+         * treatment and now carries it (EditorSidebar.module.css).
+         */
+        visibility: hidden;
+        transition:
+            transform 0.25s ease,
+            visibility 0s linear 0.25s;
+    }
+
+    /* Follow the drawer's own delayed visibility rather than the desktop rule's
+     * immediate hide, so the slide-out is actually seen. Must be `inherit` and
+     * not `visible`: an explicit `visible` here would keep the panel rendered
+     * after the drawer above it has gone hidden, which is the whole problem. */
+    .collapsed .element {
+        visibility: inherit;
+    }
 }
 
 /* Scenes list */
@@ -100,12 +176,142 @@
     flex: 1;
 }
 
+/* One tick per scene the filter keeps, placed at its share of the list's height
+   — a density read-out of where the matches fall in the screenplay.
+   Sits in the sidebar's own right padding, outside the rounded panel (which
+   clips its overflow), so the scene titles keep the full panel width. `top` and
+   `height` are measured onto the scene list in EditorSidebarNavigation, since
+   nothing here lays the two out together. Mounted only while a filter is on, and
+   inert so it can't swallow a drag or a scroll aimed at the list. */
+.marker_gutter {
+    position: absolute;
+    right: 3px;
+    width: 6px;
+    pointer-events: none;
+}
+
+.marker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 2px;
+    transform: translateY(-50%);
+    opacity: 0.8;
+}
+
+/* Document tree list. A hold anywhere on it opens the tree menu on touch (see
+   DocumentTreeSidebarView), so iOS's native selection / callout must not claim
+   the gesture first — it otherwise starts selecting the text behind the drawer
+   and the hold never becomes a menu. The rename field opts back in so its caret
+   and text selection still work. */
+@media (pointer: coarse) {
+    .tree_list {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+
+    .tree_list input {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+}
+
 .list_header {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 8px;
     padding-left: 20px;
+}
+
+/* Touch-only "+" opening the list's create menu — the right-click on empty list
+   space has no touch equivalent, and a list long enough to fill the panel leaves
+   no empty space to long-press either. Hidden on fine pointers.
+   Same 20px inset as .filter_btn, so both list headers end at the right edge of
+   the rows below them. */
+.header_btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    /* Padded box is taller than the header's icon and label, so the vertical
+       padding is pulled back out with negative margins: the tap target keeps its
+       size while the header stays the same height as the button-less ones, and
+       the list below it doesn't shift when switching tabs. */
+    margin: -4px 20px -4px auto;
+    padding: 4px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+}
+
+/* Secondary tint throughout, hover reading from the background alone — as on
+   .filter_btn, and set on the svg for the same reason (globals.css paints every
+   `svg` with --primary-text, which outranks anything the parent passes down). */
+.header_btn svg {
+    color: var(--secondary-text);
+}
+
+.header_btn:hover {
+    background-color: var(--editor-sidebar-hover);
+}
+
+@media (pointer: coarse) {
+    .header_btn {
+        display: flex;
+    }
+}
+
+/* Scene filter trigger, pinned to the right end of the header — inset to line up
+   with the right edge of the scene items below it. Like .header_btn its vertical
+   padding is pulled back out with negative margins so the tap target stays
+   comfortable without making this header taller than the others. */
+.filter_btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -4px 20px -4px auto;
+    padding: 4px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+/* The icon keeps its secondary tint throughout; hover and the active filter
+   state read from the background and the badge instead. Set on the svg itself,
+   not inherited from the button: globals.css paints every `svg` with
+   --primary-text, which outranks anything the parent passes down. */
+.filter_btn svg {
+    color: var(--secondary-text);
+}
+
+.filter_btn:hover,
+.filter_btn_active {
+    background-color: var(--editor-sidebar-hover);
+}
+
+/* Count of active filters, tucked into the button's top-right corner. */
+.filter_badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 13px;
+    height: 13px;
+    padding: 0 3px;
+    border-radius: 7px;
+    background-color: var(--primary-text);
+    color: var(--editor-sidebar);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 13px;
+    text-align: center;
 }
 
 .list_title {
@@ -156,4 +362,20 @@
 
 .tab_btn_active:hover {
     color: var(--primary-text);
+}
+
+/* Phone drawer: a tap on any gap in the panel must not park a caret in it — the
+ * same rule, and the same reason, as .sidebar_backdrop in
+ * ProjectWorkspace.module.css. Fields inside the drawer (rename, replies) opt
+ * back in so their own caret and selection keep working. */
+@media (max-width: 767px) {
+    .sidebar_content {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    .sidebar_content :is(input, textarea) {
+        -webkit-user-select: text;
+        user-select: text;
+    }
 }

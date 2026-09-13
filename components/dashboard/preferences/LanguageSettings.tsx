@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Check, ChevronDown, Download, Loader2, Plus, SpellCheck, X } from "lucide-react";
+import { Check, ChevronDown, Download, Loader2, Mic, Plus, SpellCheck, X } from "lucide-react";
 import form from "./../../utils/Form.module.css";
 import sharedStyles from "../project/ProjectSettings.module.css";
 import styles from "./SpellcheckSettings.module.css";
@@ -9,12 +9,16 @@ import { UserLanguage } from "@src/lib/utils/types";
 import { useLocale } from "@src/context/LocaleContext";
 import { useSettings } from "@src/lib/utils/hooks";
 import { useSpellcheck } from "@src/context/SpellcheckContext";
+import { useReadAloud } from "@src/context/ReadAloudContext";
 import { ProjectContext } from "@src/context/ProjectContext";
 import {
     BUILTIN_DICTIONARY_CODE,
     DICTIONARY_CATALOG,
     formatDictionarySize,
 } from "@src/lib/spellcheck/spellcheck-dictionaries";
+import { VOICE_CATALOG, formatVoiceSize } from "@src/lib/tts/voice-catalog";
+import { MODEL_VARIANTS, ModelQuality } from "@src/lib/tts/runtime";
+import { getDictationLanguage, isDictationSupported, setDictationLanguage } from "@src/lib/editor/use-dictation";
 import Dropdown, { DropdownOption } from "@components/utils/Dropdown";
 import { useTranslations } from "next-intl";
 
@@ -35,11 +39,45 @@ const LanguageSettings = () => {
     const t = useTranslations("language");
     const { spellcheckLang, setSpellcheckLang, installedDictionaries, downloadProgress, installDictionary } =
         useSpellcheck();
+    const {
+        installedModels,
+        activeModel,
+        downloadingModel,
+        downloadProgress: voiceProgress,
+        gpuAvailable,
+        installModel,
+        removeModel,
+        setActiveModel,
+    } = useReadAloud();
     const { repository } = useContext(ProjectContext);
 
     const [wordInput, setWordInput] = useState("");
     const [dictOpen, setDictOpen] = useState(false);
     const [customWords, setCustomWords] = useState<string[]>([]);
+
+    // Dictation (footer mic) language — a device preference read/written directly
+    // to localStorage. Only meaningful where the browser has speech recognition.
+    const dictationSupported = useMemo(() => isDictationSupported(), []);
+    const [dictationLang, setDictationLangState] = useState(() => getDictationLanguage());
+    const handleDictationChange = useCallback((value: string) => {
+        setDictationLangState(value);
+        setDictationLanguage(value);
+    }, []);
+
+    // Same shape as the spell-check options: a mic icon marks the trigger.
+    const dictationOptions: DropdownOption[] = useMemo(
+        () =>
+            LANGUAGE_OPTIONS.map((opt) => ({
+                ...opt,
+                triggerLabel: (
+                    <span className={styles.triggerLabel}>
+                        <Mic size={14} className={styles.triggerIcon} />
+                        {opt.label}
+                    </span>
+                ),
+            })),
+        [],
+    );
 
     const dictMap = useMemo(() => repository?.getState()?.dictionary() ?? null, [repository]);
 
@@ -127,6 +165,17 @@ const LanguageSettings = () => {
         [installedDictionaries, setSpellcheckLang, installDictionary],
     );
 
+    const modelDownloadPct =
+        voiceProgress && voiceProgress.total > 0
+            ? Math.round((voiceProgress.loaded / voiceProgress.total) * 100)
+            : null;
+
+    // Read Aloud runs on the GPU, so without one the model is unavailable.
+    const gpuMissing = gpuAvailable === false;
+    const modelNameKey: Record<ModelQuality, string> = {
+        high: "ttsModelHigh",
+    };
+
     return (
         <div className={sharedStyles.settingsForm}>
             <div className={sharedStyles.formGroup}>
@@ -149,10 +198,8 @@ const LanguageSettings = () => {
                     options={spellcheckOptions}
                     className={sharedStyles.input}
                 />
-            </div>
 
-            {spellcheckLang && dictMap && (
-                <div className={sharedStyles.formGroup}>
+                {spellcheckLang && dictMap && (
                     <div className={styles.dictCard}>
                         <div className={styles.dictCardHeader} onClick={() => setDictOpen((o) => !o)}>
                             <div className={styles.dictCardHeaderLeft}>
@@ -207,8 +254,87 @@ const LanguageSettings = () => {
                             </div>
                         )}
                     </div>
+                )}
+            </div>
+
+            {dictationSupported && (
+                <div className={sharedStyles.formGroup}>
+                    <label className={form.label}>{t("dictationLabel")}</label>
+                    <p className={sharedStyles.helpText}>{t("dictationHelpText")}</p>
+                    <Dropdown
+                        value={dictationLang}
+                        onChange={handleDictationChange}
+                        options={dictationOptions}
+                        className={sharedStyles.input}
+                    />
                 </div>
             )}
+
+            <div className={sharedStyles.formGroup}>
+                <label className={form.label}>{t("ttsLabel")}</label>
+                <p className={sharedStyles.helpText}>{t("ttsHelpText", { count: VOICE_CATALOG.length })}</p>
+                <div className={styles.voiceList}>
+                    {MODEL_VARIANTS.map((m) => {
+                        const installed = installedModels[m.quality];
+                        const isActive = activeModel === m.quality;
+                        const isDownloading = downloadingModel === m.quality;
+                        const onRowClick = () => {
+                            if (isDownloading || gpuMissing) return;
+                            if (!installed) installModel(m.quality);
+                            else if (!isActive) setActiveModel(m.quality);
+                        };
+                        return (
+                            <div
+                                key={m.quality}
+                                className={`${styles.voiceRow} ${isActive ? styles.voiceInstalled : ""} ${gpuMissing ? styles.voiceDisabled : ""}`}
+                                onClick={onRowClick}
+                            >
+                                <span className={styles.voiceNameWrap}>
+                                    <span className={styles.voiceName}>{t(modelNameKey[m.quality])}</span>
+                                </span>
+                                <span className={styles.dictMeta}>
+                                    {isDownloading ? (
+                                        <>
+                                            {modelDownloadPct !== null && (
+                                                <span className={styles.percent}>{modelDownloadPct}%</span>
+                                            )}
+                                            <Loader2 size={14} className={styles.spinner} />
+                                        </>
+                                    ) : gpuMissing ? (
+                                        <span className={styles.size}>{formatVoiceSize(m.size)}</span>
+                                    ) : installed ? (
+                                        <>
+                                            {isActive ? (
+                                                <span className={styles.activeTag}>{t("ttsActive")}</span>
+                                            ) : (
+                                                <span className={styles.activateTag}>{t("ttsActivate")}</span>
+                                            )}
+                                            <span className={styles.size}>{formatVoiceSize(m.size)}</span>
+                                            <button
+                                                className={styles.voiceRemove}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeModel(m.quality);
+                                                }}
+                                                aria-label={t("ttsRemove")}
+                                                title={t("ttsRemove")}
+                                            >
+                                                <X size={13} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className={styles.size}>{formatVoiceSize(m.size)}</span>
+                                            <Download size={14} className={styles.download} />
+                                        </>
+                                    )}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+                {gpuMissing && <p className={sharedStyles.helpText}>{t("ttsNoGpuHelp")}</p>}
+            </div>
         </div>
     );
 };

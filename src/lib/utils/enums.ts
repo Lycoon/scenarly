@@ -34,6 +34,24 @@ export enum SaveMode {
 
 export type PageFormat = "A4" | "LETTER";
 
+/**
+ * A format the project can be exported TO, as asked for by the export UI.
+ *
+ * These are format ids, not file extensions — the adapter owns the extension it
+ * writes. The two differ wherever an extension means something else on import:
+ * `TEXT` writes a `.txt` file, but a `.txt` file being imported is read as
+ * Fountain, so the id has to be distinct. Each adapter declares which id it
+ * answers to (see `ProjectAdapter.exportTarget`), so this enum is the single
+ * list of what the UI may ask for.
+ */
+export enum ExportFormat {
+    PDF = "pdf",
+    FOUNTAIN = "fountain",
+    FDX = "fdx",
+    TEXT = "text",
+    SCENARLY = "scenarly",
+}
+
 export enum Style {
     None = 0,
     Bold = 1,
@@ -41,7 +59,7 @@ export enum Style {
     Underline = 4,
 }
 
-// String values must match the class names in the /public/scriptio.css file
+// String values must match the class names in the /public/scenarly.css file
 export enum ScreenplayElement {
     Scene = "scene",
     Action = "action",

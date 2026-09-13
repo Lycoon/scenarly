@@ -30,13 +30,20 @@ import {
     DEFAULT_SKIPPED_SCENE_LETTERS,
     ShelfEntry,
     DocumentNode,
-    OutlineItem,
+    TimelineLayer,
+    TimelineClip,
     ProjectStatus,
 } from "@src/lib/project/project-state";
 import { Screenplay } from "@src/lib/utils/types";
 import { ScreenplayElement, TitlePageElement, Style, PageFormat } from "@src/lib/utils/enums";
+import {
+    RevisionDisplayMode,
+    DEFAULT_REVISION_DISPLAY_MODE,
+    captureRevisionBaseline,
+} from "@src/lib/screenplay/revisions";
 import { SearchMatch } from "@src/lib/screenplay/extensions/search-highlight-extension";
 import { useAssetGc } from "@src/lib/assets/use-asset-gc";
+import { pushPendingPoster } from "@src/lib/posters/poster-store";
 
 // Import types only - these don't cause module loading
 import type { ThrottledWebsocketProvider } from "@src/lib/cloud/utils";
@@ -57,6 +64,10 @@ export interface ProjectContextType {
     repository: ProjectRepository | null;
     provider: ThrottledWebsocketProvider | null;
     isYjsReady: boolean;
+    /** True once the doc has loaded from the local cache *and* the cloud (or
+     *  the cloud doesn't apply). Anything that writes to the doc based on what
+     *  is missing from it must wait for this, not for `isYjsReady`. */
+    isYjsSynced: boolean;
 
     /** True when the current user has VIEWER role on a cloud project.
      *  All edit affordances must be hidden/disabled when this is true,
@@ -101,6 +112,26 @@ export interface ProjectContextType {
     setContdLabel: (label: string) => void;
     moreLabel: string;
     setMoreLabel: (label: string) => void;
+    showContdDialogue: boolean;
+    setShowContdDialogue: (show: boolean) => void;
+    showContdPageBreak: boolean;
+    setShowContdPageBreak: (show: boolean) => void;
+    headerLeft: string;
+    setHeaderLeft: (template: string) => void;
+    headerMiddle: string;
+    setHeaderMiddle: (template: string) => void;
+    headerRight: string;
+    setHeaderRight: (template: string) => void;
+    showFirstPageHeader: boolean;
+    setShowFirstPageHeader: (show: boolean) => void;
+    footerLeft: string;
+    setFooterLeft: (template: string) => void;
+    footerMiddle: string;
+    setFooterMiddle: (template: string) => void;
+    footerRight: string;
+    setFooterRight: (template: string) => void;
+    showFirstPageFooter: boolean;
+    setShowFirstPageFooter: (show: boolean) => void;
     elementMargins: Record<string, { left: number; right: number }>;
     setElementMargins: (margins: Record<string, { left: number; right: number }>) => void;
     elementStyles: Record<string, ElementStyle>;
@@ -125,6 +156,17 @@ export interface ProjectContextType {
      *  Keyed by `PAGE_ONE_KEY` for page 1, by the top-level node's data-id
      *  for subsequent pages. */
     persistentPages: PersistentPageMap;
+
+    /** Revisions master switch (production change-tracking). */
+    revisionsEnabled: boolean;
+    setRevisionsEnabled: (enabled: boolean) => void;
+    /** Active revision index (into REVISION_COLORS; 0 = White base draft). New
+     *  edits are stamped with this value. */
+    currentRevision: number;
+    setCurrentRevision: (index: number) => void;
+    /** How committed revision marks are displayed (independent of stamping). */
+    revisionDisplayMode: RevisionDisplayMode;
+    setRevisionDisplayMode: (mode: RevisionDisplayMode) => void;
 
     // Search state
     searchTerm: string;
@@ -169,10 +211,11 @@ export interface ProjectContextType {
     documentEditor: Editor | null;
     updateDocumentEditor: (editor: Editor | null) => void;
 
-    // Outline view (project-wide ordered list of scene/card references)
-    outline: Record<string, OutlineItem>;
+    // Timeline (horizontal, minute-scaled lanes of scene/card clips)
+    timelineLayers: Record<string, TimelineLayer>;
+    timelineClips: Record<string, TimelineClip>;
     /** A board card to focus next time its board canvas mounts/becomes visible
-     *  (set when navigating to a card from the Outline). Cleared by the canvas. */
+     *  (set when navigating to a card from the Timeline). Cleared by the canvas. */
     boardFocusCardId: string | null;
     setBoardFocusCardId: (cardId: string | null) => void;
 }
@@ -188,6 +231,7 @@ const defaultContextValue: ProjectContextType = {
     repository: null,
     provider: null,
     isYjsReady: false,
+    isYjsSynced: false,
     isReadOnly: false,
 
     connectionStatus: "disconnected",
@@ -214,6 +258,26 @@ const defaultContextValue: ProjectContextType = {
     setContdLabel: () => {},
     moreLabel: "(MORE)",
     setMoreLabel: () => {},
+    showContdDialogue: true,
+    setShowContdDialogue: () => {},
+    showContdPageBreak: true,
+    setShowContdPageBreak: () => {},
+    headerLeft: "",
+    setHeaderLeft: () => {},
+    headerMiddle: "",
+    setHeaderMiddle: () => {},
+    headerRight: "#.",
+    setHeaderRight: () => {},
+    showFirstPageHeader: false,
+    setShowFirstPageHeader: () => {},
+    footerLeft: "",
+    setFooterLeft: () => {},
+    footerMiddle: "",
+    setFooterMiddle: () => {},
+    footerRight: "",
+    setFooterRight: () => {},
+    showFirstPageFooter: false,
+    setShowFirstPageFooter: () => {},
     elementMargins: {},
     setElementMargins: () => {},
     elementStyles: {},
@@ -228,6 +292,12 @@ const defaultContextValue: ProjectContextType = {
     pageLocking: false,
     setPageLocking: () => {},
     persistentPages: {},
+    revisionsEnabled: false,
+    setRevisionsEnabled: () => {},
+    currentRevision: 0,
+    setCurrentRevision: () => {},
+    revisionDisplayMode: DEFAULT_REVISION_DISPLAY_MODE,
+    setRevisionDisplayMode: () => {},
     characters: {},
     locations: {},
     scenes: [],
@@ -275,8 +345,9 @@ const defaultContextValue: ProjectContextType = {
     documents: {},
     documentEditor: null,
     updateDocumentEditor: () => {},
-    // Outline defaults
-    outline: {},
+    // Timeline defaults
+    timelineLayers: {},
+    timelineClips: {},
     boardFocusCardId: null,
     setBoardFocusCardId: () => {},
 };
@@ -317,6 +388,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
         ydoc,
         provider,
         status,
+        isSynced: isYjsSynced,
         connectionStatus: yjsConnectionStatus,
         users: yjsUsers,
     } = useProjectYjs({
@@ -352,6 +424,16 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
     const [sceneNumberOnRight, setSceneNumberOnRightState] = useState<boolean>(false);
     const [contdLabel, setContdLabelState] = useState<string>("(CONT'D)");
     const [moreLabel, setMoreLabelState] = useState<string>("(MORE)");
+    const [showContdDialogue, setShowContdDialogueState] = useState<boolean>(true);
+    const [showContdPageBreak, setShowContdPageBreakState] = useState<boolean>(true);
+    const [headerLeft, setHeaderLeftState] = useState<string>("");
+    const [headerMiddle, setHeaderMiddleState] = useState<string>("");
+    const [headerRight, setHeaderRightState] = useState<string>("#.");
+    const [showFirstPageHeader, setShowFirstPageHeaderState] = useState<boolean>(false);
+    const [footerLeft, setFooterLeftState] = useState<string>("");
+    const [footerMiddle, setFooterMiddleState] = useState<string>("");
+    const [footerRight, setFooterRightState] = useState<string>("");
+    const [showFirstPageFooter, setShowFirstPageFooterState] = useState<boolean>(false);
     const [elementMargins, setElementMarginsState] = useState<
         Record<string, { left: number; right: number }>
     >({});
@@ -364,6 +446,10 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
     const [persistentScenes, setPersistentScenesState] = useState<PersistentSceneMap>({});
     const [pageLocking, setPageLockingState] = useState<boolean>(false);
     const [persistentPages, setPersistentPagesState] = useState<PersistentPageMap>({});
+    const [revisionsEnabled, setRevisionsEnabledState] = useState<boolean>(false);
+    const [currentRevision, setCurrentRevisionState] = useState<number>(0);
+    const [revisionDisplayMode, setRevisionDisplayModeState] =
+        useState<RevisionDisplayMode>(DEFAULT_REVISION_DISPLAY_MODE);
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
     const [users, setUsers] = useState<CollaboratorInfo[]>([]);
 
@@ -414,8 +500,9 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
     const [documentEditor, setDocumentEditor] = useState<Editor | null>(null);
     const updateDocumentEditor = useCallback((editor: Editor | null) => setDocumentEditor(editor), []);
 
-    // Outline state
-    const [outline, setOutline] = useState<Record<string, OutlineItem>>({});
+    // Timeline state
+    const [timelineLayers, setTimelineLayers] = useState<Record<string, TimelineLayer>>({});
+    const [timelineClips, setTimelineClips] = useState<Record<string, TimelineClip>>({});
     const [boardFocusCardId, setBoardFocusCardId] = useState<string | null>(null);
 
     // Create repository instance when ydoc is available (dynamically imported)
@@ -447,6 +534,13 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
 
     // Keep IndexedDB image assets reconciled with the document (orphan sweep).
     useAssetGc(projectId, repository, isYjsReady);
+
+    // Re-upload a poster set while offline (no-op for local-only projects and
+    // once the cloud already holds these bytes).
+    useEffect(() => {
+        if (!projectId) return;
+        void pushPendingPoster(projectId);
+    }, [projectId]);
 
     // The DO pushes a role-changed message whenever an admin updates this
     // user's role. Mirror it into local state so isReadOnly flips and the
@@ -544,6 +638,36 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             if (initialLayout.moreLabel !== undefined) {
                 setMoreLabelState(initialLayout.moreLabel);
             }
+            if (initialLayout.showContdDialogue !== undefined) {
+                setShowContdDialogueState(initialLayout.showContdDialogue);
+            }
+            if (initialLayout.showContdPageBreak !== undefined) {
+                setShowContdPageBreakState(initialLayout.showContdPageBreak);
+            }
+            if (initialLayout.headerLeft !== undefined) {
+                setHeaderLeftState(initialLayout.headerLeft);
+            }
+            if (initialLayout.headerMiddle !== undefined) {
+                setHeaderMiddleState(initialLayout.headerMiddle);
+            }
+            if (initialLayout.headerRight !== undefined) {
+                setHeaderRightState(initialLayout.headerRight);
+            }
+            if (initialLayout.showFirstPageHeader !== undefined) {
+                setShowFirstPageHeaderState(initialLayout.showFirstPageHeader);
+            }
+            if (initialLayout.footerLeft !== undefined) {
+                setFooterLeftState(initialLayout.footerLeft);
+            }
+            if (initialLayout.footerMiddle !== undefined) {
+                setFooterMiddleState(initialLayout.footerMiddle);
+            }
+            if (initialLayout.footerRight !== undefined) {
+                setFooterRightState(initialLayout.footerRight);
+            }
+            if (initialLayout.showFirstPageFooter !== undefined) {
+                setShowFirstPageFooterState(initialLayout.showFirstPageFooter);
+            }
             if (initialLayout.elementMargins !== undefined) {
                 setElementMarginsState(initialLayout.elementMargins);
             }
@@ -566,6 +690,15 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             }
             if (initialProduction.pageLocking !== undefined) {
                 setPageLockingState(initialProduction.pageLocking);
+            }
+            if (initialProduction.revisionsEnabled !== undefined) {
+                setRevisionsEnabledState(initialProduction.revisionsEnabled);
+            }
+            if (initialProduction.currentRevision !== undefined) {
+                setCurrentRevisionState(initialProduction.currentRevision);
+            }
+            if (initialProduction.revisionDisplayMode !== undefined) {
+                setRevisionDisplayModeState(initialProduction.revisionDisplayMode);
             }
         }
 
@@ -605,6 +738,36 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             if (_moreLabel !== undefined) {
                 setMoreLabelState(_moreLabel);
             }
+            if (layout.showContdDialogue !== undefined) {
+                setShowContdDialogueState(layout.showContdDialogue);
+            }
+            if (layout.showContdPageBreak !== undefined) {
+                setShowContdPageBreakState(layout.showContdPageBreak);
+            }
+            if (layout.headerLeft !== undefined) {
+                setHeaderLeftState(layout.headerLeft);
+            }
+            if (layout.headerMiddle !== undefined) {
+                setHeaderMiddleState(layout.headerMiddle);
+            }
+            if (layout.headerRight !== undefined) {
+                setHeaderRightState(layout.headerRight);
+            }
+            if (layout.showFirstPageHeader !== undefined) {
+                setShowFirstPageHeaderState(layout.showFirstPageHeader);
+            }
+            if (layout.footerLeft !== undefined) {
+                setFooterLeftState(layout.footerLeft);
+            }
+            if (layout.footerMiddle !== undefined) {
+                setFooterMiddleState(layout.footerMiddle);
+            }
+            if (layout.footerRight !== undefined) {
+                setFooterRightState(layout.footerRight);
+            }
+            if (layout.showFirstPageFooter !== undefined) {
+                setShowFirstPageFooterState(layout.showFirstPageFooter);
+            }
             if (layout.elementMargins !== undefined) {
                 setElementMarginsState(layout.elementMargins);
             }
@@ -626,6 +789,15 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             }
             if (production.pageLocking !== undefined) {
                 setPageLockingState(production.pageLocking);
+            }
+            if (production.revisionsEnabled !== undefined) {
+                setRevisionsEnabledState(production.revisionsEnabled);
+            }
+            if (production.currentRevision !== undefined) {
+                setCurrentRevisionState(production.currentRevision);
+            }
+            if (production.revisionDisplayMode !== undefined) {
+                setRevisionDisplayModeState(production.revisionDisplayMode);
             }
         });
 
@@ -678,10 +850,14 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             setDocuments(docs);
         });
 
-        // Observe outline changes
-        setOutline(repository.outlineItems);
-        const unsubscribeOutline = repository.observeOutline((items) => {
-            setOutline(items);
+        // Observe timeline changes
+        setTimelineLayers(repository.timelineLayers);
+        setTimelineClips(repository.timelineClips);
+        const unsubscribeTimelineLayers = repository.observeTimelineLayers((layers) => {
+            setTimelineLayers(layers);
+        });
+        const unsubscribeTimelineClips = repository.observeTimelineClips((clips) => {
+            setTimelineClips(clips);
         });
 
         return () => {
@@ -695,7 +871,8 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             unsubscribeMetadata();
             unsubscribeShelf();
             unsubscribeDocuments();
-            unsubscribeOutline();
+            unsubscribeTimelineLayers();
+            unsubscribeTimelineClips();
         };
     }, [repository, updateCharacters, updateLocations, updateScenes, updateScreenplay]);
 
@@ -745,8 +922,9 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
     }, [yjsUsers]);
 
     // Stable update functions
+    // The browser tab title is owned by [useProjectNavbar], which also restores
+    // the app default when the project closes.
     const updateProject = useCallback((newProject: ProjectMembershipPayload) => {
-        document.title = `${newProject.project.title}`;
         setProject(newProject);
     }, []);
 
@@ -831,6 +1009,86 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
         [repository],
     );
 
+    const setShowContdDialogue = useCallback(
+        (show: boolean) => {
+            setShowContdDialogueState(show);
+            repository?.setShowContdDialogue(show);
+        },
+        [repository],
+    );
+
+    const setShowContdPageBreak = useCallback(
+        (show: boolean) => {
+            setShowContdPageBreakState(show);
+            repository?.setShowContdPageBreak(show);
+        },
+        [repository],
+    );
+
+    const setHeaderLeft = useCallback(
+        (template: string) => {
+            setHeaderLeftState(template);
+            repository?.setHeaderLeft(template);
+        },
+        [repository],
+    );
+
+    const setHeaderMiddle = useCallback(
+        (template: string) => {
+            setHeaderMiddleState(template);
+            repository?.setHeaderMiddle(template);
+        },
+        [repository],
+    );
+
+    const setHeaderRight = useCallback(
+        (template: string) => {
+            setHeaderRightState(template);
+            repository?.setHeaderRight(template);
+        },
+        [repository],
+    );
+
+    const setShowFirstPageHeader = useCallback(
+        (show: boolean) => {
+            setShowFirstPageHeaderState(show);
+            repository?.setShowFirstPageHeader(show);
+        },
+        [repository],
+    );
+
+    const setFooterLeft = useCallback(
+        (template: string) => {
+            setFooterLeftState(template);
+            repository?.setFooterLeft(template);
+        },
+        [repository],
+    );
+
+    const setFooterMiddle = useCallback(
+        (template: string) => {
+            setFooterMiddleState(template);
+            repository?.setFooterMiddle(template);
+        },
+        [repository],
+    );
+
+    const setFooterRight = useCallback(
+        (template: string) => {
+            setFooterRightState(template);
+            repository?.setFooterRight(template);
+        },
+        [repository],
+    );
+
+    const setShowFirstPageFooter = useCallback(
+        (show: boolean) => {
+            setShowFirstPageFooterState(show);
+            repository?.setShowFirstPageFooter(show);
+        },
+        [repository],
+    );
+
     const setElementMargins = useCallback(
         (margins: Record<string, { left: number; right: number }>) => {
             setElementMarginsState(margins);
@@ -859,6 +1117,81 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
         (locked: boolean) => {
             setPageLockingState(locked);
             repository?.setPageLocking(locked);
+        },
+        [repository],
+    );
+
+    /**
+     * Snapshot every line's current text as the baseline for revision `index` —
+     * the draft that revision's asterisks will be measured against, so a line
+     * edited and then restored can drop its mark again.
+     *
+     * Needs the mounted screenplay editor for the document. When there is none
+     * (the revision was changed from a view that has no editor) nothing is
+     * written, and stamping stays on the event-based path until the next advance
+     * captures one — which over-marks rather than mis-clears.
+     */
+    const captureRevisionBase = useCallback(
+        (index: number) => {
+            if (!repository || !editor) return;
+            repository.captureRevisionBase(index, captureRevisionBaseline(editor.state.doc, index));
+        },
+        [repository, editor],
+    );
+
+    /**
+     * Adopt a baseline for a revision that has none, so revision marks start being
+     * derived rather than accumulated.
+     *
+     * Without this a project whose revision opened before baselines existed — or
+     * one advanced while no editor was mounted to snapshot it — stays on the
+     * event-based path indefinitely, since nothing short of an advance captures
+     * one. Taking it mid-revision is safe: `captureRevisionBaseline` records
+     * `self` for every line already marked at this revision, so those keep their
+     * marks unconditionally and only lines edited from here on are judged by
+     * comparison.
+     *
+     * Gated on the Yjs sync, and on the editor having actually bound to a
+     * populated document: freezing an empty screenplay as the baseline would make
+     * every real line read as new the moment it was touched.
+     */
+    useEffect(() => {
+        if (!isYjsSynced || !editor || !repository) return;
+        if (!revisionsEnabled || currentRevision < 1) return;
+        if (repository.getRevisionBaseline()?.index === currentRevision) return;
+        if (editor.state.doc.content.size === 0 && (repository.getState()?.screenplayFragment().length ?? 0) > 0)
+            return;
+        captureRevisionBase(currentRevision);
+    }, [isYjsSynced, editor, repository, revisionsEnabled, currentRevision, captureRevisionBase]);
+
+    const setRevisionsEnabled = useCallback(
+        (enabled: boolean) => {
+            setRevisionsEnabledState(enabled);
+            repository?.setRevisionsEnabled(enabled);
+            // Switching stamping on is where the current revision starts measuring
+            // from, so take a baseline if this revision hasn't got one yet.
+            if (enabled && currentRevision >= 1 && repository?.getRevisionBaseline()?.index !== currentRevision) {
+                captureRevisionBase(currentRevision);
+            }
+        },
+        [repository, currentRevision, captureRevisionBase],
+    );
+
+    const setCurrentRevision = useCallback(
+        (index: number) => {
+            setCurrentRevisionState(index);
+            repository?.setCurrentRevision(index);
+            // A revision opens: the document as it stands right now is the draft
+            // this revision's marks will be compared against.
+            if (index >= 1) captureRevisionBase(index);
+        },
+        [repository, captureRevisionBase],
+    );
+
+    const setRevisionDisplayMode = useCallback(
+        (mode: RevisionDisplayMode) => {
+            setRevisionDisplayModeState(mode);
+            repository?.setRevisionDisplayMode(mode);
         },
         [repository],
     );
@@ -946,6 +1279,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             repository,
             provider,
             isYjsReady,
+            isYjsSynced,
             isReadOnly,
             connectionStatus,
             users,
@@ -971,6 +1305,26 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             setContdLabel,
             moreLabel,
             setMoreLabel,
+            showContdDialogue,
+            setShowContdDialogue,
+            showContdPageBreak,
+            setShowContdPageBreak,
+            headerLeft,
+            setHeaderLeft,
+            headerMiddle,
+            setHeaderMiddle,
+            headerRight,
+            setHeaderRight,
+            showFirstPageHeader,
+            setShowFirstPageHeader,
+            footerLeft,
+            setFooterLeft,
+            footerMiddle,
+            setFooterMiddle,
+            footerRight,
+            setFooterRight,
+            showFirstPageFooter,
+            setShowFirstPageFooter,
             elementMargins,
             setElementMargins,
             elementStyles,
@@ -985,6 +1339,12 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             pageLocking,
             setPageLocking,
             persistentPages,
+            revisionsEnabled,
+            setRevisionsEnabled,
+            currentRevision,
+            setCurrentRevision,
+            revisionDisplayMode,
+            setRevisionDisplayMode,
             screenplay,
             scenes,
             updateScenes,
@@ -1017,7 +1377,8 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             documents,
             documentEditor,
             updateDocumentEditor,
-            outline,
+            timelineLayers,
+            timelineClips,
             boardFocusCardId,
             setBoardFocusCardId,
         }),
@@ -1028,6 +1389,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             repository,
             provider,
             isYjsReady,
+            isYjsSynced,
             isReadOnly,
             connectionStatus,
             users,
@@ -1053,6 +1415,26 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             setContdLabel,
             moreLabel,
             setMoreLabel,
+            showContdDialogue,
+            setShowContdDialogue,
+            showContdPageBreak,
+            setShowContdPageBreak,
+            headerLeft,
+            setHeaderLeft,
+            headerMiddle,
+            setHeaderMiddle,
+            headerRight,
+            setHeaderRight,
+            showFirstPageHeader,
+            setShowFirstPageHeader,
+            footerLeft,
+            setFooterLeft,
+            footerMiddle,
+            setFooterMiddle,
+            footerRight,
+            setFooterRight,
+            showFirstPageFooter,
+            setShowFirstPageFooter,
             elementMargins,
             setElementMargins,
             elementStyles,
@@ -1067,6 +1449,12 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             pageLocking,
             setPageLocking,
             persistentPages,
+            revisionsEnabled,
+            setRevisionsEnabled,
+            currentRevision,
+            setCurrentRevision,
+            revisionDisplayMode,
+            setRevisionDisplayMode,
             screenplay,
             scenes,
             updateScenes,
@@ -1099,7 +1487,8 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             documents,
             documentEditor,
             updateDocumentEditor,
-            outline,
+            timelineLayers,
+            timelineClips,
             boardFocusCardId,
             setBoardFocusCardId,
         ],
