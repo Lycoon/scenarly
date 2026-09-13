@@ -39,6 +39,7 @@
         "debug:ios:sim": "npm run tauri ios build -- --debug --target aarch64-sim --open --config src-tauri/tauri.ios.conf.json",
         "build:ios": "npm run tauri ios build -- --export-method app-store-connect --config src-tauri/tauri.ios.conf.json",
         "android:init": "tauri android init && npm run android:icons",
+        "icons": "tsx scripts/generate-icons.ts && npm run android:icons",
         "android:icons": "tsx scripts/generate-android-icons.ts",
         "android:dev": "tauri android dev",
         "debug:android": "tsx scripts/run-android.ts",
