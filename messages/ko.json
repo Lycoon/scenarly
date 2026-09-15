@@ -375,6 +375,7 @@
   "projects": {
     "untitled": "제목 없음",
     "newProject": "새 프로젝트",
+    "defaultTitle": "내 프로젝트",
     "pageTitle": "프로젝트",
     "noProjects": "아직 프로젝트가 없습니다",
     "importBtn": "가져오기...",

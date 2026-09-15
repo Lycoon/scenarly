@@ -375,6 +375,7 @@
   "projects": {
     "untitled": "未命名",
     "newProject": "新项目",
+    "defaultTitle": "我的项目",
     "pageTitle": "项目",
     "noProjects": "暂无项目",
     "importBtn": "导入...",

@@ -124,7 +124,10 @@ export default function HomePageContainer() {
                                 onToggle={(open) => setOpenMenu(open ? "mobile" : null)}
                             />
 
-                            <a href={`${APP_ORIGIN}/projects`} className={styles.ctaPlatform}>
+                            {/* `quickstart`: a visitor with an empty library skips the
+                                projects list and lands straight in a fresh editor
+                                (handled by ProjectPageContainer in the app). */}
+                            <a href={`${APP_ORIGIN}/projects?quickstart`} className={styles.ctaPlatform}>
                                 <div className={styles.ctaPlatformIcons}>
                                     <Globe size={20} />
                                 </div>

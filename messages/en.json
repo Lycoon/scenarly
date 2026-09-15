@@ -375,6 +375,7 @@
   "projects": {
     "untitled": "Untitled",
     "newProject": "New Project",
+    "defaultTitle": "My Project",
     "pageTitle": "Projects",
     "noProjects": "No projects yet",
     "importBtn": "Import...",

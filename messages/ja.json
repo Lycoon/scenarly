@@ -375,6 +375,7 @@
   "projects": {
     "untitled": "無題",
     "newProject": "新規プロジェクト",
+    "defaultTitle": "マイプロジェクト",
     "pageTitle": "プロジェクト",
     "noProjects": "プロジェクトがありません",
     "importBtn": "インポート...",

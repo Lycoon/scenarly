@@ -375,6 +375,7 @@
   "projects": {
     "untitled": "Sin título",
     "newProject": "Nuevo proyecto",
+    "defaultTitle": "Mi proyecto",
     "pageTitle": "Proyectos",
     "noProjects": "Aún no hay proyectos",
     "importBtn": "Importar...",
