@@ -119,6 +119,14 @@ export class UserRepository {
         });
     }
 
+    /** The whole User row, for the GDPR export: unlike USER_SELECT it must carry
+     * the store ids too, and with no select a column added later is exported
+     * without anyone having to remember this method. Safe because User holds no
+     * secrets — OAuth tokens live on Account. */
+    fetchUserForExport(userId: string) {
+        return prisma.user.findUnique({ where: { id: userId } });
+    }
+
     fetchUserSettings(userId: string) {
         return prisma.user.findUnique({
             where: { id: userId },

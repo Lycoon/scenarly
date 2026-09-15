@@ -298,7 +298,7 @@
     "saving": "Saving...",
     "dangerZoneTitle": "Danger zone",
     "exportData": "Export my data",
-    "exportDataDesc": "Request a copy of your personal data: account information, settings and project memberships. It stays available to download here for 7 days.",
+    "exportDataDesc": "Request a copy of your personal data: account information, settings, subscriptions and project memberships. It stays available to download here for 7 days.",
     "exportBtn": "Request export",
     "exportRequesting": "Requesting...",
     "exportRequested": "Export started — it will be ready to download here in a moment, and stays available for 7 days.",

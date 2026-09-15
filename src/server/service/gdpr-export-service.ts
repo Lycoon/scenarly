@@ -2,14 +2,19 @@
  * GDPR data-access export.
  *
  * Bundles the personal data the database actually links to a user — account
- * info/settings and project memberships — into a zip on R2:
+ * info/settings, subscriptions and project memberships — into a zip on R2:
  *
- *   user.json        — account info + settings
- *   memberships.json — every project membership with its role
+ *   user.json          — the User row: account info, settings, Stripe customer id
+ *   subscriptions.json — every plan bought, with the store billing it and the
+ *                        id it is known by there (Stripe subscription id or
+ *                        Apple original transaction id)
+ *   memberships.json   — every project membership with its role
  *
- * Project content (uploaded assets, comments) is deliberately not attributed
- * to users in the database — it belongs to the project — so there is nothing
- * per-project to bundle.
+ * Billing history itself (invoices, charges) lives in the stores, not here, so
+ * the store ids are what lets the user request it from them. Project content
+ * (uploaded assets, comments) is deliberately not attributed to users in the
+ * database — it belongs to the project — so there is nothing per-project to
+ * bundle.
  *
  * The archive is downloaded from the account settings, which read
  * `getDataExportState` and hit `/users/export/download` with the session — the
@@ -26,6 +31,7 @@ import { zip, strToU8, type Zippable } from "fflate";
 
 import * as S3 from "@src/lib/s3";
 import * as ProjectService from "@src/server/service/project-service";
+import * as SubscriptionService from "@src/server/service/subscription-service";
 import * as UserService from "@src/server/service/user-service";
 import { sendDataExportEmail } from "@src/lib/mail/mail";
 import { ConflictError, NotFoundError, TooManyRequestsError } from "@src/lib/utils/api-utils";
@@ -144,9 +150,12 @@ async function purgeExpiredExports(userId: string): Promise<void> {
  */
 export async function runDataExport(exportId: string, userId: string): Promise<void> {
     try {
-        const user = await UserService.getUserFromId(userId);
+        const user = await UserService.getUserForExport(userId);
         if (!user) throw new Error("User no longer exists");
-        const memberships = await ProjectService.getMembershipsWithProject(userId);
+        const [subscriptions, memberships] = await Promise.all([
+            SubscriptionService.getSubscriptions(userId),
+            ProjectService.getMembershipsWithProject(userId),
+        ]);
 
         // Reclaim the zips of lapsed exports only. Wiping the whole prefix would
         // break the links of earlier emails that are still within their 7 days.
@@ -157,6 +166,7 @@ export async function runDataExport(exportId: string, userId: string): Promise<v
 
         const archive = await zipAsync({
             "user.json": strToU8(JSON.stringify(user, null, 2)),
+            "subscriptions.json": strToU8(JSON.stringify(subscriptions, null, 2)),
             "memberships.json": strToU8(
                 JSON.stringify(
                     memberships.map((m) => ({

@@ -298,7 +298,7 @@
     "saving": "正在保存...",
     "dangerZoneTitle": "危险区域",
     "exportData": "导出我的数据",
-    "exportDataDesc": "申请获取您的个人数据副本：账户信息、设置及项目成员资格。可在此处下载，有效期 7 天。",
+    "exportDataDesc": "申请获取您的个人数据副本：账户信息、设置、订阅及项目成员资格。可在此处下载，有效期 7 天。",
     "exportBtn": "申请导出",
     "exportRequesting": "申请中...",
     "exportRequested": "导出已开始 — 稍后即可在此处下载，有效期 7 天。",

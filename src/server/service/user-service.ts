@@ -39,6 +39,10 @@ export const getStripeCustomerId = async (userId: string) => {
     return result?.stripeCustomerId ?? null;
 };
 
+export const getUserForExport = async (userId: string) => {
+    return repository.fetchUserForExport(userId);
+};
+
 export const searchUsers = async (term: string, limit: number, cursor?: number) => {
     return repository.searchUsers(term, limit, cursor);
 };

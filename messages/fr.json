@@ -299,7 +299,7 @@
     "saving": "Enregistrement...",
     "dangerZoneTitle": "Zone dangereuse",
     "exportData": "Exporter mes données",
-    "exportDataDesc": "Demandez une copie de vos données personnelles : informations du compte, paramètres et participations aux projets. Elle reste téléchargeable ici pendant 7 jours.",
+    "exportDataDesc": "Demandez une copie de vos données personnelles : informations du compte, paramètres, abonnements et participations aux projets. Elle reste téléchargeable ici pendant 7 jours.",
     "exportBtn": "Demander l'export",
     "exportRequesting": "Demande en cours...",
     "exportRequested": "Export lancé — il sera téléchargeable ici dans un instant, et restera disponible 7 jours.",
