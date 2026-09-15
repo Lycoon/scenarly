@@ -9,7 +9,7 @@ import {
     Success,
     validate,
 } from "@src/lib/utils/api-utils";
-import { isCloudPlanActive } from "@src/lib/utils/cloud-plan-utils";
+import { hasActivePlan } from "@src/lib/plans";
 
 import * as ProjectService from "@src/server/service/project-service";
 import * as UserService from "@src/server/service/user-service";
@@ -63,7 +63,7 @@ async function transferOwnership(req: NextRequest, { routeParams, user }: AuthAp
     if (!newOwner) {
         throw new NotFoundError("The new owner must be a member of this project");
     }
-    if (!isCloudPlanActive(newOwner.cloudPlanUntil)) {
+    if (!hasActivePlan(newOwner, "CLOUD")) {
         throw new PaymentRequiredError("The new owner needs an active Cloud subscription");
     }
 

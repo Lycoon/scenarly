@@ -5,6 +5,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { UserRole } from "../../src/generated/client/browser";
+import { Plan, PLAN_NAMES } from "@src/lib/plans";
 import styles from "./UserSearch.module.css";
 
 type SearchResult = {
@@ -12,7 +13,8 @@ type SearchResult = {
     email: string;
     createdAt: string;
     role: UserRole;
-    cloudPlanUntil: string | null;
+    /** Plans not yet expired. */
+    subscriptions: { plan: Plan }[];
 };
 
 type SearchResponse = {
@@ -25,8 +27,10 @@ function formatDate(iso: string) {
     return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-function hasCloudPlan(cloudPlanUntil: string | null) {
-    return !!cloudPlanUntil && new Date(cloudPlanUntil) > new Date();
+/** The held plans joined ("Cloud"), or "Free". */
+function planLabel(subscriptions: { plan: Plan }[]) {
+    const names = subscriptions.map((s) => PLAN_NAMES[s.plan]).sort();
+    return names.length ? names.join(" + ") : "Free";
 }
 
 export default function UserSearch() {
@@ -76,16 +80,12 @@ export default function UserSearch() {
                                 className={`${styles.badge} ${
                                     u.role === UserRole.ADMIN
                                         ? styles.badgeAdmin
-                                        : hasCloudPlan(u.cloudPlanUntil)
+                                        : u.subscriptions.length
                                           ? styles.badgeCloud
                                           : styles.badgeMuted
                                 }`}
                             >
-                                {u.role === UserRole.ADMIN
-                                    ? "Admin"
-                                    : hasCloudPlan(u.cloudPlanUntil)
-                                      ? "Cloud"
-                                      : "Free"}
+                                {u.role === UserRole.ADMIN ? "Admin" : planLabel(u.subscriptions)}
                             </span>
                             <span className={styles.date}>{formatDate(u.createdAt)}</span>
                         </Link>

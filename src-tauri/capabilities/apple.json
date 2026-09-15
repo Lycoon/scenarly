@@ -1,0 +1,8 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "apple",
+    "description": "App Store builds only: StoreKit in-app purchase for the Cloud subscription (purchase, restore, price lookup). Scoped to the platforms the iap plugin is compiled for — Tauri skips a capability whose platforms do not match the build target, so this never references a permission the Windows/Linux/Android binaries do not have.",
+    "platforms": ["macOS", "iOS"],
+    "windows": ["main"],
+    "permissions": ["iap:default"]
+}

@@ -16,10 +16,7 @@ export interface UserUpdate {
     emailVerified?: Date | null;
     username?: string;
     color?: string;
-    cloudPlanUntil?: Date | null;
-    isSubscriptionCancelled?: boolean;
     stripeCustomerId?: string | null;
-    stripeSubscriptionId?: string | null;
     settings?: Partial<UserSettings>;
 }
 
@@ -28,6 +25,22 @@ export interface UserCreation {
 }
 
 type idOrEmailType = { id: string } | { email: string };
+
+/** The user as /api/users hands it to the browser — so no store ids, and just
+ * enough of each subscription to gate features and render the plan cards. */
+const USER_SELECT = {
+    id: true,
+    email: true,
+    emailVerified: true,
+    createdAt: true,
+    settings: true,
+    username: true,
+    color: true,
+    role: true,
+    subscriptions: {
+        select: { plan: true, provider: true, expiresAt: true, cancelled: true },
+    },
+} satisfies Prisma.UserSelect;
 
 export class UserRepository {
     updateUserFromId(userId: string, userUpdate: UserUpdate) {
@@ -39,10 +52,7 @@ export class UserRepository {
                 settings: userUpdate.settings as Prisma.InputJsonValue,
                 username: userUpdate.username,
                 color: userUpdate.color,
-                cloudPlanUntil: userUpdate.cloudPlanUntil,
-                isSubscriptionCancelled: userUpdate.isSubscriptionCancelled,
                 stripeCustomerId: userUpdate.stripeCustomerId,
-                stripeSubscriptionId: userUpdate.stripeSubscriptionId,
             },
         });
     }
@@ -53,6 +63,7 @@ export class UserRepository {
                 email: user.email,
                 emailVerified: new Date(),
             },
+            select: USER_SELECT,
         });
     }
 
@@ -70,29 +81,12 @@ export class UserRepository {
     fetchUser(idOrEmail: idOrEmailType) {
         return prisma.user.findUnique({
             where: idOrEmail,
-            select: {
-                id: true,
-                email: true,
-                emailVerified: true,
-                createdAt: true,
-                settings: true,
-                username: true,
-                color: true,
-                role: true,
-                cloudPlanUntil: true,
-                isSubscriptionCancelled: true,
-            },
+            select: USER_SELECT,
         });
     }
 
     countAll() {
         return prisma.user.count();
-    }
-
-    countActiveCloudPlan(now: Date = new Date()) {
-        return prisma.user.count({
-            where: { cloudPlanUntil: { gt: now } },
-        });
     }
 
     searchUsers(term: string, limit: number, cursor?: number) {
@@ -112,24 +106,16 @@ export class UserRepository {
                 email: true,
                 createdAt: true,
                 role: true,
-                cloudPlanUntil: true,
+                subscriptions: { where: { expiresAt: { gt: new Date() } }, select: { plan: true } },
             },
         });
     }
 
-    /** Find the user who owns a given Stripe subscription ID. */
-    fetchUserByStripeSubscriptionId(stripeSubscriptionId: string) {
-        return prisma.user.findUnique({
-            where: { stripeSubscriptionId },
-            select: { id: true },
-        });
-    }
-
     /** Kept out of fetchUser: that select is what /api/users hands to the browser. */
-    fetchStripeIds(userId: string) {
+    fetchStripeCustomerId(userId: string) {
         return prisma.user.findUnique({
             where: { id: userId },
-            select: { stripeCustomerId: true, stripeSubscriptionId: true },
+            select: { stripeCustomerId: true },
         });
     }
 

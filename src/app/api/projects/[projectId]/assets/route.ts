@@ -15,7 +15,7 @@ import {
     SuccessCreated,
     validate,
 } from "@src/lib/utils/api-utils";
-import { requireCloudPlan } from "@src/lib/utils/cloud-plan-utils";
+import { requireCloudPlan } from "@src/lib/utils/plan-utils";
 import { sha256Hex } from "@src/lib/assets/asset-hash";
 import { MAX_ASSET_SIZE_BYTES, USER_STORAGE_QUOTA_BYTES } from "@src/lib/utils/storage-limits";
 

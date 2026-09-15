@@ -9,7 +9,7 @@ import {
     SuccessNoContent,
     validate,
 } from "@src/lib/utils/api-utils";
-import { requireCloudPlan } from "@src/lib/utils/cloud-plan-utils";
+import { requireCloudPlan } from "@src/lib/utils/plan-utils";
 
 import * as Mail from "@src/lib/mail/mail";
 import * as ProjectService from "@src/server/service/project-service";
