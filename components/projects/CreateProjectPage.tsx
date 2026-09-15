@@ -6,7 +6,7 @@ import { join } from "@src/lib/utils/misc";
 import { FormInfoType } from "../utils/FormInfo";
 import { useAppNavigation } from "@src/lib/utils/navigation";
 import { createProject } from "@src/lib/utils/requests";
-import { useCookieUser, useIsPro } from "@src/lib/utils/hooks";
+import { useCookieUser, useHasCloudPlan } from "@src/lib/utils/hooks";
 import FormHeader from "./FormHeader";
 import FormEnd from "./FormEnd";
 
@@ -22,7 +22,7 @@ type Props = {
 
 const CreateProjectPage = ({ setIsCreating }: Props) => {
     const { user } = useCookieUser();
-    const { isPro } = useIsPro();
+    const { hasCloudPlan } = useHasCloudPlan();
     const { goToProject } = useAppNavigation();
     const t = useTranslations("projects");
 
@@ -48,12 +48,12 @@ const CreateProjectPage = ({ setIsCreating }: Props) => {
         const description = form.description.value;
 
         // Desktop: offline-first project creation
-        // Always create locally. If Pro and signed in, try cloud first to use its ID.
+        // Always create locally. If Cloud and signed in, try cloud first to use its ID.
         if (isTauri()) {
             let projectId: string | null = null;
             try {
-                // If Pro and signed in, try creating on server to get the cloud project ID
-                if (user && isPro) {
+                // If Cloud and signed in, try creating on server to get the cloud project ID
+                if (user && hasCloudPlan) {
                     try {
                         const body: CreateProjectBody = { title, description };
                         const res = await createProject(body);
@@ -85,8 +85,8 @@ const CreateProjectPage = ({ setIsCreating }: Props) => {
             return;
         }
 
-        // Web: create via API if authenticated Pro, otherwise create locally (IndexedDB)
-        if (user && isPro) {
+        // Web: create via API if authenticated Cloud, otherwise create locally (IndexedDB)
+        if (user && hasCloudPlan) {
             const body: CreateProjectBody = { title, description };
             const res = await createProject(body);
             const json = (await res.json()) as ApiResponse<{ id: string }>;
@@ -101,7 +101,7 @@ const CreateProjectPage = ({ setIsCreating }: Props) => {
             await createCachedProjectWithId(json.data.id, title, description, true);
             goToProject(json.data.id);
         } else {
-            // Unauthenticated or non-Pro: create local-only project (IndexedDB)
+            // Unauthenticated or non-Cloud: create local-only project (IndexedDB)
             const { createCachedProject } = await import("@src/lib/persistence/storage-provider/local-persistence");
             const cachedProject = await createCachedProject(title, description);
             goToProject(cachedProject.id);

@@ -1,5 +1,10 @@
 apiVersion: 1
 
+# Pre-rename contact point; provisioning only removes what is listed here.
+deleteContactPoints:
+    - orgId: 1
+      uid: scriptio-email
+
 contactPoints:
     - orgId: 1
       name: scenarly-email

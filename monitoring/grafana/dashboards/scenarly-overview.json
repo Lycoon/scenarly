@@ -11,16 +11,8 @@
                 "name": "memory_limit_bytes",
                 "type": "constant",
                 "label": "Memory limit (bytes)",
-                "query": "${APP_MEMORY_LIMIT_BYTES}",
-                "current": { "value": "${APP_MEMORY_LIMIT_BYTES}", "text": "${APP_MEMORY_LIMIT_BYTES}" },
-                "hide": 2
-            },
-            {
-                "name": "db_size_limit_bytes",
-                "type": "constant",
-                "label": "DB size limit (bytes)",
-                "query": "${DB_SIZE_LIMIT_BYTES}",
-                "current": { "value": "${DB_SIZE_LIMIT_BYTES}", "text": "${DB_SIZE_LIMIT_BYTES}" },
+                "query": "536870912",
+                "current": { "value": "536870912", "text": "536870912" },
                 "hide": 2
             }
         ]
@@ -83,7 +75,7 @@
         {
             "id": 4,
             "type": "timeseries",
-            "title": "Memory usage (% of APP_MEMORY_LIMIT_BYTES)",
+            "title": "Memory usage (% of 512 MiB limit)",
             "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
             "datasource": { "type": "prometheus", "uid": "prometheus" },
             "fieldConfig": {
@@ -95,6 +87,24 @@
                     "refId": "A",
                     "expr": "process_resident_memory_bytes / $memory_limit_bytes * 100",
                     "legendFormat": "memory %"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "type": "timeseries",
+            "title": "VPS disk usage (/)",
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "fieldConfig": {
+                "defaults": { "unit": "percentunit", "min": 0, "max": 1 },
+                "overrides": []
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}",
+                    "legendFormat": "used"
                 }
             ]
         }

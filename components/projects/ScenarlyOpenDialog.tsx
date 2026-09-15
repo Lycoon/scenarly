@@ -13,7 +13,7 @@ import {
 } from "@src/lib/import/scenarly-file-open";
 import { CURRENT_PROJECT_VERSION } from "@src/lib/project/migrations/project-migrations";
 import { getCachedProject } from "@src/lib/persistence/storage-provider/local-persistence";
-import { useCookieUser, useIsPro } from "@src/lib/utils/hooks";
+import { useCookieUser, useHasCloudPlan } from "@src/lib/utils/hooks";
 import { useAppNavigation } from "@src/lib/utils/navigation";
 
 import ProjectMigrationErrorDialog from "./ProjectMigrationErrorDialog";
@@ -36,7 +36,7 @@ const ScenarlyOpenDialog = () => {
     const t = useTranslations("popup");
     const pending = useSyncExternalStore(subscribeScenarlyOpen, getPendingScenarlyOpen, () => null);
     const { user } = useCookieUser();
-    const { isPro } = useIsPro();
+    const { hasCloudPlan } = useHasCloudPlan();
     const { goToProject } = useAppNavigation();
 
     const [busy, setBusy] = useState(false);
@@ -100,7 +100,7 @@ const ScenarlyOpenDialog = () => {
         autoCreatedRef.current = pending.bytes;
 
         let cancelled = false;
-        acceptScenarlyAsNewProject(false, user, isPro)
+        acceptScenarlyAsNewProject(false, user, hasCloudPlan)
             .then((projectId) => {
                 if (!cancelled) goToProject(projectId);
             })
@@ -111,7 +111,7 @@ const ScenarlyOpenDialog = () => {
         return () => {
             cancelled = true;
         };
-    }, [plan, pending, user, isPro, goToProject]);
+    }, [plan, pending, user, hasCloudPlan, goToProject]);
 
     if (!pending || !plan || plan.kind === "new-project") return null;
 
@@ -128,7 +128,7 @@ const ScenarlyOpenDialog = () => {
     }
 
     const titleOf = (id: string) => titles[id] ?? t("scenarlyOpen.untitledProject");
-    const openAsNew = (fork: boolean) => run(() => acceptScenarlyAsNewProject(fork, user, isPro));
+    const openAsNew = (fork: boolean) => run(() => acceptScenarlyAsNewProject(fork, user, hasCloudPlan));
 
     const newProjectButton = (fork: boolean) => (
         <button

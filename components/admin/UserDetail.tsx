@@ -3,7 +3,8 @@
 import Link from "next/link";
 import useSWR from "swr";
 import { ArrowLeft } from "lucide-react";
-import { UserRole, ProjectRole } from "../../src/generated/client/browser";
+import { UserRole, ProjectRole, Plan, SubscriptionProvider } from "../../src/generated/client/browser";
+import { PLANS, PLAN_NAMES } from "@src/lib/plans";
 import styles from "./UserDetail.module.css";
 
 type UserDetailPayload = {
@@ -14,11 +15,17 @@ type UserDetailPayload = {
         emailVerified: string | null;
         username: string | null;
         role: UserRole;
-        isProUntil: string | null;
-        isSubscriptionCancelled: boolean;
         stripeCustomerId: string | null;
         stripeCustomerUrl: string | null;
     };
+    subscriptions: {
+        plan: Plan;
+        provider: SubscriptionProvider;
+        providerId: string;
+        expiresAt: string;
+        cancelled: boolean;
+        providerUrl: string | null;
+    }[];
     projectCount: number;
 };
 
@@ -44,8 +51,8 @@ function formatDateTime(iso: string | null) {
     });
 }
 
-function isPro(isProUntil: string | null) {
-    return !!isProUntil && new Date(isProUntil) > new Date();
+function isActive(expiresAt: string | null | undefined) {
+    return !!expiresAt && new Date(expiresAt) > new Date();
 }
 
 type Props = { userId: string };
@@ -118,38 +125,8 @@ export default function UserDetail({ userId }: Props) {
                     </section>
 
                     <section className={styles.card}>
-                        <h2 className={styles.cardTitle}>Subscription</h2>
+                        <h2 className={styles.cardTitle}>Billing</h2>
                         <div className={styles.fields}>
-                            <div className={styles.field}>
-                                <span className={styles.fieldLabel}>Status</span>
-                                <span
-                                    className={`${styles.badge} ${
-                                        isPro(data.user.isProUntil)
-                                            ? styles.badgePro
-                                            : styles.badgeMuted
-                                    }`}
-                                >
-                                    {isPro(data.user.isProUntil) ? "Pro" : "Free"}
-                                </span>
-                            </div>
-                            <div className={styles.field}>
-                                <span className={styles.fieldLabel}>Pro until</span>
-                                <span className={styles.fieldValue}>
-                                    {formatDateTime(data.user.isProUntil)}
-                                </span>
-                            </div>
-                            <div className={styles.field}>
-                                <span className={styles.fieldLabel}>Cancelled</span>
-                                <span
-                                    className={`${styles.badge} ${
-                                        data.user.isSubscriptionCancelled
-                                            ? styles.badgeDanger
-                                            : styles.badgeMuted
-                                    }`}
-                                >
-                                    {data.user.isSubscriptionCancelled ? "Yes" : "No"}
-                                </span>
-                            </div>
                             <div className={styles.field}>
                                 <span className={styles.fieldLabel}>Stripe customer</span>
                                 {data.user.stripeCustomerUrl ? (
@@ -167,6 +144,55 @@ export default function UserDetail({ userId }: Props) {
                             </div>
                         </div>
                     </section>
+
+                    {PLANS.map((plan) => {
+                        const sub = data.subscriptions.find((s) => s.plan === plan);
+                        const active = isActive(sub?.expiresAt);
+                        return (
+                            <section key={plan} className={styles.card}>
+                                <h2 className={styles.cardTitle}>{PLAN_NAMES[plan]}</h2>
+                                <div className={styles.fields}>
+                                    <div className={styles.field}>
+                                        <span className={styles.fieldLabel}>Status</span>
+                                        <span className={`${styles.badge} ${active ? styles.badgeCloud : styles.badgeMuted}`}>
+                                            {active ? "Active" : sub ? "Lapsed" : "None"}
+                                        </span>
+                                    </div>
+                                    <div className={styles.field}>
+                                        <span className={styles.fieldLabel}>{active && !sub?.cancelled ? "Renews" : "Expires"}</span>
+                                        <span className={styles.fieldValue}>{formatDateTime(sub?.expiresAt ?? null)}</span>
+                                    </div>
+                                    <div className={styles.field}>
+                                        <span className={styles.fieldLabel}>Cancelled</span>
+                                        <span className={`${styles.badge} ${sub?.cancelled ? styles.badgeDanger : styles.badgeMuted}`}>
+                                            {sub?.cancelled ? "Yes" : "No"}
+                                        </span>
+                                    </div>
+                                    <div className={styles.field}>
+                                        <span className={styles.fieldLabel}>Billed by</span>
+                                        <span className={styles.fieldValue}>{sub?.provider ?? "—"}</span>
+                                    </div>
+                                    <div className={styles.field}>
+                                        <span className={styles.fieldLabel}>
+                                            {sub?.provider === "APPLE" ? "Apple transaction" : "Stripe subscription"}
+                                        </span>
+                                        {sub?.providerUrl ? (
+                                            <a
+                                                href={sub.providerUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className={`${styles.fieldValue} ${styles.idValue} ${styles.externalLink}`}
+                                            >
+                                                {sub.providerId}
+                                            </a>
+                                        ) : (
+                                            <span className={`${styles.fieldValue} ${styles.idValue}`}>{sub?.providerId ?? "—"}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+                        );
+                    })}
 
                     <section className={styles.card}>
                         <h2 className={styles.cardTitle}>

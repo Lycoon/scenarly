@@ -76,7 +76,7 @@ const ProjectNavbarDesktop = () => {
         openDashboard,
         membership,
         userCtx,
-        isPro,
+        hasCloudPlan,
         projectId,
         isInProject,
         canUploadToCloud,
@@ -199,7 +199,7 @@ const ProjectNavbarDesktop = () => {
                                             projectId={projectId}
                                             isOpen={isSavesOpen}
                                             onClose={() => setIsSavesOpen(false)}
-                                            isPro={isPro}
+                                            hasCloudPlan={hasCloudPlan}
                                             triggerRef={savesBtnRef}
                                         />
                                     </div>

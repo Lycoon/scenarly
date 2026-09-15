@@ -1,4 +1,5 @@
 import z from "zod";
+import { PERIODS, PLANS } from "@src/lib/plans";
 
 export const RequestMagicLinkBodySchema = z.object({
     email: z.email(),
@@ -43,3 +44,14 @@ export const UpdateUserBodySchema = z.object({
     color: z.string().regex(HEX_COLOR_REGEX).optional(),
 });
 export type UpdateUserBody = z.infer<typeof UpdateUserBodySchema>;
+
+export const PlanBodySchema = z.object({
+    plan: z.enum(PLANS),
+});
+export type PlanBody = z.infer<typeof PlanBodySchema>;
+
+export const CheckoutBodySchema = PlanBodySchema.extend({
+    period: z.enum(PERIODS),
+    redirectBase: z.string().optional(),
+});
+export type CheckoutBody = z.infer<typeof CheckoutBodySchema>;

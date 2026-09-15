@@ -20,7 +20,7 @@
     color: var(--primary-text);
 }
 
-.proBadge {
+.activeBadge {
     display: inline-flex;
     align-items: center;
     padding: 2px 8px;
@@ -69,7 +69,7 @@
     border-bottom: none;
 }
 
-.perkIconPro {
+.perkIconActive {
     color: var(--primary-text);
     flex-shrink: 0;
 }
@@ -156,7 +156,7 @@
     background: var(--secondary);
 }
 
-.cancelSuccess {
+.notice {
     font-size: 0.82rem;
     color: var(--success);
     padding: 8px 12px;
@@ -171,6 +171,21 @@
     color: var(--secondary-text);
     line-height: 1.5;
     margin: 0;
+}
+
+/* Auto-renewal terms shown under the App Store purchase button. */
+.legalText {
+    font-size: 0.72rem;
+    color: var(--secondary-text);
+    line-height: 1.5;
+    margin: -6px 0 0 0;
+    opacity: 0.85;
+}
+
+.legalText a {
+    color: inherit;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .errorMessage {
@@ -260,4 +275,71 @@
 .upgradeBtn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.secondaryBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border-radius: 24px;
+    background: none;
+    color: var(--primary-text);
+    border: 1px solid var(--separator);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    width: 100%;
+    margin-top: -6px;
+}
+
+.secondaryBtn:hover {
+    background: color-mix(in srgb, var(--primary-text) 6%, transparent);
+}
+.secondaryBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* One card per plan, the shared Restore button under them. */
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Monthly / yearly choice above the purchase button. */
+.periodToggle {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 24px;
+    border: 1px solid var(--separator);
+    align-self: flex-start;
+}
+
+.periodOption {
+    padding: 5px 14px;
+    border-radius: 20px;
+    background: none;
+    border: none;
+    font-size: 0.82rem;
+    color: var(--secondary-text);
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+
+.periodOptionActive {
+    background: color-mix(in srgb, var(--primary-text) 12%, transparent);
+    color: var(--primary-text);
+    font-weight: 600;
+}
+
+.periodOption:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
 }

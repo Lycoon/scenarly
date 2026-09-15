@@ -1,18 +1,13 @@
 import { NextRequest } from "next/server";
-import Stripe from "stripe";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
-import { ForbiddenError, Success } from "@src/lib/utils/api-utils";
-import * as UserService from "@src/server/service/user-service";
+import { Success, validate } from "@src/lib/utils/api-utils";
+import { PlanBodySchema } from "@src/lib/utils/api-bodies";
+import * as SubscriptionService from "@src/server/service/subscription-service";
 
+/** Stop the plan's Stripe subscription at the end of the paid period. */
 async function cancelSubscription(req: NextRequest, { user }: AuthApiContext) {
-    const { stripeSubscriptionId } = await UserService.getStripeIds(user.id);
-    if (!stripeSubscriptionId) throw new ForbiddenError("No active subscription found");
-
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-    await stripe.subscriptions.update(stripeSubscriptionId, { cancel_at_period_end: true });
-    await UserService.updateUserFromId(user.id, { isSubscriptionCancelled: true });
-
+    const { plan } = validate(PlanBodySchema, await req.json().catch(() => ({})));
+    await SubscriptionService.setStripeAutoRenew(user.id, plan, false);
     return Success(null);
 }
 

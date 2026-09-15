@@ -9,7 +9,7 @@ import {
     SuccessNoContent,
     validate,
 } from "@src/lib/utils/api-utils";
-import { requirePro } from "@src/lib/utils/pro-utils";
+import { requireCloudPlan } from "@src/lib/utils/plan-utils";
 
 import * as Mail from "@src/lib/mail/mail";
 import * as ProjectService from "@src/server/service/project-service";
@@ -56,7 +56,7 @@ async function inviteMember(req: NextRequest, { routeParams, user }: AuthApiCont
         throw new ForbiddenError("Only admin members can issue invites");
     }
 
-    await requirePro(user.id);
+    await requireCloudPlan(user.id);
 
     const invites = await ProjectService.getInvites(projectId);
     const isAlreadyInvited = invites.some((i) => i.email === emailToInvite);

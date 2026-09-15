@@ -44,7 +44,7 @@ export class UnauthorizedError extends AppError {
     }
 }
 export class PaymentRequiredError extends AppError {
-    constructor(message = "Pro subscription required") {
+    constructor(message = "Cloud subscription required") {
         super(402, message);
     }
 }

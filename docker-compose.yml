@@ -188,6 +188,23 @@ services:
             - internal
         depends_on:
             - app-prod
+            - node-exporter
+
+    # Host metrics (disk, CPU, memory) for Prometheus. Reads the host root
+    # read-only via /host and shares the host PID namespace so it sees the
+    # host's mount table rather than the container's.
+    node-exporter:
+        image: prom/node-exporter:latest
+        container_name: scenarly-node-exporter
+        profiles: ["prod"]
+        restart: unless-stopped
+        pid: host
+        command:
+            - --path.rootfs=/host
+        volumes:
+            - /:/host:ro,rslave
+        networks:
+            - internal
 
     grafana:
         image: grafana/grafana:latest
@@ -204,8 +221,6 @@ services:
             - GF_SMTP_PASSWORD=${SMTP_SECRET}
             - GF_SMTP_FROM_ADDRESS=no-reply@scenarly.com
             - GF_SMTP_FROM_NAME=Scenarly Monitoring
-            - APP_MEMORY_LIMIT_BYTES=${APP_MEMORY_LIMIT_BYTES}
-            - DB_SIZE_LIMIT_BYTES=${DB_SIZE_LIMIT_BYTES}
         volumes:
             - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
             - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro

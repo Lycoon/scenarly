@@ -6,7 +6,7 @@ import debounce from "debounce";
 import { ProjectContext } from "@src/context/ProjectContext";
 import { UserContext } from "@src/context/UserContext";
 import { DashboardContext } from "@src/context/DashboardContext";
-import { useCookieUser, useIsPro, useProjectIdFromUrl } from "@src/lib/utils/hooks";
+import { useCookieUser, useHasCloudPlan, useProjectIdFromUrl } from "@src/lib/utils/hooks";
 import { useDashboardMenu } from "@components/dashboard/useDashboardMenu";
 import { editProject } from "@src/lib/utils/requests";
 import { useAppNavigation } from "@src/lib/utils/navigation";
@@ -31,7 +31,7 @@ export const useProjectNavbar = () => {
     } = useContext(DashboardContext);
     const { project: membership, setProjectTitle: setContextTitle } = useContext(ProjectContext);
     const userCtx = useContext(UserContext);
-    const { isPro } = useIsPro();
+    const { hasCloudPlan } = useHasCloudPlan();
     const { user } = useCookieUser();
     const projectId = useProjectIdFromUrl();
     const { structure: dashboardMenu, isSignedIn } = useDashboardMenu();
@@ -42,7 +42,7 @@ export const useProjectNavbar = () => {
     const isLocalEdit = useRef(false);
 
     const isInProject = !!projectId;
-    const canUploadToCloud = !membership && !!user && isPro && !!projectId && isLocalOnly === true;
+    const canUploadToCloud = !membership && !!user && hasCloudPlan && !!projectId && isLocalOnly === true;
 
     const deferredTitleUpdate = useMemo(
         () =>
@@ -157,7 +157,7 @@ export const useProjectNavbar = () => {
         swapDrawerScreen,
         membership,
         userCtx,
-        isPro,
+        hasCloudPlan,
         user,
         projectId,
         isInProject,

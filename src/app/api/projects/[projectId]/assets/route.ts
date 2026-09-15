@@ -15,7 +15,7 @@ import {
     SuccessCreated,
     validate,
 } from "@src/lib/utils/api-utils";
-import { requirePro } from "@src/lib/utils/pro-utils";
+import { requireCloudPlan } from "@src/lib/utils/plan-utils";
 import { sha256Hex } from "@src/lib/assets/asset-hash";
 import { MAX_ASSET_SIZE_BYTES, USER_STORAGE_QUOTA_BYTES } from "@src/lib/utils/storage-limits";
 
@@ -65,7 +65,7 @@ async function uploadAsset(req: NextRequest, { routeParams, searchParams, user }
 
     const ownerId = await ProjectService.getProjectOwnerId(projectId);
     if (!ownerId) throw new InternalServerError();
-    await requirePro(ownerId);
+    await requireCloudPlan(ownerId);
 
     const bytes = new Uint8Array(await req.arrayBuffer());
     if (bytes.byteLength === 0) throw new BodyFieldError("Empty asset body");

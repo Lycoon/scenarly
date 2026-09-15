@@ -469,7 +469,7 @@ export interface CreateProjectFromScenarlyOptions {
     /** Project title; defaults to the one inside the archive. */
     title?: string;
     user?: CookieUser | null;
-    isPro?: boolean;
+    hasCloudPlan?: boolean;
 }
 
 /**
@@ -500,7 +500,7 @@ export async function createProjectFromScenarly(
 
         const metadata = ydoc.metadata();
         const title = opts.title || metadata.get("title") || "Untitled";
-        const projectId = await createProjectShell(title, opts.user, opts.isPro);
+        const projectId = await createProjectShell(title, opts.user, opts.hasCloudPlan);
 
         const repository = createProjectRepository(ydoc)!;
         ydoc.transact(() => {

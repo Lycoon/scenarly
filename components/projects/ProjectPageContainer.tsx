@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
     useCookieUser,
     useIsPhone,
-    useIsPro,
+    useHasCloudPlan,
     useProjectMemberships,
     ExtendedProjectMembershipPayload,
 } from "@src/lib/utils/hooks";
 import { join } from "@src/lib/utils/misc";
-import { importFileAsProject } from "@src/lib/import/import-project";
+import { createProjectShell, importFileAsProject } from "@src/lib/import/import-project";
 import { useImportAccept } from "@src/lib/import/use-import-accept";
 import { useAppNavigation } from "@src/lib/utils/navigation";
 import { isFileBindingSupported } from "@src/lib/persistence/file-binding";
@@ -35,9 +36,10 @@ interface ProjectPageContainerProps {
 const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContainerProps) => {
     const { user } = useCookieUser();
     const isPhone = useIsPhone();
-    const { isPro } = useIsPro();
+    const { hasCloudPlan, isLoading: isPlanLoading } = useHasCloudPlan();
     const { projects, isLoading, mutate } = useProjectMemberships();
-    const { goToProject } = useAppNavigation();
+    const { goToProject, goToProjects } = useAppNavigation();
+    const params = useSearchParams();
     const importAccept = useImportAccept();
     const t = useTranslations("projects");
     const tNav = useTranslations("navbar");
@@ -50,6 +52,40 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
     useEffect(() => {
         if (parent.current) autoAnimate(parent.current);
     }, [parent]);
+
+    // "Open in Browser" on the landing homepage arrives as `/projects?quickstart`:
+    // a visitor with nothing in their library should land in an editor, not on
+    // an empty list, so give them a blank project and open it. Anyone who
+    // already has projects just gets the list. Either way the param is consumed
+    // on the spot, so a reload — or deleting the last project later — can't
+    // trigger it again. The plan must be known too, or a Cloud user would get a
+    // local-only project.
+    const quickstart = params.has("quickstart");
+    const isQuickstarting = quickstart && !isLoading && !isPlanLoading && !!projects && projects.length === 0;
+    const quickstartRan = useRef(false);
+
+    useEffect(() => {
+        if (!quickstart || quickstartRan.current || isLoading || isPlanLoading || !projects) return;
+        // Decide once per mount: StrictMode re-runs effects in dev, and a
+        // refresh of the list mid-creation must not create a second project.
+        quickstartRan.current = true;
+
+        if (projects.length > 0) {
+            goToProjects();
+            return;
+        }
+
+        (async () => {
+            try {
+                const projectId = await createProjectShell(t("defaultTitle"), user, hasCloudPlan);
+                goToProject(projectId);
+            } catch (error) {
+                console.error("[Projects] Quickstart project creation failed:", error);
+                setImportError(t("form.failedToCreate"));
+                goToProjects();
+            }
+        })();
+    }, [quickstart, isLoading, isPlanLoading, projects, user, hasCloudPlan, goToProject, goToProjects, t]);
 
     // Unlike `startCreating`, this leaves the phone drawer open. The file picker
     // covers the screen on its own, so closing behind it buys nothing and costs
@@ -88,7 +124,7 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
 
         try {
             // This now correctly preserves all project data (title page, board, etc.)
-            const result = await importFileAsProject(file, user, undefined, isPro);
+            const result = await importFileAsProject(file, user, undefined, hasCloudPlan);
 
             if (result.success && result.projectId) {
                 // Refresh the project list
@@ -114,7 +150,9 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
         setIsCreating(true);
     };
 
-    if (isLoading || !projects) return <Loading />;
+    // Also hold here while the quickstart project is being created and opened:
+    // the empty list must not flash before the editor appears.
+    if (isLoading || !projects || isQuickstarting) return <Loading />;
 
     const renderMain = () => {
         if (isCreating) {

@@ -26,8 +26,11 @@ function ProjectsPageContent() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
-        if (!projectId && params.get("pro") === "success") {
-            sessionStorage.setItem("proWelcome", "1");
+        // Back from a Stripe checkout: open the Subscription tab on the plan
+        // just bought so its card can greet the user.
+        const subscribed = params.get("subscribed");
+        if (!projectId && subscribed) {
+            sessionStorage.setItem("welcomePlan", subscribed);
             goToProjects();
             openDashboard("Subscription");
         }

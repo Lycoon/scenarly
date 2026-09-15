@@ -12,6 +12,7 @@ import { KeyBindingMap, tinykeys } from "tinykeys";
 import { DEFAULT_KEYBINDS, executeKeybindAction, KeybindId, ViewActions } from "./keybinds";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProjectRole } from "../../generated/client/browser";
+import { hasActivePlan } from "@src/lib/plans";
 import { isTauri } from "@tauri-apps/api/core";
 import { useTranslations } from "next-intl";
 import { keyboardInsetNow, viewportBottomInset } from "@src/lib/editor/visible-band";
@@ -688,7 +689,7 @@ const useProjectMembership = () => {
         }
     }, [data, isLoading, updateProject]);
 
-    // The cloud copy is gone (e.g. owner lost Pro and the project was demoted server-side,
+    // The cloud copy is gone (e.g. owner lost Cloud and the project was demoted server-side,
     // or it was deleted from another device). Offline-first: if we still have it cached
     // locally, fall back to that copy instead of redirecting away.
     const cloudMissing = error?.status === 404 && isCachedLocally === true;
@@ -813,10 +814,9 @@ const useCachedProjectInfo = (projectId: string | null) => {
     return { title, description, author, isLoading };
 };
 
-const useIsPro = () => {
+const useHasCloudPlan = () => {
     const { user, isLoading } = useUser();
-    const isPro = !!user?.isProUntil && new Date(user.isProUntil) > new Date();
-    return { isPro, isLoading };
+    return { hasCloudPlan: hasActivePlan(user, "CLOUD"), isLoading };
 };
 
 const useDesktopBridgeAuth = () => {
@@ -879,7 +879,7 @@ export {
     useDataExport,
     useCookieUser,
     useSettings,
-    useIsPro,
+    useHasCloudPlan,
     useProjectMemberships,
     useProjectMembership,
     useProjectInvites,

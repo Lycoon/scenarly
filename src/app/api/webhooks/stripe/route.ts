@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { logger } from "@src/lib/utils/logger";
 import * as UserService from "@src/server/service/user-service";
+import * as SubscriptionService from "@src/server/service/subscription-service";
 
 export async function POST(req: NextRequest) {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    const stripe = SubscriptionService.getStripe();
     const sig = req.headers.get("stripe-signature") ?? "";
     const rawBody = await req.arrayBuffer();
 
@@ -18,45 +20,33 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    if (event.type === "checkout.session.completed") {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.client_reference_id;
-        if (userId && session.subscription) {
-            const subscriptionId = session.subscription as string;
+    switch (event.type) {
+        case "checkout.session.completed": {
+            const session = event.data.object;
+            const userId = session.client_reference_id;
+            if (!userId || !session.subscription) break;
+
+            const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
             const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-            const periodEnd = subscription.items.data[0]?.current_period_end;
-            await UserService.updateUserFromId(userId, {
-                isProUntil: periodEnd ? new Date(periodEnd * 1000) : null,
-                isSubscriptionCancelled: false,
-                stripeCustomerId: typeof session.customer === "string" ? session.customer : session.customer?.id,
-                stripeSubscriptionId: subscriptionId,
-            });
-        }
-    }
+            // The price on the subscription says which plan was bought.
+            const priceId = subscription.items.data[0]?.price.id;
+            const plan = priceId ? SubscriptionService.planForStripePrice(priceId) : null;
+            if (!plan) {
+                logger.warn("[Stripe webhook] Checkout for an unknown price", { userId, subscriptionId, priceId });
+                break;
+            }
 
-    if (event.type === "customer.subscription.updated") {
-        const subscription = event.data.object as Stripe.Subscription;
-        const userId = await UserService.getUserIdByStripeSubscriptionId(subscription.id);
-        if (userId) {
-            const periodEnd = subscription.items.data[0]?.current_period_end;
-            await UserService.updateUserFromId(userId, {
-                isProUntil: periodEnd ? new Date(periodEnd * 1000) : null,
-                isSubscriptionCancelled: subscription.cancel_at_period_end,
-            });
+            const customerId = typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
+            await UserService.updateUserFromId(userId, { stripeCustomerId: customerId });
+            await SubscriptionService.activateStripe(userId, plan, subscription);
+            break;
         }
-    }
-
-    if (event.type === "customer.subscription.deleted") {
-        const subscription = event.data.object as Stripe.Subscription;
-        const userId = await UserService.getUserIdByStripeSubscriptionId(subscription.id);
-        if (userId) {
-            // The customer id stays so a later checkout reuses the same Stripe customer.
-            await UserService.updateUserFromId(userId, {
-                isProUntil: null,
-                isSubscriptionCancelled: false,
-                stripeSubscriptionId: null,
-            });
-        }
+        case "customer.subscription.updated":
+            await SubscriptionService.syncStripe(event.data.object);
+            break;
+        case "customer.subscription.deleted":
+            await SubscriptionService.endStripe(event.data.object.id);
+            break;
     }
 
     return NextResponse.json({ received: true });

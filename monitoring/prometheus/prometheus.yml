@@ -11,3 +11,7 @@ scrape_configs:
           credentials_file: /etc/prometheus/bearer-token
       static_configs:
           - targets: ["app-prod:3000"]
+
+    - job_name: node
+      static_configs:
+          - targets: ["node-exporter:9100"]

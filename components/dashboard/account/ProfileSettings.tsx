@@ -15,6 +15,7 @@ import dangerStyles from "../project/DangerZone.module.css";
 import modal from "../../utils/ModalBtn.module.css";
 import { ApiResponse } from "@src/lib/utils/api-utils";
 import { useDataExport, useUser } from "@src/lib/utils/hooks";
+import { isSubscriptionActive, UserSubscription } from "@src/lib/plans";
 import { saveBlob } from "@src/lib/utils/save-file";
 import { useLocale } from "@src/context/LocaleContext";
 
@@ -40,11 +41,14 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
 
     // A subscription still renewing is money at stake: deleting the account
     // cancels it on the spot, so the dialog has to say so before they confirm.
-    const isPro = !!user?.isProUntil && new Date(user.isProUntil) > new Date();
-    const hasLiveSubscription = isPro && !user?.isSubscriptionCancelled;
-    const proExpiryDate = user?.isProUntil
+    // With several plans, the one paid furthest ahead is the date that matters.
+    const liveSubscriptions = ((user?.subscriptions ?? []) as UserSubscription[]).filter(
+        (s) => isSubscriptionActive(s) && !s.cancelled,
+    );
+    const hasLiveSubscription = liveSubscriptions.length > 0;
+    const cloudExpiryDate = hasLiveSubscription
         ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(
-              new Date(user.isProUntil),
+              new Date(Math.max(...liveSubscriptions.map((s) => new Date(s.expiresAt).getTime()))),
           )
         : "";
 
@@ -265,7 +269,7 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
                             {hasLiveSubscription && (
                                 <div className={styles.subscriptionWarning}>
                                     <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
-                                    <span>{t("deleteSubscriptionWarning", { date: proExpiryDate })}</span>
+                                    <span>{t("deleteSubscriptionWarning", { date: cloudExpiryDate })}</span>
                                 </div>
                             )}
                             <label

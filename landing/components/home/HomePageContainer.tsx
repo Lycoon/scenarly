@@ -74,7 +74,7 @@ export default function HomePageContainer() {
                     {/* Layer 1.1: Preview Image (Behind Content, In Front of Stripes) */}
                     <div className={styles.heroBackgroundWrapper}>
                         <Image
-                            src="/_site/images/preview.png"
+                            src="/_site/images/landing_preview.png"
                             alt="Scenarly Interface Preview"
                             width={1920}
                             height={1080}
@@ -89,7 +89,7 @@ export default function HomePageContainer() {
                             src="/_site/images/scenarly.png"
                             alt="Scenarly Logo"
                             width={400}
-                            height={80}
+                            height={110}
                             className={styles.heroLogo}
                         />
                     </div>
@@ -124,7 +124,10 @@ export default function HomePageContainer() {
                                 onToggle={(open) => setOpenMenu(open ? "mobile" : null)}
                             />
 
-                            <a href={`${APP_ORIGIN}/projects`} className={styles.ctaPlatform}>
+                            {/* `quickstart`: a visitor with an empty library skips the
+                                projects list and lands straight in a fresh editor
+                                (handled by ProjectPageContainer in the app). */}
+                            <a href={`${APP_ORIGIN}/projects?quickstart`} className={styles.ctaPlatform}>
                                 <div className={styles.ctaPlatformIcons}>
                                     <Globe size={20} />
                                 </div>
@@ -379,7 +382,7 @@ export default function HomePageContainer() {
                                 <div className={styles.bentoHeader}>
                                     <Cloud size={24} style={{ color: "var(--secondary-text)" }} />
                                     <h3 className={styles.pillarTitle}>Cloud Sync</h3>
-                                    <span className={styles.proBadge}>Pro</span>
+                                    <span className={styles.cloudBadge}>Cloud</span>
                                 </div>
                                 <p className={styles.pillarText}>
                                     Never hit Save again — your words are synced to the cloud continuously. Switch
@@ -404,7 +407,7 @@ export default function HomePageContainer() {
                                 <div className={styles.bentoHeader}>
                                     <MessagesSquare size={24} style={{ color: "var(--secondary-text)" }} />
                                     <h3 className={styles.pillarTitle}>Real-time Collaboration</h3>
-                                    <span className={styles.proBadge}>Pro</span>
+                                    <span className={styles.cloudBadge}>Cloud</span>
                                 </div>
                                 <p className={styles.pillarText}>
                                     Invite up to 5 collaborators and write the same screenplay simultaneously in real
@@ -433,26 +436,27 @@ export default function HomePageContainer() {
                         <details className={styles.faqItem}>
                             <summary className={styles.faqQuestion}>Is Scenarly free to use?</summary>
                             <p className={styles.faqAnswer}>
-                                Scenarly is free to use for most of its features. No project limitation, no forced
-                                watermark on PDF generation. Only advanced features such as real-time collaboration and
-                                report generation are part of our Pro plan, which is available for a reasonable monthly
-                                fee.
+                                Scenarly is entirely free. No project limitation, no forced watermark on PDF
+                                generation. If you want to sync your projects to the cloud and work in real time with
+                                other writers, you can opt into our Cloud plan for a few bucks a month.
                             </p>
                         </details>
 
                         <details className={styles.faqItem}>
                             <summary className={styles.faqQuestion}>Can I use Scenarly offline?</summary>
                             <p className={styles.faqAnswer}>
-                                Absolutely. The desktop app works fully offline. When you sign in and reconnect, your
-                                changes sync automatically to the cloud.
+                                Absolutely. Scenarly is offline-first: the desktop app works fully offline and no
+                                account is needed to use it. If you do want cloud sync or real-time collaboration, you
+                                can sign in at any time and your changes will sync automatically.
                             </p>
                         </details>
 
                         <details className={styles.faqItem}>
-                            <summary className={styles.faqQuestion}>What export formats are supported?</summary>
+                            <summary className={styles.faqQuestion}>What file formats are supported?</summary>
                             <p className={styles.faqAnswer}>
-                                You can export your screenplays as PDF, FDX (Final Draft), and Fountain. You can also
-                                import from these formats.
+                                You can export your screenplays as PDF, Fountain, Final Draft (FDX), or plain text.
+                                For importing, Scenarly reads Fountain and Final Draft (FDX) files, along with
+                                WriterSolo and FadeIn projects.
                             </p>
                         </details>
 
@@ -467,9 +471,10 @@ export default function HomePageContainer() {
                         <details className={styles.faqItem}>
                             <summary className={styles.faqQuestion}>Is my data safe?</summary>
                             <p className={styles.faqAnswer}>
-                                Your data is hosted entirely on European servers, passwords are securely hashed, and all
-                                communications are encrypted with TLS. We never sell or share your data. Read more in
-                                our <a href="/privacy">privacy policy</a>.
+                                Your data is hosted entirely on European servers, and all communications are encrypted
+                                with TLS. We don't store any passwords: signing in is handled through OAuth with Apple
+                                and Google, or an email magic link. We never sell or share your data. Read more in our{" "}
+                                <a href="/privacy">privacy policy</a>.
                             </p>
                         </details>
 

@@ -98,7 +98,7 @@
     text-transform: uppercase;
 }
 
-.badgePro {
+.badgeCloud {
     background: color-mix(in srgb, var(--success) 22%, transparent);
     color: var(--success);
 }
