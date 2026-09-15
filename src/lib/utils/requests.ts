@@ -9,6 +9,7 @@ import {
     UpdateUserBody,
 } from "./api-bodies";
 import { apiFetch } from "@src/lib/api-client";
+import type { Period, Plan } from "@src/lib/plans";
 import type { SaveEntry } from "@src/lib/saves/types";
 
 type RESTMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -136,18 +137,39 @@ export const submitDesktopToken = (nonce: string) => {
     return request(`/api/desktop/token`, "POST", { nonce });
 };
 
-export const cancelStripeSubscription = async (): Promise<boolean> => {
-    const res = await request("/api/stripe/cancel", "POST");
+/* Subscription */
+
+export const cancelStripeSubscription = async (plan: Plan): Promise<boolean> => {
+    const res = await request("/api/stripe/cancel", "POST", { plan });
     return res.ok;
 };
 
-export const createStripeCheckout = async (): Promise<{ url: string } | null> => {
+export const resumeStripeSubscription = async (plan: Plan): Promise<boolean> => {
+    const res = await request("/api/stripe/resume", "POST", { plan });
+    return res.ok;
+};
+
+/** No url with a 409 status means the account already holds this plan, from either store. */
+export const createStripeCheckout = async (plan: Plan, period: Period): Promise<{ url: string | null; status: number }> => {
     const redirectBase = typeof window !== "undefined" ? window.location.origin : undefined;
-    const res = await request("/api/stripe/checkout", "POST", { redirectBase });
-    if (res.ok) {
-        const { data } = (await res.json()) as ApiResponse<{ url: string }>;
-        return data ?? null;
+    const res = await request("/api/stripe/checkout", "POST", { plan, period, redirectBase });
+    const { data } = res.ok ? ((await res.json()) as ApiResponse<{ url: string }>) : { data: undefined };
+    return { url: data?.url ?? null, status: res.status };
+};
+
+export type AppleLinkResult =
+    | { status: "linked" }
+    // The subscription backs another account's plan; `ownerEmail` is masked.
+    | { status: "owned"; ownerEmail: string }
+    | { status: "error" };
+
+export const linkApplePurchase = async (jwsTransaction: string): Promise<AppleLinkResult> => {
+    const res = await request("/api/apple/link", "POST", { jwsTransaction });
+    if (res.ok) return { status: "linked" };
+    if (res.status === 409) {
+        const { data } = (await res.json()) as ApiResponse<{ ownerEmail: string }>;
+        if (data?.ownerEmail) return { status: "owned", ownerEmail: data.ownerEmail };
     }
-    return null;
+    return { status: "error" };
 };
 

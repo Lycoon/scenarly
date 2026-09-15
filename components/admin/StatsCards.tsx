@@ -17,7 +17,7 @@ export default function StatsCards() {
 
     const cards = [
         { label: "Users", value: data.userCount, hint: "All-time registrations" },
-        { label: "Active Cloud", value: data.activeCloudPlanCount, hint: "cloudPlanUntil > now" },
+        { label: "Active Cloud", value: data.activeCloudPlanCount, hint: "Cloud subscriptions not yet expired" },
         { label: "Projects", value: data.projectCount, hint: "All projects" },
     ];
 

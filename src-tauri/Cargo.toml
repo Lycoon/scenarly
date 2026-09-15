@@ -41,3 +41,6 @@ tauri-plugin-single-instance = "2"
 # user picked) live only for the session. A file-backed project has to survive a
 # restart, so they are persisted and restored on launch.
 tauri-plugin-persisted-scope = "2"
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+tauri-plugin-iap = "0.9"

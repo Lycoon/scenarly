@@ -28,6 +28,20 @@ enum DataExportStatus {
   FAILED
 }
 
+// The paid plans. Each is an independent monthly subscription; a user can
+// hold any combination. Cloud: sync, collaboration, version history.
+enum Plan {
+  CLOUD
+}
+
+// Which store bills a subscription: Stripe on the web and Windows, StoreKit on
+// the App Store builds (iOS and macOS). One plan is only ever billed by one of
+// them at a time.
+enum SubscriptionProvider {
+  STRIPE
+  APPLE
+}
+
 model User {
   id                  String      @id @default(uuid(7))
   createdAt           DateTime    @default(now())
@@ -37,20 +51,42 @@ model User {
   color               String?
   role                UserRole    @default(USER)
 
-  cloudPlanUntil              DateTime?
-  isSubscriptionCancelled     Boolean   @default(false)
-  // Stripe is the source of truth for billing; these only link the user to it.
-  // The customer id outlives the subscription so a lapsed user re-subscribes
-  // on the same Stripe customer; the subscription id is cleared when it ends.
-  stripeCustomerId            String?   @unique
-  stripeSubscriptionId        String?   @unique
+  // Stripe is the source of truth for web billing; this only links the user to
+  // it. It outlives any subscription so a lapsed user re-subscribes on the same
+  // Stripe customer, keeping their payment method and invoice history.
+  stripeCustomerId    String?     @unique
 
   settings            Json?
 
   accounts            Account[]
   sessions            Session[]
   projects            ProjectMember[]
+  subscriptions       Subscription[]
   dataExports         DataExport[]
+}
+
+// One row per plan a user has bought, from whichever store billed it. The
+// stores stay the source of truth for money; this mirrors just enough to gate
+// features and to route their events. `expiresAt` in the past is a lapsed plan:
+// the row is kept so an App Store resubscribe — which reuses the original
+// transaction id — lands on the same account. Buying a plan through the other
+// store replaces the row, which is what keeps one plan from being billed twice.
+model Subscription {
+  plan                Plan
+  provider            SubscriptionProvider
+  // Stripe subscription id, or Apple's original transaction id — the one every
+  // renewal of an App Store subscription shares. Unique across the store so
+  // one store subscription can only ever back one account.
+  providerId          String
+  expiresAt           DateTime
+  // Will not renew: cancelled at period end (Stripe) or auto-renew off (Apple).
+  cancelled           Boolean     @default(false)
+
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+
+  @@id([userId, plan])
+  @@unique([provider, providerId])
 }
 
 model Account {

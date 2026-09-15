@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import * as ProjectService from "@src/server/service/project-service";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import { InternalServerError, SuccessCreated, validate } from "@src/lib/utils/api-utils";
-import { requireCloudPlan } from "@src/lib/utils/cloud-plan-utils";
+import { requireCloudPlan } from "@src/lib/utils/plan-utils";
 
 import z from "zod";
 

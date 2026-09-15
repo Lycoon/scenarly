@@ -12,6 +12,7 @@ import { KeyBindingMap, tinykeys } from "tinykeys";
 import { DEFAULT_KEYBINDS, executeKeybindAction, KeybindId, ViewActions } from "./keybinds";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProjectRole } from "../../generated/client/browser";
+import { hasActivePlan } from "@src/lib/plans";
 import { isTauri } from "@tauri-apps/api/core";
 import { useTranslations } from "next-intl";
 import { keyboardInsetNow, viewportBottomInset } from "@src/lib/editor/visible-band";
@@ -815,8 +816,7 @@ const useCachedProjectInfo = (projectId: string | null) => {
 
 const useHasCloudPlan = () => {
     const { user, isLoading } = useUser();
-    const hasCloudPlan = !!user?.cloudPlanUntil && new Date(user.cloudPlanUntil) > new Date();
-    return { hasCloudPlan, isLoading };
+    return { hasCloudPlan: hasActivePlan(user, "CLOUD"), isLoading };
 };
 
 const useDesktopBridgeAuth = () => {

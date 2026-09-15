@@ -34,17 +34,13 @@ export const getUserSettings = async (userId: string) => {
     return repository.fetchUserSettings(userId);
 };
 
-export const getUserIdByStripeSubscriptionId = async (subscriptionId: string) => {
-    const result = await repository.fetchUserByStripeSubscriptionId(subscriptionId);
-    return result?.id ?? null;
+export const getStripeCustomerId = async (userId: string) => {
+    const result = await repository.fetchStripeCustomerId(userId);
+    return result?.stripeCustomerId ?? null;
 };
 
-export const getStripeIds = async (userId: string) => {
-    const result = await repository.fetchStripeIds(userId);
-    return {
-        stripeCustomerId: result?.stripeCustomerId ?? null,
-        stripeSubscriptionId: result?.stripeSubscriptionId ?? null,
-    };
+export const getUserForExport = async (userId: string) => {
+    return repository.fetchUserForExport(userId);
 };
 
 export const searchUsers = async (term: string, limit: number, cursor?: number) => {
@@ -55,7 +51,4 @@ export const countUsers = async () => {
     return repository.countAll();
 };
 
-export const countActiveCloudPlanUsers = async () => {
-    return repository.countActiveCloudPlan();
-};
 

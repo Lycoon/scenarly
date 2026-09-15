@@ -1,0 +1,6 @@
+# Matches bundle.macOS.minimumSystemVersion in tauri.conf.json. The StoreKit
+# bridge in tauri-plugin-iap is Swift with async/await, which needs the macOS 13
+# Swift runtime; a debug binary built for Tauri's older default target fails at
+# launch with "Library not loaded: @rpath/libswift_Concurrency.dylib".
+[env]
+MACOSX_DEPLOYMENT_TARGET = "13.0"

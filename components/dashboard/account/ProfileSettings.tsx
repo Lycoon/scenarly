@@ -15,6 +15,7 @@ import dangerStyles from "../project/DangerZone.module.css";
 import modal from "../../utils/ModalBtn.module.css";
 import { ApiResponse } from "@src/lib/utils/api-utils";
 import { useDataExport, useUser } from "@src/lib/utils/hooks";
+import { isSubscriptionActive, UserSubscription } from "@src/lib/plans";
 import { saveBlob } from "@src/lib/utils/save-file";
 import { useLocale } from "@src/context/LocaleContext";
 
@@ -40,11 +41,14 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
 
     // A subscription still renewing is money at stake: deleting the account
     // cancels it on the spot, so the dialog has to say so before they confirm.
-    const hasCloudPlan = !!user?.cloudPlanUntil && new Date(user.cloudPlanUntil) > new Date();
-    const hasLiveSubscription = hasCloudPlan && !user?.isSubscriptionCancelled;
-    const cloudExpiryDate = user?.cloudPlanUntil
+    // With several plans, the one paid furthest ahead is the date that matters.
+    const liveSubscriptions = ((user?.subscriptions ?? []) as UserSubscription[]).filter(
+        (s) => isSubscriptionActive(s) && !s.cancelled,
+    );
+    const hasLiveSubscription = liveSubscriptions.length > 0;
+    const cloudExpiryDate = hasLiveSubscription
         ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(
-              new Date(user.cloudPlanUntil),
+              new Date(Math.max(...liveSubscriptions.map((s) => new Date(s.expiresAt).getTime()))),
           )
         : "";
 

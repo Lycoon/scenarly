@@ -3,6 +3,7 @@ import z from "zod";
 
 import * as UserService from "@src/server/service/user-service";
 import * as ProjectService from "@src/server/service/project-service";
+import * as SubscriptionService from "@src/server/service/subscription-service";
 import { Success, UserNotFoundError, validate } from "@src/lib/utils/api-utils";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import { assertAdmin } from "@src/lib/utils/admin-guard";
@@ -16,13 +17,15 @@ async function getUserDetail(req: NextRequest, { routeParams, user }: AuthApiCon
     const target = await UserService.getUserFromId(userId);
     if (!target) throw new UserNotFoundError();
 
-    const [projectCount, { stripeCustomerId }] = await Promise.all([
+    const [projectCount, stripeCustomerId, subscriptions] = await Promise.all([
         ProjectService.countMembershipsByUser(userId),
-        UserService.getStripeIds(userId),
+        UserService.getStripeCustomerId(userId),
+        SubscriptionService.getSubscriptions(userId),
     ]);
 
-    // Billing history lives in Stripe; hand the admin a deep link instead of
-    // mirroring it. Test-mode keys open the test-mode dashboard.
+    // Billing history lives in the stores; hand the admin deep links instead
+    // of mirroring it. Test-mode keys open the test-mode dashboard. Apple's
+    // original transaction id is what to look up in App Store Connect.
     const dashboardBase = process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
         ? "https://dashboard.stripe.com/test"
         : "https://dashboard.stripe.com";
@@ -35,11 +38,13 @@ async function getUserDetail(req: NextRequest, { routeParams, user }: AuthApiCon
             emailVerified: target.emailVerified,
             username: target.username,
             role: target.role,
-            cloudPlanUntil: target.cloudPlanUntil,
-            isSubscriptionCancelled: target.isSubscriptionCancelled,
             stripeCustomerId,
             stripeCustomerUrl: stripeCustomerId ? `${dashboardBase}/customers/${stripeCustomerId}` : null,
         },
+        subscriptions: subscriptions.map((s) => ({
+            ...s,
+            providerUrl: s.provider === "STRIPE" ? `${dashboardBase}/subscriptions/${s.providerId}` : null,
+        })),
         projectCount,
     });
 }

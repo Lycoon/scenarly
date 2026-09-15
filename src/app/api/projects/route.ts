@@ -8,7 +8,7 @@ import {
     UserNotFoundError,
     validate,
 } from "@src/lib/utils/api-utils";
-import { requireCloudPlan } from "@src/lib/utils/cloud-plan-utils";
+import { requireCloudPlan } from "@src/lib/utils/plan-utils";
 
 import { CreateProjectBodySchema } from "@src/lib/utils/api-bodies";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";

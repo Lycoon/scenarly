@@ -20,31 +20,15 @@
  * the user unable to delete their account at all.
  */
 
-import Stripe from "stripe";
-
 import * as CollabUtils from "@src/lib/cloud/utils";
 import * as S3 from "@src/lib/s3";
 import * as MagicLinkService from "@src/server/service/magic-link-service";
 import * as ProjectService from "@src/server/service/project-service";
 import * as UserService from "@src/server/service/user-service";
+import * as SubscriptionService from "@src/server/service/subscription-service";
 import { destroyProjectCompletely } from "@src/server/service/project-teardown-service";
 import { ProjectRole } from "@src/generated/client/client";
 import { logger } from "@src/lib/utils/logger";
-
-/**
- * Stop billing a user who no longer exists. Cancels immediately rather than at
- * period end: the account is gone, so there is nothing left to keep active —
- * and once the User row is deleted we can no longer map the subscription back
- * to anyone. The webhook clears stripeSubscriptionId when a subscription ends,
- * so one still set means we believe it is live.
- */
-async function cancelStripeSubscription(userId: string): Promise<void> {
-    const { stripeSubscriptionId } = await UserService.getStripeIds(userId);
-    if (!stripeSubscriptionId) return;
-
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-    await stripe.subscriptions.cancel(stripeSubscriptionId);
-}
 
 export async function deleteAccount(userId: string): Promise<boolean> {
     const user = await UserService.getUserFromId(userId);
@@ -65,7 +49,7 @@ export async function deleteAccount(userId: string): Promise<boolean> {
     }
 
     try {
-        await cancelStripeSubscription(userId);
+        await SubscriptionService.cancelAllForDeletion(userId);
     } catch (e) {
         logger.error("[AccountDeletion] Failed to cancel Stripe subscription", { userId, error: e });
     }

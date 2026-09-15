@@ -4,11 +4,15 @@ import { Success, validate } from "@src/lib/utils/api-utils";
 import { PlanBodySchema } from "@src/lib/utils/api-bodies";
 import * as SubscriptionService from "@src/server/service/subscription-service";
 
-/** Stop the plan's Stripe subscription at the end of the paid period. */
-async function cancelSubscription(req: NextRequest, { user }: AuthApiContext) {
+/**
+ * Undo a cancel-at-period-end on the plan's Stripe subscription while it is
+ * still running. Reactivating through a new checkout instead would open a
+ * second subscription alongside the one that has not ended yet.
+ */
+async function resumeSubscription(req: NextRequest, { user }: AuthApiContext) {
     const { plan } = validate(PlanBodySchema, await req.json().catch(() => ({})));
-    await SubscriptionService.setStripeAutoRenew(user.id, plan, false);
+    await SubscriptionService.setStripeAutoRenew(user.id, plan, true);
     return Success(null);
 }
 
-export const POST = apiHandler(cancelSubscription);
+export const POST = apiHandler(resumeSubscription);

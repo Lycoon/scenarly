@@ -36,7 +36,12 @@ declare global {
             // Stripe
             STRIPE_SECRET_KEY: string;
             STRIPE_WEBHOOK_SECRET: string;
-            STRIPE_CLOUD_PRICE_ID: string;
+            STRIPE_CLOUD_MONTHLY_PRICE_ID: string;
+            STRIPE_CLOUD_YEARLY_PRICE_ID: string;
+
+            // Apple in-app purchase
+            APPLE_BUNDLE_ID: string;
+            APPLE_APP_ID: string;
         }
     }
 }

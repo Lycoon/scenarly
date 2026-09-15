@@ -1,5 +1,16 @@
 apiVersion: 1
 
+# Provisioned rules are never removed just because they leave this file; the
+# pre-rename "scriptio-*" rules and the retired DB-ceiling rule have to be
+# deleted explicitly.
+deleteRules:
+    - orgId: 1
+      uid: scriptio-http-error-rate
+    - orgId: 1
+      uid: scriptio-db-almost-full
+    - orgId: 1
+      uid: scenarly-db-almost-full
+
 groups:
     - orgId: 1
       name: scenarly-app
@@ -37,10 +48,10 @@ groups:
             execErrState: Error
             annotations:
                 summary: HTTP error rate above 5%
-                description: "{{ $value | printf \"%.2f\" }} of requests in the last 5 minutes returned a 4xx/5xx status."
+                description: "{{ $values.A.Value | humanizePercentage }} of requests in the last 5 minutes returned a 4xx/5xx status."
 
-          - uid: scenarly-db-almost-full
-            title: DbAlmostFull
+          - uid: scenarly-disk-almost-full
+            title: DiskAlmostFull
             condition: C
             data:
                 - refId: A
@@ -50,7 +61,8 @@ groups:
                   datasourceUid: prometheus
                   model:
                       refId: A
-                      expr: scenarly_db_size_bytes / ${DB_SIZE_LIMIT_BYTES}
+                      # Used fraction of the host root filesystem, from node_exporter
+                      expr: 1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}
                       instant: true
                 - refId: C
                   relativeTimeRange:
@@ -69,5 +81,5 @@ groups:
             noDataState: OK
             execErrState: Error
             annotations:
-                summary: Database is approaching its capacity ceiling
-                description: "DB is at {{ $value | humanizePercentage }} of the configured DB_SIZE_LIMIT_BYTES."
+                summary: VPS disk is almost full
+                description: "The root filesystem is at {{ $values.A.Value | humanizePercentage }} capacity."
