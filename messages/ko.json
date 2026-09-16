@@ -42,10 +42,10 @@
     "screenplay": "시나리오",
     "board": "보드",
     "titlePage": "타이틀 페이지",
-    "synced": "클라우드에 동기화됨",
+    "synced": "동기화됨",
     "noConnection": "연결 없음",
     "reconnecting": "재연결 중...",
-    "uploadToCloud": "클라우드에 업로드",
+    "syncToCloud": "동기화",
     "storageProject": "이 프로젝트",
     "storageTotal": "총 사용량",
     "endlessScroll": "무한 스크롤",
@@ -358,10 +358,9 @@
           "name": "Cloud",
           "title": "Cloud 플랜",
           "perks": {
-            "projects": "클라우드 프로젝트 생성",
-            "saves": "수동 저장 및 버전 기록",
-            "collaborators": "협업자 초대",
-            "autoSave": "클라우드 자동 저장"
+            "cloudSync": "모든 플랫폼에서 자동 저장 클라우드 동기화",
+            "collaboration": "실시간 협업",
+            "sharedStorage": "자산을 위한 공유 클라우드 저장소"
           }
         }
       },

@@ -42,10 +42,10 @@
     "screenplay": "剧本",
     "board": "剧本板",
     "titlePage": "扉页",
-    "synced": "已同步到云端",
+    "synced": "已同步",
     "noConnection": "无连接",
     "reconnecting": "正在重新连接...",
-    "uploadToCloud": "上传到云端",
+    "syncToCloud": "同步",
     "storageProject": "本项目",
     "storageTotal": "已用总量",
     "endlessScroll": "无限滚动",
@@ -358,10 +358,9 @@
           "name": "Cloud",
           "title": "Cloud 计划",
           "perks": {
-            "projects": "创建云端项目",
-            "saves": "手动保存与版本历史",
-            "collaborators": "邀请协作者",
-            "autoSave": "云端自动保存"
+            "cloudSync": "跨所有平台的自动保存云同步",
+            "collaboration": "实时协作",
+            "sharedStorage": "共享云存储用于素材"
           }
         }
       },

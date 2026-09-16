@@ -42,10 +42,10 @@
     "screenplay": "脚本",
     "board": "ボード",
     "titlePage": "タイトルページ",
-    "synced": "クラウドに同期済み",
+    "synced": "同期済み",
     "noConnection": "接続なし",
     "reconnecting": "再接続中...",
-    "uploadToCloud": "クラウドにアップロード",
+    "syncToCloud": "同期",
     "storageProject": "このプロジェクト",
     "storageTotal": "合計使用量",
     "endlessScroll": "無限スクロール",
@@ -358,10 +358,9 @@
           "name": "Cloud",
           "title": "Cloudプラン",
           "perks": {
-            "projects": "クラウドプロジェクトの作成",
-            "saves": "手動保存とバージョン履歴",
-            "collaborators": "コラボレーターを招待",
-            "autoSave": "クラウド自動保存"
+            "cloudSync": "すべてのプラットフォームで自動保存クラウド同期",
+            "collaboration": "リアルタイムコラボレーション",
+            "sharedStorage": "アセット用共有クラウドストレージ"
           }
         }
       },

@@ -42,10 +42,10 @@
     "screenplay": "Scénario",
     "board": "Tableau",
     "titlePage": "Page de titre",
-    "synced": "Synchronisé dans le cloud",
+    "synced": "Synchronisé",
     "noConnection": "Pas de connexion",
     "reconnecting": "Reconnexion...",
-    "uploadToCloud": "Téléverser dans le cloud",
+    "syncToCloud": "Synchroniser",
     "storageProject": "Ce projet",
     "storageTotal": "Total utilisé",
     "cachedProject": "Projet en cache",
@@ -359,10 +359,9 @@
           "name": "Cloud",
           "title": "Plan Cloud",
           "perks": {
-            "projects": "Créer des projets cloud",
-            "saves": "Sauvegardes manuelles et historique des versions",
-            "collaborators": "Inviter des collaborateurs",
-            "autoSave": "Sauvegarde automatique dans le cloud"
+            "cloudSync": "Synchronisation cloud automatique sur toutes les plateformes",
+            "collaboration": "Collaboration en temps réel",
+            "sharedStorage": "Stockage cloud partagé pour les ressources"
           }
         }
       },
