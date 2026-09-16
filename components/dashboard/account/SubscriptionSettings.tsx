@@ -24,7 +24,7 @@ import { useLocale } from "@src/context/LocaleContext";
 import styles from "./SubscriptionSettings.module.css";
 
 const PLAN_PERKS: Record<Plan, readonly string[]> = {
-    CLOUD: ["projects", "saves", "collaborators", "autoSave"],
+    CLOUD: ["cloudSync", "collaboration", "sharedStorage"],
 };
 
 // Apple's standard EULA covers App Store purchases until we publish our own

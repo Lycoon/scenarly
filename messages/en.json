@@ -42,10 +42,10 @@
     "screenplay": "Screenplay",
     "board": "Board",
     "titlePage": "Title Page",
-    "synced": "Synced to cloud",
+    "synced": "Synced",
     "noConnection": "No connection",
     "reconnecting": "Reconnecting...",
-    "uploadToCloud": "Upload to cloud",
+    "syncToCloud": "Synchronize",
     "storageProject": "This project",
     "storageTotal": "Total used",
     "endlessScroll": "Endless Scroll",
@@ -358,10 +358,9 @@
           "name": "Cloud",
           "title": "Cloud Plan",
           "perks": {
-            "projects": "Create cloud projects",
-            "saves": "Manual saves & version history",
-            "collaborators": "Invite collaborators",
-            "autoSave": "Cloud auto-save"
+            "cloudSync": "Auto-save cloud sync across all platforms",
+            "collaboration": "Real-time collaboration",
+            "sharedStorage": "Shared cloud storage for assets"
           }
         }
       },

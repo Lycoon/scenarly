@@ -27,6 +27,13 @@
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    /* Promote to its own compositor layer, isolated from .overlay's
+     * backdrop-filter. Without this, Firefox re-rasterizes the *entire* blurred
+     * overlay — redoing the expensive blur sample of the whole editor behind it
+     * — every time a settings tab swaps this box's content, since the repaint
+     * happens inside the same layer as the blur. Chromium already isolates this
+     * on its own, which is why the freeze is Firefox-only. */
+    will-change: transform;
 }
 
 /* Tablet (a touch device wide enough for the desktop layout — an iPad reports

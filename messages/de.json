@@ -42,10 +42,10 @@
     "screenplay": "Drehbuch",
     "board": "Board",
     "titlePage": "Titelseite",
-    "synced": "Mit Cloud synchronisiert",
+    "synced": "Synchronisiert",
     "noConnection": "Keine Verbindung",
     "reconnecting": "Verbindung wird wiederhergestellt...",
-    "uploadToCloud": "In die Cloud hochladen",
+    "syncToCloud": "Synchronisieren",
     "storageProject": "Dieses Projekt",
     "storageTotal": "Gesamt belegt",
     "cachedProject": "Gecachtes Projekt",
@@ -359,10 +359,9 @@
           "name": "Cloud",
           "title": "Cloud-Plan",
           "perks": {
-            "projects": "Cloud-Projekte erstellen",
-            "saves": "Manuelle Speicherpunkte & Versionsverlauf",
-            "collaborators": "Mitarbeiter einladen",
-            "autoSave": "Automatisches Cloud-Speichern"
+            "cloudSync": "Automatische Cloud-Synchronisierung auf allen Plattformen",
+            "collaboration": "Zusammenarbeit in Echtzeit",
+            "sharedStorage": "Gemeinsamer Cloud-Speicher für Assets"
           }
         }
       },
