@@ -30,13 +30,19 @@ export const PLAN_NAMES: Record<Plan, string> = { CLOUD: "Cloud" };
 export const PLANS_ON_SALE: readonly Plan[] = ["CLOUD"];
 
 /**
- * App Store product id of a plan's period: `com.scenarly.cloud.monthly`.
+ * App Store product id of a plan's period: `com.scenarly.cloud.month`.
  * Prefixed with the bundle id because Apple requires product ids to be unique
  * across the whole developer team, so the staging app carries its own set
- * (`com.scenarly.staging.cloud.monthly`). One subscription group per plan.
+ * (`com.scenarly.staging.cloud.month`). One subscription group per plan.
+ * Uses `month`/`year` rather than `monthly`/`yearly` because the latter got
+ * created once as a plain (non-subscription) IAP and deleted — Apple never
+ * allows a product id to be reused after that, even across product types —
+ * so this spelling must stay as-is rather than reverting to the "ly" form.
  */
+const APPLE_PERIOD_SEGMENT: Record<Period, string> = { MONTHLY: "month", YEARLY: "year" };
+
 export const appleProductId = (bundleId: string, plan: Plan, period: Period) =>
-    `${bundleId}.${plan.toLowerCase()}.${period.toLowerCase()}`;
+    `${bundleId}.${plan.toLowerCase()}.${APPLE_PERIOD_SEGMENT[period]}`;
 
 export const planForAppleProduct = (bundleId: string, productId: string): Plan | null =>
     PLANS.find((plan) => PERIODS.some((period) => appleProductId(bundleId, plan, period) === productId)) ?? null;
