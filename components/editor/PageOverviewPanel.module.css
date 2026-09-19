@@ -125,6 +125,27 @@
     user-select: none;
 }
 
+/* The production page-lock badge, in the sheet's top-right corner. Sits above
+   the scaled sheet (which is a still image — pointer-events: none) on a
+   translucent disc of the page's own background, so the glyph stays legible
+   over whatever text the page's top line carries. Positioned on the frame, not
+   the sheet, so the page's scale never touches it. */
+.lock_badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: color-mix(in srgb, var(--editor-script-bg) 85%, transparent);
+    color: var(--secondary-text);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--secondary-text) 25%, transparent);
+    pointer-events: none;
+}
+
 .page_label {
     font-size: 11px;
     font-weight: 500;

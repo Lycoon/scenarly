@@ -210,10 +210,6 @@ const CharacterItemMenu = ({ props }: SubMenuProps<CharacterContextProps>) => {
                         disabled={!character.persistent}
                         title={character.persistent ? undefined : t("removeUnsavedHint")}
                     />
-                    <ContextMenuItem
-                        text={t("paste")}
-                        action={() => pasteText(projectCtx.editor!, character.name)}
-                    />
                     <ContextMenuSeparator />
                 </>
             )}

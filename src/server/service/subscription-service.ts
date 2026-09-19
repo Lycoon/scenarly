@@ -22,7 +22,7 @@
 import Stripe from "stripe";
 import { SubscriptionRepository } from "../repository/subscription-repository";
 import * as UserService from "./user-service";
-import { isSubscriptionActive, Period, Plan, planForAppleProduct, PLANS, PLANS_ON_SALE } from "@src/lib/plans";
+import { isSubscriptionActive, Period, PERIODS, Plan, planForAppleProduct, PLANS, PLANS_ON_SALE } from "@src/lib/plans";
 import { ConflictError, ForbiddenError } from "@src/lib/utils/api-utils";
 import { logger } from "@src/lib/utils/logger";
 import type { AppleTransaction } from "@src/lib/apple-jws";
@@ -47,6 +47,39 @@ export function stripePriceFor(plan: Plan, period: Period): string {
     const priceId = STRIPE_PRICE_IDS[plan][period];
     if (!priceId) throw new ForbiddenError(`${plan} has no ${period} Stripe price configured`);
     return priceId;
+}
+
+// Stripe amounts are in the currency's smallest unit, except these, which have none.
+const ZERO_DECIMAL_CURRENCIES = new Set([
+    "bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf",
+]);
+
+/**
+ * Each on-sale period of `plan`, formatted in `currency` when Stripe has that
+ * price configured for it (Adaptive Pricing / manual currency_options in the
+ * Dashboard) — the price's own currency otherwise, so every plan always shows
+ * a price. Formatted with `locale` so it renders like the rest of the page.
+ */
+export async function stripeDisplayPrices(
+    plan: Plan,
+    currency: string | undefined,
+    locale: string,
+): Promise<Partial<Record<Period, string>>> {
+    const result: Partial<Record<Period, string>> = {};
+    for (const period of PERIODS) {
+        const priceId = STRIPE_PRICE_IDS[plan][period];
+        if (!priceId) continue;
+
+        const price = await getStripe().prices.retrieve(priceId, { expand: ["currency_options"] });
+        const useCurrency = currency && price.currency_options?.[currency] ? currency : price.currency;
+        const unitAmount =
+            useCurrency === price.currency ? price.unit_amount : price.currency_options?.[useCurrency]?.unit_amount;
+        if (unitAmount == null) continue;
+
+        const amount = ZERO_DECIMAL_CURRENCIES.has(useCurrency) ? unitAmount : unitAmount / 100;
+        result[period] = new Intl.NumberFormat(locale, { style: "currency", currency: useCurrency }).format(amount);
+    }
+    return result;
 }
 
 export function assertOnSale(plan: Plan): void {

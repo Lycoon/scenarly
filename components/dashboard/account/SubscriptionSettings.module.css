@@ -262,11 +262,22 @@
     background: var(--primary);
     color: var(--primary-text);
     border: none;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s;
     width: 100%;
+    min-width: 0;
+}
+
+/* A price/period label can run long in some languages; it stays on one line
+   and, only if it truly doesn't fit, clips with an ellipsis rather than
+   wrapping or overflowing the button. */
+.upgradeBtnLabel {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .upgradeBtn:hover {
@@ -310,23 +321,34 @@
     gap: 16px;
 }
 
-/* Monthly / yearly choice above the purchase button. */
+/* Monthly / yearly choice above the purchase button. Both options sit in
+   equal-width grid columns, sized to the wider of the two labels, so picking
+   one never resizes the toggle (or shifts whatever sits next to it). */
 .periodToggle {
-    display: flex;
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 4px;
     padding: 3px;
     border-radius: 24px;
     border: 1px solid var(--separator);
-    align-self: flex-start;
 }
 
 .periodOption {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
     padding: 5px 14px;
     border-radius: 20px;
     background: none;
     border: none;
     font-size: 0.82rem;
+    /* Always bold, even inactive — toggling font-weight on click would change
+       each label's intrinsic width and shift the equal-width grid columns above. */
+    font-weight: 600;
     color: var(--secondary-text);
+    text-align: center;
     cursor: pointer;
     transition:
         background 0.15s,
@@ -336,10 +358,89 @@
 .periodOptionActive {
     background: color-mix(in srgb, var(--primary-text) 12%, transparent);
     color: var(--primary-text);
-    font-weight: 600;
 }
 
 .periodOption:disabled {
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+/* Discount badge on the yearly option, a nudge to pick it. Green whether or
+   not the option is chosen, so it stands out from the monochrome toggle. */
+.periodOptionIcon {
+    flex-shrink: 0;
+    color: var(--success);
+}
+
+/* Anchor for the "2 months free" hint, which floats under the toggle once
+   yearly is picked. */
+.periodToggleWrap {
+    position: relative;
+    display: flex;
+}
+
+/* Yearly is the toggle's right-hand column, so the hint is centred under
+   the 75% mark of the toggle's width. It is out of flow so picking a period
+   never moves anything — it hangs over the card's bottom edge, by design.
+   The arrow (below) reaches 5px above the box, with 3px clear of the toggle. */
+.periodHint {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 75%;
+    transform: translateX(-50%);
+    width: max-content;
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--primary-text) 8%, var(--secondary));
+    border: 1px solid color-mix(in srgb, var(--primary-text) 22%, var(--secondary));
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--primary-text);
+    white-space: nowrap;
+    animation: periodHintIn 0.2s ease-out both;
+}
+
+/* The arrow: a small square rotated so its top corner points at the yearly
+   option. Its upper two edges carry the border and its opaque fill hides the
+   segment of the hint's top border it straddles, so the outline flows
+   unbroken from box to arrow. Colours are mixed against the card background
+   rather than transparent so the overlap doesn't double up. */
+.periodHint::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    border-left: inherit;
+    border-top: inherit;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+/* The translateX is the hint's resting centring on `left`; keep it in every frame. */
+@keyframes periodHintIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -3px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Period toggle and purchase button share a row. */
+.purchaseRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.purchaseRow .upgradeBtn {
+    width: auto;
+    flex: 1;
 }

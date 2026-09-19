@@ -62,6 +62,7 @@
     "viewPages": "Pages View",
     "viewPagesOpen": "Go to page {page}",
     "viewPagesEmpty": "No pages to show yet",
+    "viewPagesLocked": "Locked page",
     "splitPanel": "Split Panel",
     "unsplitPanel": "Unsplit Panel",
     "swapPanels": "Swap Panels",
@@ -347,8 +348,8 @@
       "privacyLink": "Privacy Policy",
       "purchasing": "Purchasing...",
       "activeBadge": "Active",
-      "upgradeBtn": "Upgrade to {plan}",
-      "upgradeBtnPrice": "Upgrade to {plan} — {price} / {period}",
+      "upgradeBtn": "Subscribe",
+      "upgradeBtnPrice": "Subscribe — {price} / {period}",
       "cancelConfirm": "{plan} access stays active until {date}. Cancel anyway?",
       "cancelNo": "Keep {plan}",
       "welcome": "You're now subscribed to Scenarly {plan}. Welcome!",
@@ -368,7 +369,8 @@
       "monthly": "Monthly",
       "yearly": "Yearly",
       "perMonth": "month",
-      "perYear": "year"
+      "perYear": "year",
+      "yearlyHint": "2 months free"
     }
   },
   "projects": {

@@ -21,22 +21,12 @@ export type Period = (typeof PERIODS)[number];
 
 /** How each plan is called in the interface. */
 export const PLAN_NAMES: Record<Plan, string> = { CLOUD: "Cloud" };
-
-/**
- * Plans that can currently be bought. A plan not on sale is neither offered
- * in the app nor accepted by the checkout routes, but a subscription someone
- * already holds is still honoured and shown.
- */
 export const PLANS_ON_SALE: readonly Plan[] = ["CLOUD"];
 
-/**
- * App Store product id of a plan's period: `com.scenarly.cloud.monthly`.
- * Prefixed with the bundle id because Apple requires product ids to be unique
- * across the whole developer team, so the staging app carries its own set
- * (`com.scenarly.staging.cloud.monthly`). One subscription group per plan.
- */
+const APPLE_PERIOD_SEGMENT: Record<Period, string> = { MONTHLY: "month", YEARLY: "year" };
+
 export const appleProductId = (bundleId: string, plan: Plan, period: Period) =>
-    `${bundleId}.${plan.toLowerCase()}.${period.toLowerCase()}`;
+    `${bundleId}.${plan.toLowerCase()}.${APPLE_PERIOD_SEGMENT[period]}`;
 
 export const planForAppleProduct = (bundleId: string, productId: string): Plan | null =>
     PLANS.find((plan) => PERIODS.some((period) => appleProductId(bundleId, plan, period) === productId)) ?? null;
