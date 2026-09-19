@@ -62,6 +62,7 @@
     "viewPages": "Widok stron",
     "viewPagesOpen": "Przejdź do strony {page}",
     "viewPagesEmpty": "Brak stron do wyświetlenia",
+    "viewPagesLocked": "Zablokowana strona",
     "splitPanel": "Podziel panel",
     "unsplitPanel": "Zamknij panel",
     "swapPanels": "Zamień panele",
@@ -347,8 +348,8 @@
       "privacyLink": "Polityka prywatności",
       "purchasing": "Zakup w toku...",
       "activeBadge": "Aktywny",
-      "upgradeBtn": "Przejdź na {plan}",
-      "upgradeBtnPrice": "Przejdź na {plan} — {price} / {period}",
+      "upgradeBtn": "Subskrybuj",
+      "upgradeBtnPrice": "Subskrybuj — {price} / {period}",
       "cancelConfirm": "Dostęp {plan} pozostaje aktywny do {date}. Anulować mimo to?",
       "cancelNo": "Zachowaj {plan}",
       "welcome": "Subskrybujesz teraz Scenarly {plan}. Witamy!",
@@ -368,7 +369,8 @@
       "monthly": "Miesięcznie",
       "yearly": "Rocznie",
       "perMonth": "miesiąc",
-      "perYear": "rok"
+      "perYear": "rok",
+      "yearlyHint": "2 miesiące gratis"
     }
   },
   "projects": {

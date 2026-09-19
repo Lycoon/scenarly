@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowRight, Check, ExternalLink, Lock, Sparkles } from "lucide-react";
+import { ArrowRight, BadgePercent, Check, ExternalLink, Lock, Sparkles } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
 import {
     cancelStripeSubscription,
     createStripeCheckout,
+    getStripePrices,
     linkApplePurchase,
     resumeStripeSubscription,
 } from "@src/lib/utils/requests";
@@ -71,9 +72,9 @@ const SubscriptionSettings = () => {
     });
     const [welcomeLeaving, setWelcomeLeaving] = useState(false);
     // Detect the App Store build after mount so SSR renders the same tree the
-    // client initially does, avoiding hydration mismatches.
+    // client initially does, avoiding hydration mismatches; done inline with
+    // the price fetch below so the right store is asked on the first try.
     const [isAppleBuild, setIsAppleBuild] = useState(false);
-    useEffect(() => { setIsAppleBuild(isAppleStoreBuild()); }, []);
 
     // A plan shows up once it is on sale, or as long as the user still holds it.
     const visiblePlans = PLANS.filter((plan) => PLANS_ON_SALE.includes(plan) || getSubscription(user, plan));
@@ -82,13 +83,14 @@ const SubscriptionSettings = () => {
         new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(date));
 
     useEffect(() => {
-        if (!isAppleBuild) return;
+        const appleBuild = isAppleStoreBuild();
+        setIsAppleBuild(appleBuild);
         for (const plan of PLANS_ON_SALE) {
-            getApplePrices(plan)
-                .then((planPrices) => setPrices((p) => ({ ...p, [plan]: planPrices })))
-                .catch(() => {});
+            const planPrices = appleBuild ? getApplePrices(plan) : getStripePrices(plan, locale);
+            planPrices.then((prices) => setPrices((p) => ({ ...p, [plan]: prices }))).catch(() => {});
         }
-    }, [isAppleBuild]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- platform + prices, fetched once on mount
+    }, []);
 
     useEffect(() => {
         if (!welcome) return;
@@ -245,7 +247,7 @@ const SubscriptionSettings = () => {
             if (subscription?.cancelled) {
                 return (
                     <button className={styles.upgradeBtn} onClick={() => handleResume(plan)} disabled={busy !== null}>
-                        {t("resubscribe")}
+                        <span className={styles.upgradeBtnLabel}>{t("resubscribe")}</span>
                         <ArrowRight size={16} />
                     </button>
                 );
@@ -263,34 +265,42 @@ const SubscriptionSettings = () => {
         const period = periodOf(plan);
         const price = prices[plan]?.[period];
         const periodToggle = (
-            <div className={styles.periodToggle} role="radiogroup">
-                {PERIODS.map((option) => (
-                    <button
-                        key={option}
-                        role="radio"
-                        aria-checked={option === period}
-                        className={`${styles.periodOption} ${option === period ? styles.periodOptionActive : ""}`}
-                        onClick={() => setPeriods((p) => ({ ...p, [plan]: option }))}
-                        disabled={busy !== null}
-                    >
-                        {t(option === "MONTHLY" ? "monthly" : "yearly")}
-                    </button>
-                ))}
+            <div className={styles.periodToggleWrap}>
+                <div className={styles.periodToggle} role="radiogroup">
+                    {PERIODS.map((option) => (
+                        <button
+                            key={option}
+                            role="radio"
+                            aria-checked={option === period}
+                            className={`${styles.periodOption} ${option === period ? styles.periodOptionActive : ""}`}
+                            onClick={() => setPeriods((p) => ({ ...p, [plan]: option }))}
+                            disabled={busy !== null}
+                        >
+                            {option === "YEARLY" && <BadgePercent size={16} className={styles.periodOptionIcon} />}
+                            {t(option === "MONTHLY" ? "monthly" : "yearly")}
+                        </button>
+                    ))}
+                </div>
+                {period === "YEARLY" && <span className={styles.periodHint}>{t("yearlyHint")}</span>}
             </div>
         );
 
         if (isAppleBuild) {
             return (
                 <>
-                    {periodToggle}
-                    <button className={styles.upgradeBtn} onClick={() => handleApplePurchase(plan)} disabled={busy !== null}>
-                        {isBusy(plan, "upgrade")
-                            ? t("purchasing")
-                            : price
-                                ? t("upgradeBtnPrice", { plan: name, price, period: t(period === "MONTHLY" ? "perMonth" : "perYear") })
-                                : t("upgradeBtn", { plan: name })}
-                        {!isBusy(plan, "upgrade") && <ArrowRight size={16} />}
-                    </button>
+                    <div className={styles.purchaseRow}>
+                        {periodToggle}
+                        <button className={styles.upgradeBtn} onClick={() => handleApplePurchase(plan)} disabled={busy !== null}>
+                            <span className={styles.upgradeBtnLabel}>
+                                {isBusy(plan, "upgrade")
+                                    ? t("purchasing")
+                                    : price
+                                        ? t("upgradeBtnPrice", { price, period: t(period === "MONTHLY" ? "perMonth" : "perYear") })
+                                        : t("upgradeBtn")}
+                            </span>
+                            {!isBusy(plan, "upgrade") && <ArrowRight size={16} />}
+                        </button>
+                    </div>
                     <p className={styles.legalText}>
                         {t("appleTerms")}{" "}
                         <a onClick={() => openExternal(TERMS_URL)}>{t("termsLink")}</a>
@@ -302,13 +312,19 @@ const SubscriptionSettings = () => {
         }
 
         return (
-            <>
+            <div className={styles.purchaseRow}>
                 {periodToggle}
                 <button className={styles.upgradeBtn} onClick={() => handleCheckout(plan)} disabled={busy !== null}>
-                    {isBusy(plan, "upgrade") ? t("redirecting") : t("upgradeBtn", { plan: name })}
+                    <span className={styles.upgradeBtnLabel}>
+                        {isBusy(plan, "upgrade")
+                            ? t("redirecting")
+                            : price
+                                ? t("upgradeBtnPrice", { price, period: t(period === "MONTHLY" ? "perMonth" : "perYear") })
+                                : t("upgradeBtn")}
+                    </span>
                     {!isBusy(plan, "upgrade") && <ArrowRight size={16} />}
                 </button>
-            </>
+            </div>
         );
     };
 

@@ -62,6 +62,7 @@
     "viewPages": "ページビュー",
     "viewPagesOpen": "{page}ページへ移動",
     "viewPagesEmpty": "表示できるページがありません",
+    "viewPagesLocked": "ロックされたページ",
     "splitPanel": "パネルを分割",
     "unsplitPanel": "パネルを閉じる",
     "swapPanels": "パネルを入れ替え",
@@ -347,8 +348,8 @@
       "privacyLink": "プライバシーポリシー",
       "purchasing": "購入中...",
       "activeBadge": "有効",
-      "upgradeBtn": "{plan}にアップグレード",
-      "upgradeBtnPrice": "{plan}にアップグレード — {price} / {period}",
+      "upgradeBtn": "購読する",
+      "upgradeBtnPrice": "購読する — {price} / {period}",
       "cancelConfirm": "{plan}アクセスは{date}まで有効です。それでもキャンセルしますか？",
       "cancelNo": "{plan}を維持",
       "welcome": "Scenarly {plan} にご登録いただきました。ようこそ！",
@@ -368,7 +369,8 @@
       "monthly": "月額",
       "yearly": "年額",
       "perMonth": "月",
-      "perYear": "年"
+      "perYear": "年",
+      "yearlyHint": "2ヶ月分無料"
     }
   },
   "projects": {

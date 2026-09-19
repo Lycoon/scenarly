@@ -63,6 +63,7 @@
     "viewPages": "Seitenansicht",
     "viewPagesOpen": "Zu Seite {page} springen",
     "viewPagesEmpty": "Noch keine Seiten vorhanden",
+    "viewPagesLocked": "Gesperrte Seite",
     "splitPanel": "Panel teilen",
     "unsplitPanel": "Panel schließen",
     "swapPanels": "Panels tauschen",
@@ -348,8 +349,8 @@
       "privacyLink": "Datenschutzerklärung",
       "purchasing": "Kauf wird durchgeführt...",
       "activeBadge": "Aktiv",
-      "upgradeBtn": "Auf {plan} upgraden",
-      "upgradeBtnPrice": "Auf {plan} upgraden — {price} / {period}",
+      "upgradeBtn": "Abonnieren",
+      "upgradeBtnPrice": "Abonnieren — {price} / {period}",
       "cancelConfirm": "Dein {plan}-Zugang bleibt bis {date} aktiv. Trotzdem kündigen?",
       "cancelNo": "{plan} behalten",
       "welcome": "Du hast jetzt Scenarly {plan} abonniert. Willkommen!",
@@ -369,7 +370,8 @@
       "monthly": "Monatlich",
       "yearly": "Jährlich",
       "perMonth": "Monat",
-      "perYear": "Jahr"
+      "perYear": "Jahr",
+      "yearlyHint": "2 Monate gratis"
     }
   },
   "projects": {

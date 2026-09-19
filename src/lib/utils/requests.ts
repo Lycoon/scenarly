@@ -11,6 +11,7 @@ import {
 import { apiFetch } from "@src/lib/api-client";
 import type { Period, Plan } from "@src/lib/plans";
 import type { SaveEntry } from "@src/lib/saves/types";
+import { guessUserCurrency } from "@src/lib/utils/currency";
 
 type RESTMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -155,6 +156,16 @@ export const createStripeCheckout = async (plan: Plan, period: Period): Promise<
     const res = await request("/api/stripe/checkout", "POST", { plan, period, redirectBase });
     const { data } = res.ok ? ((await res.json()) as ApiResponse<{ url: string }>) : { data: undefined };
     return { url: data?.url ?? null, status: res.status };
+};
+
+/** Localized prices of a plan per period, in the user's guessed currency ("$4.99"). */
+export const getStripePrices = async (plan: Plan, locale: string): Promise<Partial<Record<Period, string>>> => {
+    const currency = guessUserCurrency();
+    const params = new URLSearchParams({ plan, locale, ...(currency ? { currency } : {}) });
+    const res = await request(`/api/stripe/prices?${params}`, "GET");
+    if (!res.ok) return {};
+    const { data } = (await res.json()) as ApiResponse<Partial<Record<Period, string>>>;
+    return data ?? {};
 };
 
 export type AppleLinkResult =

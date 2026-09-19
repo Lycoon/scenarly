@@ -62,6 +62,7 @@
     "viewPages": "페이지 보기",
     "viewPagesOpen": "{page}페이지로 이동",
     "viewPagesEmpty": "표시할 페이지가 없습니다",
+    "viewPagesLocked": "잠긴 페이지",
     "splitPanel": "패널 분할",
     "unsplitPanel": "패널 통합",
     "swapPanels": "패널 교체",
@@ -347,8 +348,8 @@
       "privacyLink": "개인정보 처리방침",
       "purchasing": "구매 중...",
       "activeBadge": "활성",
-      "upgradeBtn": "{plan}로 업그레이드",
-      "upgradeBtnPrice": "{plan}로 업그레이드 — {price} / {period}",
+      "upgradeBtn": "구독하기",
+      "upgradeBtnPrice": "구독하기 — {price} / {period}",
       "cancelConfirm": "{plan} 이용은 {date}까지 유지됩니다. 그래도 취소하시겠습니까?",
       "cancelNo": "{plan} 유지",
       "welcome": "Scenarly {plan}를 구독하셨습니다. 환영합니다!",
@@ -368,7 +369,8 @@
       "monthly": "월간",
       "yearly": "연간",
       "perMonth": "월",
-      "perYear": "년"
+      "perYear": "년",
+      "yearlyHint": "2개월 무료"
     }
   },
   "projects": {
