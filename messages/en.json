@@ -34,6 +34,7 @@
     "redo": "Redo",
     "production": "Production",
     "readAloud": "Read Aloud",
+    "dialogueTuner": "Dialogue Tuner",
     "tools": "Tools",
     "analytics": "Analytics",
     "settings": "Settings",
@@ -168,6 +169,17 @@
       "screenplay_section": "Toggle Section",
       "screenplay_note": "Toggle Note"
     }
+  },
+  "dialogueTuner": {
+    "title": "Dialogue Tuner",
+    "chooseCharacter": "Choose a character",
+    "previous": "Previous dialogue",
+    "next": "Next dialogue",
+    "dialogueCount": "{current} of {total}",
+    "noDialogues": "No dialogues",
+    "noCharacters": "No characters in the script yet.",
+    "emptyState": "Pick a character to read through their dialogues one by one.",
+    "emptyDialogue": "(empty)"
   },
   "readaloud": {
     "title": "Read Aloud",
@@ -655,6 +667,7 @@
     "removeUnsavedHint": "Auto-detected from the script — nothing to remove",
     "paste": "Paste",
     "highlight": "Highlight",
+    "tuneDialogue": "Tune dialogue...",
     "addCharacter": "Add character",
     "addComment": "Comment",
     "searchOnWeb": "Search on web",

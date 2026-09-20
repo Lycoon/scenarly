@@ -19,6 +19,7 @@ export const PopupSceneItem = ({ data: { scene } }: PopupData<PopupSceneData>) =
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("popup.scene");
+    const tNav = useTranslations("navbar");
 
     const [synopsis, setSynopsis] = useState<string>(scene.synopsis || "");
     const [color, setColor] = useState<string | undefined>(scene.color);
@@ -49,7 +50,9 @@ export const PopupSceneItem = ({ data: { scene } }: PopupData<PopupSceneData>) =
                     style={{ cursor: isDragging ? "grabbing" : "grab" }}
                 >
                     <h2 className={popup.title}>{t("edit")}</h2>
-                    <X className={popup.close_btn} onClick={() => closePopup(userCtx)} />
+                    <button className={popup.close_btn} onClick={() => closePopup(userCtx)} aria-label={tNav("close")}>
+                        <X size={18} />
+                    </button>
                 </div>
                 <form className={popup.form} onSubmit={onSubmit}>
                     <div className={styles.element}>

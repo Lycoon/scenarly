@@ -14,6 +14,7 @@ const PopupUnlockPages = ({ data: { confirmUnlock } }: PopupData<PopupUnlockPage
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("production");
+    const tNav = useTranslations("navbar");
 
     const onConfirm = () => {
         confirmUnlock();
@@ -32,7 +33,9 @@ const PopupUnlockPages = ({ data: { confirmUnlock } }: PopupData<PopupUnlockPage
                     style={{ cursor: isDragging ? "grabbing" : "grab" }}
                 >
                     <h2 className={popup.title}>{t("unlockPagesTitle")}</h2>
-                    <X className={popup.close_btn} onClick={() => closePopup(userCtx)} />
+                    <button className={popup.close_btn} onClick={() => closePopup(userCtx)} aria-label={tNav("close")}>
+                        <X size={18} />
+                    </button>
                 </div>
                 <div className={popup.info}>
                     <p>{t("unlockPagesWarning")}</p>

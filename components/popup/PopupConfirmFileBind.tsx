@@ -24,6 +24,7 @@ const PopupConfirmFileBind = ({ data: { refusal, confirm } }: PopupData<PopupCon
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("popup.fileBind");
+    const tNav = useTranslations("navbar");
 
     const body = () => {
         switch (refusal.kind) {
@@ -50,7 +51,9 @@ const PopupConfirmFileBind = ({ data: { refusal, confirm } }: PopupData<PopupCon
                     style={{ cursor: isDragging ? "grabbing" : "grab" }}
                 >
                     <h2 className={popup.title}>{t("title")}</h2>
-                    <X className={popup.close_btn} onClick={() => closePopup(userCtx)} />
+                    <button className={popup.close_btn} onClick={() => closePopup(userCtx)} aria-label={tNav("close")}>
+                        <X size={18} />
+                    </button>
                 </div>
                 <div className={popup.info}>
                     <p>{body()}</p>

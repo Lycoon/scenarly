@@ -14,6 +14,7 @@ const PopupUnlockDraft = ({ data: { confirmUnlock } }: PopupData<PopupUnlockDraf
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("production");
+    const tNav = useTranslations("navbar");
 
     const onConfirm = () => {
         confirmUnlock();
@@ -32,7 +33,9 @@ const PopupUnlockDraft = ({ data: { confirmUnlock } }: PopupData<PopupUnlockDraf
                     style={{ cursor: isDragging ? "grabbing" : "grab" }}
                 >
                     <h2 className={popup.title}>{t("unlockDraftTitle")}</h2>
-                    <X className={popup.close_btn} onClick={() => closePopup(userCtx)} />
+                    <button className={popup.close_btn} onClick={() => closePopup(userCtx)} aria-label={tNav("close")}>
+                        <X size={18} />
+                    </button>
                 </div>
                 <div className={popup.info}>
                     <p>{t("unlockDraftWarning")}</p>

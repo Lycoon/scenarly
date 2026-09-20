@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
     AudioLines,
@@ -9,9 +9,11 @@ import {
     CircleArrowLeft,
     History,
     Lock,
+    MessagesSquare,
     Settings,
 } from "lucide-react";
 
+import { ProjectContext } from "@src/context/ProjectContext";
 import { uploadToCloudPopup } from "@src/lib/screenplay/popup";
 import { useIsTouch } from "@src/lib/utils/hooks";
 import { join } from "@src/lib/utils/misc";
@@ -21,6 +23,7 @@ import { SaveTargets, CollaboratorsDisplay } from "./ProjectNavbarShared";
 import SavesPanel from "./SavesPanel";
 import ProductionPanel from "./ProductionPanel";
 import ReadAloudPanel from "./ReadAloudPanel";
+import DialogueTunerPanel from "./DialogueTunerPanel";
 import ScreenplayFormatDropdown from "./ScreenplayFormatDropdown";
 import ScreenplaySearch from "./ScreenplaySearch";
 import AnalyticsModal from "@components/analytics/AnalyticsModal";
@@ -28,7 +31,7 @@ import AnalyticsModal from "@components/analytics/AnalyticsModal";
 import navbar from "./ProjectNavbar.module.css";
 import navBtn from "@components/utils/NavbarIconButton.module.css";
 
-/** Wrapper that anchors a panel (Saves/Production/ReadAloud) to its trigger. */
+/** Wrapper that anchors a panel (Saves/Production/ReadAloud/DialogueTuner) to its trigger. */
 const panelAnchorStyle: React.CSSProperties = {
     position: "relative",
     height: "100%",
@@ -43,17 +46,17 @@ const panelAnchorStyle: React.CSSProperties = {
 
 /**
  * Desktop/web project navbar: back button + title + the folded history/production/
- * read-aloud/analytics cluster on the left, the format dropdown centred,
+ * read-aloud/dialogue-tuner/analytics cluster on the left, the format dropdown centred,
  * collaborators/search/settings on the right. The phone layout lives in
  * [ProjectNavbarMobile]; both draw shared project state from
  * {@link useProjectNavbar}.
  *
- * The four screenplay tools sit behind a round chevron next to the title island
+ * The five screenplay tools sit behind a round chevron next to the title island
  * rather than loose in the bar, and expand onto one shared pill — the same
  * single-island treatment the phone bar gives them (.mobile_tools).
  *
  * Analytics folds in with them rather than sitting out in the right-hand cluster:
- * it is a review-time reading of the script like the other three, not a bar-level
+ * it is a review-time reading of the script like the other four, not a bar-level
  * command like search or settings, and keeping it here matches the phone. Safe to
  * move inside the isInProject guard — this navbar only mounts under a projectId
  * (see [ProjectLayoutContent]), so that guard was never actually false.
@@ -92,15 +95,17 @@ const ProjectNavbarDesktop = () => {
     const savesBtnRef = useRef<HTMLDivElement>(null);
     const productionBtnRef = useRef<HTMLDivElement>(null);
     const readAloudBtnRef = useRef<HTMLDivElement>(null);
+    const dialogueTunerBtnRef = useRef<HTMLDivElement>(null);
 
     const [isSavesOpen, setIsSavesOpen] = useState(false);
     const [isProductionOpen, setIsProductionOpen] = useState(false);
     const [isReadAloudOpen, setIsReadAloudOpen] = useState(false);
+    const [isDialogueTunerOpen, setIsDialogueTunerOpen] = useState(false);
     const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
     // The tools cluster is folded away by default and expands on the chevron.
     const [isToolsOpen, setIsToolsOpen] = useState(false);
-    const anyPanelOpen = isSavesOpen || isProductionOpen || isReadAloudOpen;
+    const anyPanelOpen = isSavesOpen || isProductionOpen || isReadAloudOpen || isDialogueTunerOpen;
 
     // Folding closes whatever panel is up: its trigger is about to be clipped
     // away, so the panel would be left stranded with no way to dismiss it by
@@ -110,9 +115,26 @@ const ProjectNavbarDesktop = () => {
             setIsSavesOpen(false);
             setIsProductionOpen(false);
             setIsReadAloudOpen(false);
+            setIsDialogueTunerOpen(false);
         }
         setIsToolsOpen(!isToolsOpen);
     };
+
+    // "Tune dialogue..." in the sidebar's character menu lands here: the panel
+    // can only be opened expanded (see .tools_group_overflow), so unfold the
+    // cluster first, then open the tuner on top of whatever panel was up.
+    const { onDialogueTunerRequest } = useContext(ProjectContext);
+    useEffect(
+        () =>
+            onDialogueTunerRequest(() => {
+                setIsToolsOpen(true);
+                setIsSavesOpen(false);
+                setIsProductionOpen(false);
+                setIsReadAloudOpen(false);
+                setIsDialogueTunerOpen(true);
+            }),
+        [onDialogueTunerRequest],
+    );
 
     return (
         <nav className={join(navbar.container)}>
@@ -239,6 +261,25 @@ const ProjectNavbarDesktop = () => {
                                             isOpen={isReadAloudOpen}
                                             onClose={() => setIsReadAloudOpen(false)}
                                             triggerRef={readAloudBtnRef}
+                                        />
+                                    </div>
+                                    <div style={panelAnchorStyle}>
+                                        <div
+                                            ref={dialogueTunerBtnRef}
+                                            className={join(
+                                                navBtn.button,
+                                                navbar.tools_icon,
+                                                isDialogueTunerOpen ? navbar.tools_icon_active : "",
+                                            )}
+                                            onClick={() => setIsDialogueTunerOpen(!isDialogueTunerOpen)}
+                                            aria-label={t("dialogueTuner")}
+                                        >
+                                            <MessagesSquare size={18} />
+                                        </div>
+                                        <DialogueTunerPanel
+                                            isOpen={isDialogueTunerOpen}
+                                            onClose={() => setIsDialogueTunerOpen(false)}
+                                            triggerRef={dialogueTunerBtnRef}
                                         />
                                     </div>
                                     {/* No panel anchor: analytics is a full modal

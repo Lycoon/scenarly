@@ -7,6 +7,7 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import { Editor } from "@tiptap/react";
@@ -96,6 +97,22 @@ export interface ProjectContextType {
     // Character dialogue highlighting
     highlightedCharacters: Set<string>;
     toggleCharacterHighlight: (characterName: string) => void;
+
+    // Dialogue tuner: read one character's speeches in isolation (navbar panel)
+    /** Character whose speeches are being tuned (uppercase name), or null when off. */
+    dialogueTunerCharacter: string | null;
+    setDialogueTunerCharacter: (name: string | null) => void;
+    /** Index of the speech the tuner is parked on, in reading order. */
+    dialogueTunerIndex: number;
+    setDialogueTunerIndex: (index: number) => void;
+    /**
+     * Subscribe to "Tune dialogue..." requests from the character menu. The
+     * navbar listens so it can unfold its tools and open the tuner panel — the
+     * panel is its own UI state, not the project's. Returns an unsubscribe.
+     */
+    onDialogueTunerRequest: (callback: () => void) => () => void;
+    /** Tune `characterName` from its first speech, opening the tuner panel. */
+    requestDialogueTuner: (characterName: string) => void;
 
     // Page format
     pageFormat: PageFormat;
@@ -244,6 +261,12 @@ const defaultContextValue: ProjectContextType = {
     setSelectedStyles: () => {},
     highlightedCharacters: new Set<string>(),
     toggleCharacterHighlight: () => {},
+    dialogueTunerCharacter: null,
+    setDialogueTunerCharacter: () => {},
+    dialogueTunerIndex: 0,
+    setDialogueTunerIndex: () => {},
+    onDialogueTunerRequest: () => () => {},
+    requestDialogueTuner: () => {},
     pageFormat: "LETTER",
     setPageFormat: () => {},
     pageMargins: DEFAULT_PAGE_MARGINS,
@@ -417,6 +440,12 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
     );
     const [selectedStyles, setSelectedStylesState] = useState<Style>(Style.None);
     const [highlightedCharacters, setHighlightedCharacters] = useState<Set<string>>(new Set());
+    const [dialogueTunerCharacter, setDialogueTunerCharacterState] = useState<string | null>(null);
+    const [dialogueTunerIndex, setDialogueTunerIndex] = useState<number>(0);
+    // Tuner-request listeners (see onDialogueTunerRequest): a ref'd set, like
+    // ViewContext's endless-scroll listeners, so a request never has to round
+    // trip through state to reach the navbar.
+    const dialogueTunerListenersRef = useRef(new Set<() => void>());
     const [pageFormat, setPageFormatState] = useState<PageFormat>("LETTER");
     const [pageMargins, setPageMarginsState] = useState<PageMargin>(DEFAULT_PAGE_MARGINS);
     const [displaySceneNumbers, setDisplaySceneNumbersState] = useState<boolean>(false);
@@ -953,6 +982,29 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
         });
     }, []);
 
+    // Picking a character always restarts from its first speech: the index
+    // belongs to the previous character's list.
+    const setDialogueTunerCharacter = useCallback((name: string | null) => {
+        setDialogueTunerCharacterState(name ? name.toUpperCase() : null);
+        setDialogueTunerIndex(0);
+    }, []);
+
+    const onDialogueTunerRequest = useCallback((callback: () => void) => {
+        const listeners = dialogueTunerListenersRef.current;
+        listeners.add(callback);
+        return () => {
+            listeners.delete(callback);
+        };
+    }, []);
+
+    const requestDialogueTuner = useCallback(
+        (characterName: string) => {
+            setDialogueTunerCharacter(characterName);
+            dialogueTunerListenersRef.current.forEach((listener) => listener());
+        },
+        [setDialogueTunerCharacter],
+    );
+
     const setPageFormat = useCallback(
         (format: PageFormat) => {
             setPageFormatState(format);
@@ -1291,6 +1343,12 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             setSelectedStyles,
             highlightedCharacters,
             toggleCharacterHighlight,
+            dialogueTunerCharacter,
+            setDialogueTunerCharacter,
+            dialogueTunerIndex,
+            setDialogueTunerIndex,
+            onDialogueTunerRequest,
+            requestDialogueTuner,
             pageFormat,
             setPageFormat,
             pageMargins,
@@ -1401,6 +1459,12 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             setSelectedStyles,
             highlightedCharacters,
             toggleCharacterHighlight,
+            dialogueTunerCharacter,
+            setDialogueTunerCharacter,
+            dialogueTunerIndex,
+            setDialogueTunerIndex,
+            onDialogueTunerRequest,
+            requestDialogueTuner,
             pageFormat,
             setPageFormat,
             pageMargins,

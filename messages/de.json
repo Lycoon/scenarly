@@ -34,6 +34,7 @@
     "redo": "Wiederholen",
     "production": "Produktion",
     "readAloud": "Vorlesen",
+    "dialogueTuner": "Dialog-Tuner",
     "tools": "Werkzeuge",
     "analytics": "Analysen",
     "settings": "Einstellungen",
@@ -169,6 +170,17 @@
       "screenplay_section": "Zu Abschnitt wechseln",
       "screenplay_note": "Zu Notiz wechseln"
     }
+  },
+  "dialogueTuner": {
+    "title": "Dialog-Tuner",
+    "chooseCharacter": "Charakter wählen",
+    "previous": "Vorheriger Dialog",
+    "next": "Nächster Dialog",
+    "dialogueCount": "{current} von {total}",
+    "noDialogues": "Keine Dialoge",
+    "noCharacters": "Noch keine Charaktere im Drehbuch.",
+    "emptyState": "Wähle einen Charakter, um seine Dialoge einzeln durchzugehen.",
+    "emptyDialogue": "(leer)"
   },
   "readaloud": {
     "title": "Vorlesen",
@@ -656,6 +668,7 @@
     "removeUnsavedHint": "Automatisch aus dem Skript erkannt – nichts zu entfernen",
     "paste": "Einfügen",
     "highlight": "Hervorheben",
+    "tuneDialogue": "Dialoge abstimmen...",
     "addCharacter": "Charakter hinzufügen",
     "addComment": "Kommentieren",
     "searchOnWeb": "Im Web suchen",

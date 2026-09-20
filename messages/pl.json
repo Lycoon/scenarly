@@ -34,6 +34,7 @@
     "redo": "Ponów",
     "production": "Produkcja",
     "readAloud": "Czytaj na głos",
+    "dialogueTuner": "Strojenie dialogów",
     "tools": "Narzędzia",
     "analytics": "Analityka",
     "settings": "Ustawienia",
@@ -168,6 +169,17 @@
       "screenplay_section": "Przełącz na sekcję",
       "screenplay_note": "Przełącz na notatkę"
     }
+  },
+  "dialogueTuner": {
+    "title": "Strojenie dialogów",
+    "chooseCharacter": "Wybierz postać",
+    "previous": "Poprzedni dialog",
+    "next": "Następny dialog",
+    "dialogueCount": "{current} z {total}",
+    "noDialogues": "Brak dialogów",
+    "noCharacters": "W scenariuszu nie ma jeszcze postaci.",
+    "emptyState": "Wybierz postać, aby przejrzeć jej dialogi jeden po drugim.",
+    "emptyDialogue": "(pusty)"
   },
   "readaloud": {
     "title": "Czytanie na głos",
@@ -655,6 +667,7 @@
     "removeUnsavedHint": "Wykryto automatycznie w scenariuszu — nie ma czego usunąć",
     "paste": "Wklej",
     "highlight": "Wyróżnij",
+    "tuneDialogue": "Dostrój dialogi...",
     "addCharacter": "Dodaj postać",
     "addComment": "Komentuj",
     "searchOnWeb": "Szukaj w sieci",

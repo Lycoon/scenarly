@@ -62,14 +62,26 @@
     color: var(--warning) !important;
 }
 
+/* Same look as the dashboard drawer close (DashboardModal .close_btn). The negative
+   margin keeps the 36px hit area from pushing the header taller than its title. */
 .close_btn {
-    height: 22px;
-    width: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    margin: -7px -7px -7px 0;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: none;
     color: var(--secondary-text);
     cursor: pointer;
 }
 
 .close_btn:hover {
+    background-color: var(--secondary-hover);
     color: var(--primary-text);
 }
 

@@ -34,6 +34,7 @@
     "redo": "Rétablir",
     "production": "Production",
     "readAloud": "Lecture à voix haute",
+    "dialogueTuner": "Accordeur de dialogues",
     "tools": "Outils",
     "analytics": "Analyses",
     "settings": "Paramètres",
@@ -169,6 +170,17 @@
       "screenplay_section": "Basculer en section",
       "screenplay_note": "Basculer en note"
     }
+  },
+  "dialogueTuner": {
+    "title": "Accordeur de dialogues",
+    "chooseCharacter": "Choisir un personnage",
+    "previous": "Dialogue précédent",
+    "next": "Dialogue suivant",
+    "dialogueCount": "{current} sur {total}",
+    "noDialogues": "Aucun dialogue",
+    "noCharacters": "Aucun personnage dans le script pour l'instant.",
+    "emptyState": "Choisissez un personnage pour parcourir ses dialogues un par un.",
+    "emptyDialogue": "(vide)"
   },
   "readaloud": {
     "title": "Lecture à voix haute",
@@ -656,6 +668,7 @@
     "removeUnsavedHint": "Détecté automatiquement dans le scénario — rien à supprimer",
     "paste": "Coller",
     "highlight": "Surligner",
+    "tuneDialogue": "Accorder les dialogues...",
     "addCharacter": "Ajouter un personnage",
     "addComment": "Commenter",
     "searchOnWeb": "Rechercher sur le web",
