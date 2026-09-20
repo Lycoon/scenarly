@@ -382,9 +382,12 @@
 /* Yearly is the toggle's right-hand column, so the hint is centred under
    the 75% mark of the toggle's width. It is out of flow so picking a period
    never moves anything — it hangs over the card's bottom edge, by design.
+   The z-index keeps it above what it hangs across: the legal text below the
+   row has an opacity, which would otherwise paint it over the hint.
    The arrow (below) reaches 5px above the box, with 3px clear of the toggle. */
 .periodHint {
     position: absolute;
+    z-index: 1;
     top: calc(100% + 8px);
     left: 75%;
     transform: translateX(-50%);
@@ -443,4 +446,26 @@
 .purchaseRow .upgradeBtn {
     width: auto;
     flex: 1;
+}
+
+/* On phones the two stack: the button first, then the toggle spanning the
+   full width beneath it, so the hint hangs below the toggle rather than
+   across the button. */
+@media (max-width: 767px) {
+    .purchaseRow {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .purchaseRow .upgradeBtn {
+        flex: none;
+    }
+
+    .purchaseRow .periodToggleWrap {
+        order: 1;
+    }
+
+    .purchaseRow .periodToggle {
+        flex: 1;
+    }
 }
