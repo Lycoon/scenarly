@@ -254,7 +254,35 @@ const SubscriptionSettings = () => {
         if (!PLANS_ON_SALE.includes(plan)) return null;
 
         const period = periodOf(plan);
-        const price = prices[plan]?.[period];
+        const purchasing = isBusy(plan, "upgrade");
+        const labelFor = (option: Period) => {
+            const price = prices[plan]?.[option];
+            return price
+                ? t("upgradeBtnPrice", { price, period: t(option === "MONTHLY" ? "perMonth" : "perYear") })
+                : t("upgradeBtn");
+        };
+        // Every label the button can show is rendered, stacked in one grid cell
+        // with only the current one visible, so the button keeps the size of
+        // its widest label: switching period or starting a purchase never
+        // resizes it. The arrow likewise stays in place, just hidden, while busy.
+        const purchaseButton = (onClick: () => void, busyLabel: string) => (
+            <button className={styles.upgradeBtn} onClick={onClick} disabled={busy !== null}>
+                <span className={styles.upgradeBtnLabels}>
+                    {PERIODS.map((option) => (
+                        <span
+                            key={option}
+                            className={`${styles.upgradeBtnLabel} ${purchasing || option !== period ? styles.upgradeBtnLabelHidden : ""}`}
+                        >
+                            {labelFor(option)}
+                        </span>
+                    ))}
+                    <span className={`${styles.upgradeBtnLabel} ${purchasing ? "" : styles.upgradeBtnLabelHidden}`}>
+                        {busyLabel}
+                    </span>
+                </span>
+                <ArrowRight size={16} className={`${styles.upgradeBtnArrow} ${purchasing ? styles.upgradeBtnLabelHidden : ""}`} />
+            </button>
+        );
         const periodToggle = (
             <div className={styles.periodToggleWrap}>
                 <div className={styles.periodToggle} role="radiogroup">
@@ -281,16 +309,7 @@ const SubscriptionSettings = () => {
                 <>
                     <div className={styles.purchaseRow}>
                         {periodToggle}
-                        <button className={styles.upgradeBtn} onClick={() => handleApplePurchase(plan)} disabled={busy !== null}>
-                            <span className={styles.upgradeBtnLabel}>
-                                {isBusy(plan, "upgrade")
-                                    ? t("purchasing")
-                                    : price
-                                        ? t("upgradeBtnPrice", { price, period: t(period === "MONTHLY" ? "perMonth" : "perYear") })
-                                        : t("upgradeBtn")}
-                            </span>
-                            {!isBusy(plan, "upgrade") && <ArrowRight size={16} />}
-                        </button>
+                        {purchaseButton(() => handleApplePurchase(plan), t("purchasing"))}
                     </div>
                     <p className={styles.legalText}>
                         {t("appleTerms")}{" "}
@@ -305,16 +324,7 @@ const SubscriptionSettings = () => {
         return (
             <div className={styles.purchaseRow}>
                 {periodToggle}
-                <button className={styles.upgradeBtn} onClick={() => handleCheckout(plan)} disabled={busy !== null}>
-                    <span className={styles.upgradeBtnLabel}>
-                        {isBusy(plan, "upgrade")
-                            ? t("redirecting")
-                            : price
-                                ? t("upgradeBtnPrice", { price, period: t(period === "MONTHLY" ? "perMonth" : "perYear") })
-                                : t("upgradeBtn")}
-                    </span>
-                    {!isBusy(plan, "upgrade") && <ArrowRight size={16} />}
-                </button>
+                {purchaseButton(() => handleCheckout(plan), t("redirecting"))}
             </div>
         );
     };
