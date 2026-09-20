@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowRight, BadgePercent, Check, ExternalLink, Lock, Sparkles } from "lucide-react";
-import { isTauri } from "@tauri-apps/api/core";
 import {
     cancelStripeSubscription,
     createStripeCheckout,
@@ -21,6 +20,7 @@ import {
 import { getSubscription, isSubscriptionActive, Period, PERIODS, Plan, PLANS, PLANS_ON_SALE } from "@src/lib/plans";
 import { useUser } from "@src/lib/utils/hooks";
 import { useLocale } from "@src/context/LocaleContext";
+import { openExternal } from "@src/lib/utils/open-external";
 
 import styles from "./SubscriptionSettings.module.css";
 
@@ -35,15 +35,6 @@ const PRIVACY_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://scenarly.com"
 
 type Action = "upgrade" | "cancel" | "resume";
 type LinkStatus = "linked" | "owned" | "error";
-
-const openExternal = async (url: string) => {
-    if (isTauri()) {
-        const { openUrl } = await import("@tauri-apps/plugin-opener");
-        await openUrl(url);
-    } else {
-        window.open(url, "_blank");
-    }
-};
 
 /**
  * One card per plan. Each is billed by Stripe (web, Windows) or by Apple (App

@@ -27,3 +27,19 @@ export const isAndroid = (): boolean => /Android/.test(ua());
  * dialog — neither of which can be filtered by our screenplay extensions.
  */
 export const isMobileFilePicker = (): boolean => isIOS() || isAndroid();
+
+export type OSName = "Windows" | "macOS" | "Linux" | "iOS" | "Android";
+
+/**
+ * Human-readable OS name, or null when the user agent gives nothing away.
+ * Mobile checks come first: Android reports `Linux` and iPadOS `Macintosh`.
+ */
+export const osName = (): OSName | null => {
+    if (isIOS()) return "iOS";
+    if (isAndroid()) return "Android";
+    const agent = ua();
+    if (/Windows/.test(agent)) return "Windows";
+    if (/Macintosh|Mac OS X/.test(agent)) return "macOS";
+    if (/Linux/.test(agent)) return "Linux";
+    return null;
+};

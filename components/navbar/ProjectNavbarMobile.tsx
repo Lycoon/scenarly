@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import {
     ArrowLeft,
-    AudioLines,
     BarChart2,
     Check,
     ChevronRight,
@@ -30,7 +29,6 @@ import { HistoryControls, MobileSaveTargets } from "./ProjectNavbarShared";
 import ProjectNavbarMobileMenu from "./ProjectNavbarMobileMenu";
 import SavesPanel from "./SavesPanel";
 import ProductionPanel from "./ProductionPanel";
-import ReadAloudPanel from "./ReadAloudPanel";
 import ScreenplaySearch from "./ScreenplaySearch";
 import AnalyticsModal from "@components/analytics/AnalyticsModal";
 
@@ -85,10 +83,10 @@ const ProjectNavbarMobile = () => {
     // [ProjectWorkspace]). Saves and analytics stay: both are project-wide.
     const isEditorView = !!activeEditor;
 
-    // The screenplay tools (saves/production/read-aloud) open one at a time as a
+    // The screenplay tools (saves/production) open one at a time as a
     // sheet below the bar; analytics is a full modal. Kept as a single value so
     // tapping one tool icon replaces whatever sheet was open.
-    const [activePanel, setActivePanel] = useState<null | "saves" | "production" | "readAloud">(null);
+    const [activePanel, setActivePanel] = useState<null | "saves" | "production">(null);
     const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
     // The cluster is folded away behind a chevron by default, as on the desktop
@@ -122,13 +120,12 @@ const ProjectNavbarMobile = () => {
     // re-opened it, so a sheet could only ever be dismissed by tapping elsewhere.
     const savesBtnRef = useRef<HTMLDivElement>(null);
     const productionBtnRef = useRef<HTMLDivElement>(null);
-    const readAloudBtnRef = useRef<HTMLDivElement>(null);
 
     // Opening a tool sheet closes the side drawers and the burger menu so it
     // surfaces cleanly on top; tapping the same icon again dismisses it — this
     // toggle is now the only thing that decides that, the sheet's own dismissal
     // having stepped aside for its trigger. Mirrors the desktop bar's toggles.
-    const toggleTool = (panel: "saves" | "production" | "readAloud") => {
+    const toggleTool = (panel: "saves" | "production") => {
         const next = activePanel === panel ? null : panel;
         if (next) {
             setLeftSidebarOpen(false);
@@ -158,7 +155,7 @@ const ProjectNavbarMobile = () => {
     // stranded — its trigger has just left the bar, so re-tapping to dismiss is no
     // longer possible. Close it with the buttons.
     useEffect(() => {
-        if (!isEditorView && (activePanel === "production" || activePanel === "readAloud")) {
+        if (!isEditorView && activePanel === "production") {
             setActivePanel(null);
         }
     }, [isEditorView, activePanel]);
@@ -251,7 +248,7 @@ const ProjectNavbarMobile = () => {
                         </div>
                     </div>
                 )}
-                {/* Screenplay tools cluster: the saves/production/read-aloud/analytics
+                {/* Screenplay tools cluster: the saves/production/analytics
                     entries that the desktop bar spreads across its left/right. Each opens
                     a sheet (or the analytics modal) that fits the phone screen. Hidden
                     while editing — the left cluster expands to the edit controls then, so
@@ -300,24 +297,14 @@ const ProjectNavbarMobile = () => {
                                     <History size={18} />
                                 </div>
                                 {isEditorView && (
-                                    <>
-                                        <div
-                                            ref={productionBtnRef}
-                                            className={`${navBtn.button} ${navbar.mobile_icon} ${activePanel === "production" ? navBtn.active : ""}`}
-                                            onClick={() => toggleTool("production")}
-                                            aria-label={t("production")}
-                                        >
-                                            <Lock size={18} />
-                                        </div>
-                                        <div
-                                            ref={readAloudBtnRef}
-                                            className={`${navBtn.button} ${navbar.mobile_icon} ${activePanel === "readAloud" ? navBtn.active : ""}`}
-                                            onClick={() => toggleTool("readAloud")}
-                                            aria-label={t("readAloud")}
-                                        >
-                                            <AudioLines size={18} />
-                                        </div>
-                                    </>
+                                    <div
+                                        ref={productionBtnRef}
+                                        className={`${navBtn.button} ${navbar.mobile_icon} ${activePanel === "production" ? navBtn.active : ""}`}
+                                        onClick={() => toggleTool("production")}
+                                        aria-label={t("production")}
+                                    >
+                                        <Lock size={18} />
+                                    </div>
                                 )}
                                 <div
                                     className={`${navBtn.button} ${navbar.mobile_icon} ${isAnalyticsOpen ? navBtn.active : ""}`}
@@ -475,11 +462,6 @@ const ProjectNavbarMobile = () => {
                             isOpen={activePanel === "production"}
                             onClose={() => setActivePanel(null)}
                             triggerRef={productionBtnRef}
-                        />
-                        <ReadAloudPanel
-                            isOpen={activePanel === "readAloud"}
-                            onClose={() => setActivePanel(null)}
-                            triggerRef={readAloudBtnRef}
                         />
                     </>,
                     document.body,
