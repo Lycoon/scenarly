@@ -34,6 +34,7 @@
     "redo": "Rehacer",
     "production": "Producción",
     "readAloud": "Leer en voz alta",
+    "dialogueTuner": "Afinador de diálogos",
     "tools": "Herramientas",
     "analytics": "Analíticas",
     "settings": "Ajustes",
@@ -168,6 +169,17 @@
       "screenplay_section": "Cambiar a sección",
       "screenplay_note": "Cambiar a nota"
     }
+  },
+  "dialogueTuner": {
+    "title": "Afinador de diálogos",
+    "chooseCharacter": "Elige un personaje",
+    "previous": "Diálogo anterior",
+    "next": "Diálogo siguiente",
+    "dialogueCount": "{current} de {total}",
+    "noDialogues": "Sin diálogos",
+    "noCharacters": "Todavía no hay personajes en el guion.",
+    "emptyState": "Elige un personaje para leer sus diálogos uno por uno.",
+    "emptyDialogue": "(vacío)"
   },
   "readaloud": {
     "title": "Lectura en voz alta",
@@ -655,6 +667,7 @@
     "removeUnsavedHint": "Detectado automáticamente en el guion: no hay nada que eliminar",
     "paste": "Pegar",
     "highlight": "Resaltar",
+    "tuneDialogue": "Afinar diálogos...",
     "addCharacter": "Añadir personaje",
     "addComment": "Comentar",
     "searchOnWeb": "Buscar en la web",

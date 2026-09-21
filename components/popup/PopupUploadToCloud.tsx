@@ -14,6 +14,7 @@ const PopupUploadToCloud = ({ data: { projectId } }: PopupData<PopupUploadToClou
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("popup.uploadToCloud");
+    const tNav = useTranslations("navbar");
 
     const [isUploading, setIsUploading] = useState(false);
     const [info, setInfo] = useState<FormInfoType | undefined>(undefined);
@@ -49,7 +50,9 @@ const PopupUploadToCloud = ({ data: { projectId } }: PopupData<PopupUploadToClou
                     style={{ cursor: isDragging ? "grabbing" : "grab" }}
                 >
                     <h2 className={popup.title}>{t("title")}</h2>
-                    <X className={popup.close_btn} onClick={onCancel} />
+                    <button className={popup.close_btn} onClick={onCancel} aria-label={tNav("close")}>
+                        <X size={18} />
+                    </button>
                 </div>
                 <div className={popup.info}>
                     <p>{t("body")}</p>

@@ -34,6 +34,7 @@
     "redo": "다시 실행",
     "production": "프로덕션",
     "readAloud": "소리내어 읽기",
+    "dialogueTuner": "대사 튜너",
     "tools": "도구",
     "analytics": "분석",
     "settings": "설정",
@@ -168,6 +169,17 @@
       "screenplay_section": "섹션으로 전환",
       "screenplay_note": "노트로 전환"
     }
+  },
+  "dialogueTuner": {
+    "title": "대사 튜너",
+    "chooseCharacter": "인물 선택",
+    "previous": "이전 대사",
+    "next": "다음 대사",
+    "dialogueCount": "{total}개 중 {current}",
+    "noDialogues": "대사 없음",
+    "noCharacters": "아직 대본에 인물이 없습니다.",
+    "emptyState": "인물을 선택하면 그 인물의 대사를 하나씩 읽어볼 수 있습니다.",
+    "emptyDialogue": "(비어 있음)"
   },
   "readaloud": {
     "title": "읽어주기",
@@ -655,6 +667,7 @@
     "removeUnsavedHint": "대본에서 자동으로 감지됨 — 삭제할 항목이 없습니다",
     "paste": "붙여넣기",
     "highlight": "하이라이트",
+    "tuneDialogue": "대사 다듬기...",
     "addCharacter": "인물 추가",
     "addComment": "댓글",
     "searchOnWeb": "웹 검색",

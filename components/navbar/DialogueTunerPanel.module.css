@@ -1,0 +1,254 @@
+.container {
+    composes: panel from "./navbar-shared.module.css";
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 100;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
+    /* Visible so the character dropdown menu can extend past the panel edge. */
+    overflow: visible;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--separator);
+    flex-shrink: 0;
+}
+
+.title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-text);
+}
+
+.icon_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border: none;
+    background: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.icon_btn:hover {
+    background-color: var(--tertiary);
+    color: var(--primary-text);
+}
+
+.section {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--separator);
+}
+
+/* ── Character ── */
+.character_row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* The dropdown and the navigation cluster split the row in two equal halves
+   (flex-basis 0, so content width plays no part): the counter's text length
+   then never shifts the dropdown or the arrows. */
+.character_field {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+/* Field chrome only — the label inside is a sidebar character row
+   (SidebarItem's title_row / title), so the type comes from there. */
+.character_select {
+    padding: 7px 10px;
+    font-size: 12px;
+    background: var(--secondary);
+    border: 1px solid var(--separator);
+    border-radius: 8px;
+    color: var(--primary-text);
+}
+
+/* The open menu is the sidebar's character list: rows run edge to edge with a
+   separator between them and the sidebar's hover fill, not the Dropdown's
+   default padded pills. Only the menu box itself keeps its corners. The
+   `.character_menu` prefix out-ranks the Dropdown module's own row rules
+   (same class count, so order alone would decide). */
+.character_menu {
+    padding: 0;
+    overflow: hidden auto;
+}
+
+.character_menu .character_option {
+    /* The menu box sits on the trigger's left edge, so this matches the
+       trigger's own inset (10px padding + 1px border): the names in the list
+       line up with the selected name above them. */
+    padding-inline: 11px;
+    padding-block: 10px;
+    border-radius: 0;
+    font-size: 12px;
+}
+
+.character_menu .character_option:not(:last-child) {
+    border-bottom: 1px solid var(--separator);
+}
+
+.character_menu .character_option:hover,
+.character_menu .character_option[aria-selected="true"] {
+    background-color: var(--editor-sidebar-hover);
+}
+
+/* ── Navigation (the search bar's up/down + counter, beside the character) ── */
+.navigation {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    /* The other half of the row (see .character_field). */
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.nav_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--primary-text);
+    transition: background-color 0.15s ease;
+}
+
+.nav_btn:hover:not(:disabled) {
+    background-color: var(--secondary-hover);
+}
+
+.nav_btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Takes whatever the half leaves between the two arrows, so they stay pinned
+   to its ends whatever the counter reads. */
+.match_count {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--secondary-text);
+    white-space: nowrap;
+}
+
+/* ── Dialogue list ── */
+/* The sidebar's list, not a menu: rows run edge to edge with a separator
+   between them, the sidebar's hover fill, and no rounding — the same box as
+   SidebarItem's .container (20px inline / 10px block). The panel's bottom
+   corners clip the last row. */
+.list {
+    display: flex;
+    flex-direction: column;
+    /* Bounded + scrollable so the panel stays a reasonable size under the bar. */
+    max-height: min(420px, calc(100vh - var(--navbar-height) - 200px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+}
+
+.item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+    /* Extra on the right so the text doesn't sit against the scrollbar. */
+    padding: 6px 30px 10px 10px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--primary-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.item:not(:last-child) {
+    border-bottom: 1px solid var(--separator);
+}
+
+.item:hover,
+.item_current {
+    background-color: var(--editor-sidebar-hover);
+}
+
+/* The sidebar's scene number, ahead of the title. */
+.item_index {
+    flex-shrink: 0;
+    min-width: 1.4em;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--secondary-text);
+    text-align: right;
+}
+
+.item_body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+/* SidebarItem's .preview: 12px secondary text. */
+.item_scene {
+    font-size: 12px;
+    color: var(--secondary-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* SidebarItem's .title size, clamped to three lines: enough to recognise the
+   speech, without one long monologue pushing the rest of the list off the panel. */
+.item_text {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--primary-text);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── Empty states ── */
+.empty {
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.empty_icon {
+    color: var(--secondary-text);
+    opacity: 0.7;
+}
+
+.empty_text {
+    font-size: 0.82rem;
+    color: var(--secondary-text);
+    line-height: 1.5;
+}

@@ -34,6 +34,7 @@
     "redo": "やり直す",
     "production": "制作",
     "readAloud": "読み上げ",
+    "dialogueTuner": "セリフチューナー",
     "tools": "ツール",
     "analytics": "分析",
     "settings": "設定",
@@ -168,6 +169,17 @@
       "screenplay_section": "セクションに切り替え",
       "screenplay_note": "メモに切り替え"
     }
+  },
+  "dialogueTuner": {
+    "title": "セリフチューナー",
+    "chooseCharacter": "登場人物を選択",
+    "previous": "前のセリフ",
+    "next": "次のセリフ",
+    "dialogueCount": "{current} / {total}",
+    "noDialogues": "セリフがありません",
+    "noCharacters": "脚本にまだ登場人物がいません。",
+    "emptyState": "登場人物を選ぶと、そのセリフを一つずつ読み進められます。",
+    "emptyDialogue": "（空）"
   },
   "readaloud": {
     "title": "読み上げ",
@@ -655,6 +667,7 @@
     "removeUnsavedHint": "脚本から自動検出されているため、削除するものがありません",
     "paste": "貼り付け",
     "highlight": "ハイライト",
+    "tuneDialogue": "セリフを調整...",
     "addCharacter": "登場人物を追加",
     "addComment": "コメント",
     "searchOnWeb": "ウェブ検索",

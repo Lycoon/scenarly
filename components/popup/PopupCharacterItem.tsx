@@ -69,6 +69,7 @@ export const PopupCharacterItem = ({ type, data: { character } }: PopupData<Popu
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("popup.character");
+    const tNav = useTranslations("navbar");
 
     const [newNameWarning, setNewNameWarning] = useState<boolean>(false);
     const [takenNameError, setTakenNameError] = useState<boolean>(false);
@@ -214,7 +215,9 @@ export const PopupCharacterItem = ({ type, data: { character } }: PopupData<Popu
                     style={{ cursor: isDragging ? "grabbing" : "grab" }}
                 >
                     <h2 className={popup.title}>{def.title}</h2>
-                    <X className={popup.close_btn} onClick={() => closePopup(userCtx)} />
+                    <button className={popup.close_btn} onClick={() => closePopup(userCtx)} aria-label={tNav("close")}>
+                        <X size={18} />
+                    </button>
                 </div>
                 <form className={popup.form} onSubmit={def.onSubmit}>
                     {takenNameError && TakenNameError(newName, t)}

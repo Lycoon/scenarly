@@ -34,6 +34,7 @@
     "redo": "重做",
     "production": "制作",
     "readAloud": "朗读",
+    "dialogueTuner": "对白调校",
     "tools": "工具",
     "analytics": "分析",
     "settings": "设置",
@@ -168,6 +169,17 @@
       "screenplay_section": "切换为章节",
       "screenplay_note": "切换为备注"
     }
+  },
+  "dialogueTuner": {
+    "title": "对白调校",
+    "chooseCharacter": "选择角色",
+    "previous": "上一段对白",
+    "next": "下一段对白",
+    "dialogueCount": "第 {current} 条，共 {total} 条",
+    "noDialogues": "没有对白",
+    "noCharacters": "剧本中还没有角色。",
+    "emptyState": "选择一个角色，逐条阅读其对白。",
+    "emptyDialogue": "（空）"
   },
   "readaloud": {
     "title": "朗读",
@@ -655,6 +667,7 @@
     "removeUnsavedHint": "根据剧本自动检测，无内容可移除",
     "paste": "粘贴",
     "highlight": "高亮",
+    "tuneDialogue": "调校对白...",
     "addCharacter": "添加角色",
     "addComment": "评论",
     "searchOnWeb": "网页搜索",

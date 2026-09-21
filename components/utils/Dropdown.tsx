@@ -27,6 +27,14 @@ interface DropdownProps {
     fitContent?: boolean;
     /** Render the menu in a body portal so it overflows scrolling/clipping parents. */
     portal?: boolean;
+    /**
+     * Extra classes on the menu box and on each (leaf) option row. A portaled
+     * menu is a child of <body>, out of reach of the consumer's own stylesheet
+     * by descent, so this is how a panel restyles the rows — e.g. as the
+     * sidebar's edge-to-edge list rows rather than the default padded pills.
+     */
+    menuClassName?: string;
+    itemClassName?: string;
 }
 
 /** Recursively find the option matching `value`, descending into submenus. */
@@ -46,6 +54,7 @@ const MenuItem = ({
     onSelect,
     openValue,
     onOpen,
+    itemClassName = "",
 }: {
     option: DropdownOption;
     value: string;
@@ -53,15 +62,20 @@ const MenuItem = ({
     /** The category whose submenu is currently open (only one at a time). */
     openValue: string | null;
     onOpen: (value: string | null) => void;
+    itemClassName?: string;
 }) => {
     const hasChildren = !!option.children?.length;
     const [flip, setFlip] = useState(false);
     const itemRef = useRef<HTMLDivElement>(null);
 
     if (!hasChildren) {
+        const selected = value === option.value;
         return (
             <div
-                className={`${styles.dropdown_item} ${value === option.value ? styles.dropdown_item_active : ""}`}
+                className={`${styles.dropdown_item} ${selected ? styles.dropdown_item_active : ""} ${itemClassName}`}
+                // Exposed so a consumer's row style can mark the selected row
+                // without knowing this module's active class.
+                aria-selected={selected}
                 onClick={() => onSelect(option.value)}
             >
                 <div className={styles.item_content}>{option.label}</div>
@@ -114,6 +128,8 @@ const Dropdown = ({
     placeholder = "Select...",
     fitContent = false,
     portal = false,
+    menuClassName = "",
+    itemClassName = "",
 }: DropdownProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
@@ -181,7 +197,7 @@ const Dropdown = ({
         <div
             ref={menuRef}
             {...(portal ? { "data-dropdown-portal": "" } : {})}
-            className={`${styles.dropdown_menu} ${portal ? styles.portal_menu : ""} ${fitContent ? styles.fit_content : ""} ${hasSubmenus ? styles.has_submenus : ""}`}
+            className={`${styles.dropdown_menu} ${portal ? styles.portal_menu : ""} ${fitContent ? styles.fit_content : ""} ${hasSubmenus ? styles.has_submenus : ""} ${menuClassName}`}
             style={
                 portal && menuPos
                     ? {
@@ -206,6 +222,7 @@ const Dropdown = ({
                     onSelect={handleSelect}
                     openValue={openSubmenu}
                     onOpen={setOpenSubmenu}
+                    itemClassName={itemClassName}
                 />
             ))}
         </div>

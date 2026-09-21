@@ -6,6 +6,7 @@ import { UserContext } from "@src/context/UserContext";
 import { useSpellcheck } from "@src/context/SpellcheckContext";
 import { refreshSpellcheck } from "@src/lib/spellcheck/spellcheck-extension";
 import { Scene } from "@src/lib/screenplay/scenes";
+import { useIsPhone } from "@src/lib/utils/hooks";
 
 import context from "./ContextMenu.module.css";
 import {
@@ -33,6 +34,7 @@ import {
     ListTree,
     Loader2,
     MessageSquarePlus,
+    MessagesSquare,
     Pencil,
     Scissors,
     SeparatorHorizontal,
@@ -192,8 +194,11 @@ const CharacterItemMenu = ({ props }: SubMenuProps<CharacterContextProps>) => {
     const t = useTranslations("contextMenu");
     const userCtx = useContext(UserContext);
     const projectCtx = useContext(ProjectContext);
-    const { toggleCharacterHighlight, isReadOnly } = projectCtx;
+    const { toggleCharacterHighlight, requestDialogueTuner, isReadOnly } = projectCtx;
     const character: CharacterData = props.character;
+    // The tuner panel hangs off the desktop navbar's tools island; the phone bar
+    // has no such panel, so the entry would set state nothing shows.
+    const isPhone = useIsPhone();
 
     return (
         <>
@@ -218,6 +223,13 @@ const CharacterItemMenu = ({ props }: SubMenuProps<CharacterContextProps>) => {
                 icon={Highlighter}
                 action={() => toggleCharacterHighlight(character.name)}
             />
+            {!isPhone && (
+                <ContextMenuItem
+                    text={t("tuneDialogue")}
+                    icon={MessagesSquare}
+                    action={() => requestDialogueTuner(character.name)}
+                />
+            )}
         </>
     );
 };

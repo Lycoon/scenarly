@@ -280,6 +280,32 @@
     min-width: 0;
 }
 
+/* The purchase button's labels — one per period plus the busy text — all sit
+   in this single grid cell, the current one visible and the rest hidden but
+   still laid out. The cell is as wide and tall as the widest of them, so the
+   button holds one size whichever is shown, and the arrow after it never
+   moves. The `minmax(0, 1fr)` column lets the cell shrink below its labels'
+   width on narrow phones, where each label then clips with its own ellipsis. */
+.upgradeBtnLabels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+}
+
+.upgradeBtnLabels > .upgradeBtnLabel {
+    grid-area: 1 / 1;
+    text-align: center;
+}
+
+/* Out of sight but still taking its space; shared by the labels and the arrow. */
+.upgradeBtnLabelHidden {
+    visibility: hidden;
+}
+
+.upgradeBtnArrow {
+    flex-shrink: 0;
+}
+
 .upgradeBtn:hover {
     opacity: 0.8;
 }
