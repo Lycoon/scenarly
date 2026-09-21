@@ -28,7 +28,7 @@ const normalizeRoute = (pathname: string): string => {
 function handleError(err: unknown): NextResponse {
     if (err instanceof AppError) {
         return NextResponse.json(
-            { status: "error", message: err.message },
+            { status: "error", message: err.message, ...(err.code && { code: err.code }) },
             { status: err.statusCode },
         );
     }

@@ -20,10 +20,23 @@ const client = new S3Client({
     },
 });
 
-export const getSignedDownloadUrl = async (name: string, expiresIn = 900): Promise<string | null> => {
+export interface SignedUrlOptions {
+    /** `Content-Type` the response should carry (e.g. `application/pdf`). */
+    contentType?: string;
+    /** `Content-Disposition` the response should carry (e.g. `inline; filename="x.pdf"`). */
+    contentDisposition?: string;
+}
+
+export const getSignedDownloadUrl = async (
+    name: string,
+    expiresIn = 900,
+    options: SignedUrlOptions = {},
+): Promise<string | null> => {
     const params = {
         Bucket: env.S3_BUCKET,
         Key: name,
+        ResponseContentType: options.contentType,
+        ResponseContentDisposition: options.contentDisposition,
     };
 
     try {

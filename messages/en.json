@@ -422,7 +422,8 @@
       "title": "Title",
       "lastEdited": "Last edited",
       "storage": "Storage"
-    }
+    },
+    "communityBtn": "Community"
   },
   "editorSidebar": {
     "scenes": "Scenes",
@@ -575,7 +576,11 @@
     "passwordPlaceholder": "Enter password",
     "exportBtn": "Export",
     "exporting": "Exporting...",
-    "exportingProgress": "Exporting ({progress}%)"
+    "exportingProgress": "Exporting ({progress}%)",
+    "communityLabel": "Community",
+    "submitToCoverage": "Submit to Coverage",
+    "submitToCoverageDesc": "Export this script as a PDF and put it up for review by other writers (3 credits).",
+    "submitToCoverageDescDesktop": "Coverage runs in the web app. Opens scenarly.com in your browser."
   },
   "layout": {
     "pageFormat": "Page Format",
@@ -765,6 +770,13 @@
       "replaceAnyway": "Replace it",
       "cancel": "Cancel",
       "ok": "OK"
+    },
+    "submitToCoverage": {
+      "title": "Submit to Coverage",
+      "done": "Your script is in the pool. Reviews will appear on its Coverage page as they arrive.",
+      "open": "Open Coverage page",
+      "notMember": "Coverage is Scenarly's review exchange. Join it on the Community pages first — it takes a minute — then come back here.",
+      "openCommunity": "Open Community"
     }
   },
   "board": {
@@ -877,5 +889,243 @@
     "daysAgo": "{days, plural, one {# day ago} other {# days ago}}",
     "monthsAgo": "{months, plural, one {# month ago} other {# months ago}}",
     "moreThanYearAgo": "More than 1 year ago"
+  },
+  "community": {
+    "nav": {
+      "community": "Community",
+      "coverage": "My Coverage",
+      "credits": "{count, plural, one {# credit} other {# credits}}",
+      "creditsTitle": "Your Coverage credits",
+      "backToApp": "My projects",
+      "submit": "Submit a script",
+      "review": "Review a script",
+      "showcase": "Showcase"
+    },
+    "gate": {
+      "signedOutTitle": "Sign in to enter Coverage",
+      "signedOutBody": "Coverage is for Scenarly accounts. Sign in, or create an account, to submit and review scripts.",
+      "signIn": "Sign in",
+      "unverifiedTitle": "Verify your email first",
+      "unverifiedBody": "Coverage is open to verified accounts. Sign in with the link we email you and come back.",
+      "tooRecentTitle": "Almost there",
+      "tooRecentBody": "Coverage opens to accounts that are at least a week old. Yours qualifies on {date}.",
+      "joinTitle": "Join Coverage",
+      "joinBody": "Pick a pen name and you're in, with {credits} credits to submit your first script. Reviews are blind by default: your pen name only shows when you choose to sign a review.",
+      "penName": "Pen name",
+      "penNamePlaceholder": "How other writers will know you",
+      "penNameHint": "You can change it later.",
+      "penNameTooShort": "A pen name needs at least {min} characters.",
+      "join": "Join Coverage",
+      "joining": "Joining…",
+      "joinFailed": "Could not join. Please try again."
+    },
+    "dashboard": {
+      "title": "Coverage",
+      "welcome": "Signed in as {name}",
+      "balance": "{count, plural, one {# credit} other {# credits}}",
+      "submitCard": "Submit a screenplay",
+      "submitCardBody": "Upload a PDF, or submit a Scenarly project from its Export tab. It stays in the pool until it has three reviews.",
+      "submitCost": "Costs {cost} credits",
+      "reviewCard": "Review a screenplay",
+      "reviewCardContinue": "Continue your review",
+      "reviewCardBody": "Pick one of five scripts, read it, write your notes. You have three weeks, and can send them after one.",
+      "reviewReward": "Earns 1 credit",
+      "tabs": {
+        "submissions": "My scripts",
+        "reviews": "Reviews I wrote",
+        "credits": "Credits"
+      },
+      "noSubmissionsTitle": "No script submitted yet",
+      "noSubmissionsBody": "Submit one and it joins the pool other writers draw from.",
+      "noReviewsTitle": "No review written yet",
+      "noReviewsBody": "Every review you complete earns a credit toward your next submission."
+    },
+    "submissions": {
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "reviewsProgress": "{count} / {min} reviews",
+      "beingRead": "{count, plural, one {# reviewer reading} other {# reviewers reading}}",
+      "statusPooled": "In the pool until {date}",
+      "statusRetired": "Out of the pool",
+      "statusShowcaseOnly": "Showcase only",
+      "statusRemoved": "Withdrawn",
+      "submittedOn": "Submitted {date}",
+      "poolStatus": "{count} of {min} reviews in — in the pool until at least {date}",
+      "retiredStatus": "Left the pool on {date}. Reviews stay here.",
+      "proof": "Proof of existence: SHA-256 {hash}… registered {date}",
+      "viewPdf": "View PDF",
+      "hidePdf": "Hide PDF",
+      "reviewsTitle": "{count, plural, =0 {Reviews} one {# review} other {# reviews}}",
+      "noReviewsTitle": "No review yet",
+      "noReviewsBodyPooled": "Reviewers have at least a week with a script before they can send their notes. You'll get an email when one lands.",
+      "noReviewsBodyRetired": "This script left the pool without a review.",
+      "dangerTitle": "Withdraw",
+      "withdrawRefund": "Nobody has claimed this script yet: withdrawing it refunds your {cost} credits.",
+      "withdrawNoRefund": "This script has been claimed, so withdrawing it does not refund the credits. Reviews in progress will still arrive.",
+      "withdrawRetired": "Withdrawing removes the PDF from our storage. The reviews you received stay readable.",
+      "withdraw": "Withdraw this script",
+      "withdrawYes": "Yes, withdraw",
+      "withdrawing": "Withdrawing…",
+      "withdrawFailed": "Could not withdraw. Please try again.",
+      "notFound": "This submission does not exist or is not yours."
+    },
+    "submit": {
+      "title": "Submit a screenplay",
+      "subtitle": "Upload the PDF you want reviewed. It is frozen as submitted: later edits never change it.",
+      "dropTitle": "Drop a PDF here, or click to choose one",
+      "dropBody": "PDF only, up to {mb} MB.",
+      "fileSize": "{mb} MB",
+      "titleLabel": "Title",
+      "titlePlaceholder": "The title as it appears on the script",
+      "loglineLabel": "Logline or synopsis",
+      "loglinePlaceholder": "What reviewers see before they choose your script. One to three sentences.",
+      "loglineHint": "{count} characters ({min}–{max})",
+      "formatHint": "Feature screenplays only, {min} to {max} pages.",
+      "genresLabel": "Genres (up to {max})",
+      "costTitle": "{cost} credits — you have {balance}",
+      "costBody": "Your script stays in the pool until three writers have reviewed it, and for at least a month. Refunded in full if you withdraw before anyone claims it.",
+      "frozenNote": "The file's hash and today's date ({date}) are recorded as proof this script existed now.",
+      "cancel": "Cancel",
+      "submit": "Submit for {cost} credits",
+      "rendering": "Rendering PDF…",
+      "uploading": "Uploading…",
+      "errors": {
+        "notPdf": "Choose a PDF file.",
+        "tooLarge": "The PDF is over {mb} MB.",
+        "noFile": "Choose a PDF first.",
+        "noTitle": "Give the script a title.",
+        "loglineShort": "The logline needs at least {min} characters.",
+        "noGenre": "Pick at least one genre.",
+        "credits": "Submitting costs {cost} credits; you have {balance}. Review a script to earn more.",
+        "duplicate": "This exact PDF is already in Coverage.",
+        "failed": "Submission failed. Please try again."
+      }
+    },
+    "offers": {
+      "title": "Pick a script to review",
+      "subtitle": "Five scripts, drawn for you. Claim one and you have three weeks to read it and write your notes; they can be sent after one.",
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "reviewsSoFar": "{count, plural, =0 {no reviews yet} one {# review so far} other {# reviews so far}}",
+      "claim": "Review this one",
+      "unavailable": "No longer available",
+      "reshuffle": "Show me five others",
+      "reshuffleAt": "New set available {time}",
+      "thinPool": "The pool is small right now; more scripts arrive as writers submit them.",
+      "emptyTitle": "Nothing to review right now",
+      "emptyBody": "Every script in the pool is either yours or one you've already reviewed. Check back soon.",
+      "claimFailed": "Could not claim this script.",
+      "reshuffleFailed": "Could not reshuffle."
+    },
+    "claim": {
+      "inProgress": "You are reviewing “{title}”",
+      "canSubmitNow": "You can send your review now",
+      "canSubmitFrom": "You can send your review from {date}",
+      "deadlineIn": "{days, plural, one {# day left} other {# days left}}",
+      "deadlineOn": "Due {date} ({days, plural, one {# day left} other {# days left}})",
+      "continue": "Continue",
+      "autoSubmittedTag": "Sent automatically",
+      "submittedBanner": "Your review was sent. You earned 1 credit.",
+      "releasedBanner": "You gave the script back. No credit, no penalty.",
+      "goneBanner": "This claim has ended: the review was already sent or the deadline passed."
+    },
+    "review": {
+      "worksWellLabel": "What works",
+      "worksWellPlaceholder": "The moments, characters and choices that land — and why.",
+      "doesNotWorkLabel": "What doesn't work",
+      "doesNotWorkPlaceholder": "Where the script loses you: structure, stakes, dialogue, clarity.",
+      "remarksLabel": "Additional remarks",
+      "remarksPlaceholder": "Anything else the writer should hear: comparables, format notes, a fix you'd try.",
+      "wordCount": "{count} / {min} words",
+      "saving": "Saving…",
+      "savedAt": "Saved {time}",
+      "unsaved": "Unsaved changes",
+      "saveFailed": "Could not save the draft",
+      "signLabel": "Sign this review",
+      "signHint": "Show the author your pen name. Off by default: reviews are blind.",
+      "floorPassed": "The one-week wait is over. Send your review when it's ready.",
+      "autoSendNote": "Reviews can be sent after one week. If your saved draft is long enough on {date}, it is sent for you.",
+      "release": "Give this script back",
+      "releaseConfirm": "Give it back? You won't be offered this script again.",
+      "releaseYes": "Give it back",
+      "releasing": "Giving back…",
+      "releaseFailed": "Could not give the script back.",
+      "submit": "Send review",
+      "submitting": "Sending…",
+      "submitFailed": "Could not send the review.",
+      "opensOn": "Opens {date}"
+    },
+    "reviews": {
+      "reviewerN": "Reviewer {n}",
+      "words": "{count} words",
+      "autoSubmitted": "sent automatically",
+      "worksWellLabel": "What works",
+      "doesNotWorkLabel": "What doesn't work",
+      "remarksLabel": "Additional remarks",
+      "ratePrompt": "Was this review useful?",
+      "rated": "You rated this review: {rating}",
+      "rateFailed": "Could not save your rating.",
+      "report": "Report",
+      "reported": "Reported",
+      "reportReason": "Why are you reporting this review?",
+      "reportDetails": "Anything else we should know (optional)",
+      "reportSend": "Send report",
+      "reportFailed": "Could not send the report."
+    },
+    "viewer": {
+      "failed": "The script could not be loaded.",
+      "retry": "Try again"
+    },
+    "enums": {
+      "formats": {
+        "FEATURE": "Feature",
+        "SHORT": "Short",
+        "PILOT": "Pilot",
+        "OTHER": "Other"
+      },
+      "genres": {
+        "ACTION": "Action",
+        "ADVENTURE": "Adventure",
+        "ANIMATION": "Animation",
+        "COMEDY": "Comedy",
+        "CRIME": "Crime",
+        "DRAMA": "Drama",
+        "FAMILY": "Family",
+        "FANTASY": "Fantasy",
+        "HORROR": "Horror",
+        "MYSTERY": "Mystery",
+        "ROMANCE": "Romance",
+        "SCIFI": "Sci-fi",
+        "THRILLER": "Thriller",
+        "WESTERN": "Western",
+        "OTHER": "Other"
+      },
+      "ratings": {
+        "USEFUL": "Useful",
+        "NOT_USEFUL": "Not useful"
+      },
+      "claimStatus": {
+        "ACTIVE": "In progress",
+        "SUBMITTED": "Sent",
+        "EXPIRED": "Expired",
+        "RELEASED": "Given back"
+      },
+      "creditReasons": {
+        "STARTER": "Welcome credits",
+        "SUBMISSION": "Script submitted",
+        "REVIEW_COMPLETED": "Review completed",
+        "SUBMISSION_REFUND": "Submission refunded",
+        "ADMIN_ADJUST": "Adjustment"
+      },
+      "reportReasons": {
+        "ABUSIVE": "Abusive or insulting",
+        "OFF_TOPIC": "Not about this script",
+        "LOW_EFFORT": "Low effort",
+        "AI_GENERATED": "Looks machine-generated",
+        "OTHER": "Other"
+      }
+    },
+    "showcase": {
+      "comingSoonTitle": "Showcase is coming",
+      "comingSoonBody": "A public wall of screenplays their authors chose to share. Not open yet."
+    }
   }
 }

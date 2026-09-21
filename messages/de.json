@@ -423,7 +423,8 @@
       "title": "Titel",
       "lastEdited": "Zuletzt bearbeitet",
       "storage": "Speicher"
-    }
+    },
+    "communityBtn": "Community"
   },
   "editorSidebar": {
     "scenes": "Szenen",
@@ -576,7 +577,11 @@
     "passwordPlaceholder": "Passwort eingeben",
     "exportBtn": "Exportieren",
     "exporting": "Exportieren...",
-    "exportingProgress": "Exportieren ({progress}%)"
+    "exportingProgress": "Exportieren ({progress}%)",
+    "communityLabel": "Community",
+    "submitToCoverage": "Bei Coverage einreichen",
+    "submitToCoverageDesc": "Exportiert dieses Drehbuch als PDF und stellt es anderen Autoren zur Besprechung bereit (3 Credits).",
+    "submitToCoverageDescDesktop": "Coverage läuft in der Web-App. Öffnet scenarly.com in deinem Browser."
   },
   "layout": {
     "pageFormat": "Seitenformat",
@@ -766,6 +771,13 @@
       "replaceAnyway": "Ersetzen",
       "cancel": "Abbrechen",
       "ok": "OK"
+    },
+    "submitToCoverage": {
+      "title": "Bei Coverage einreichen",
+      "done": "Dein Drehbuch ist im Pool. Besprechungen erscheinen auf seiner Coverage-Seite, sobald sie eintreffen.",
+      "open": "Coverage-Seite öffnen",
+      "notMember": "Coverage ist Scenarlys Besprechungstausch. Tritt zuerst über die Community-Seiten bei — das dauert eine Minute — und komm dann hierher zurück.",
+      "openCommunity": "Community öffnen"
     }
   },
   "board": {
@@ -878,5 +890,243 @@
     "daysAgo": "{days, plural, one {vor # Tag} other {vor # Tagen}}",
     "monthsAgo": "Vor {months, plural, one {# Monat} other {# Monaten}}",
     "moreThanYearAgo": "Vor über einem Jahr"
+  },
+  "community": {
+    "nav": {
+      "community": "Community",
+      "coverage": "Mein Coverage",
+      "credits": "{count, plural, one {# Credit} other {# Credits}}",
+      "creditsTitle": "Deine Coverage-Credits",
+      "backToApp": "Meine Projekte",
+      "submit": "Drehbuch einreichen",
+      "review": "Drehbuch besprechen",
+      "showcase": "Showcase"
+    },
+    "gate": {
+      "signedOutTitle": "Melde dich an, um Coverage zu nutzen",
+      "signedOutBody": "Coverage ist für Scenarly-Konten. Melde dich an oder erstelle ein Konto, um Drehbücher einzureichen und zu besprechen.",
+      "signIn": "Anmelden",
+      "unverifiedTitle": "Bestätige zuerst deine E-Mail",
+      "unverifiedBody": "Coverage steht bestätigten Konten offen. Melde dich mit dem Link an, den wir dir mailen, und komm zurück.",
+      "tooRecentTitle": "Fast geschafft",
+      "tooRecentBody": "Coverage öffnet sich für Konten, die mindestens eine Woche alt sind. Deins ist ab dem {date} dabei.",
+      "joinTitle": "Coverage beitreten",
+      "joinBody": "Wähle einen Künstlernamen und du bist drin, mit {credits} Credits für dein erstes Drehbuch. Besprechungen sind standardmäßig anonym: Dein Künstlername erscheint nur, wenn du eine Besprechung unterschreibst.",
+      "penName": "Künstlername",
+      "penNamePlaceholder": "So kennen dich andere Autoren",
+      "penNameHint": "Kann später geändert werden.",
+      "penNameTooShort": "Ein Künstlername braucht mindestens {min} Zeichen.",
+      "join": "Coverage beitreten",
+      "joining": "Beitritt…",
+      "joinFailed": "Beitritt fehlgeschlagen. Bitte erneut versuchen."
+    },
+    "dashboard": {
+      "title": "Coverage",
+      "welcome": "Angemeldet als {name}",
+      "balance": "{count, plural, one {# Credit} other {# Credits}}",
+      "submitCard": "Drehbuch einreichen",
+      "submitCardBody": "Lade ein PDF hoch oder reiche ein Scenarly-Projekt über seinen Export-Tab ein. Es bleibt im Pool, bis es drei Besprechungen hat.",
+      "submitCost": "Kostet {cost} Credits",
+      "reviewCard": "Drehbuch besprechen",
+      "reviewCardContinue": "Besprechung fortsetzen",
+      "reviewCardBody": "Wähle eines von fünf Drehbüchern, lies es, schreib deine Anmerkungen. Du hast drei Wochen und kannst nach einer abschicken.",
+      "reviewReward": "Bringt 1 Credit",
+      "tabs": {
+        "submissions": "Meine Drehbücher",
+        "reviews": "Meine Besprechungen",
+        "credits": "Credits"
+      },
+      "noSubmissionsTitle": "Noch kein Drehbuch eingereicht",
+      "noSubmissionsBody": "Reiche eines ein und es kommt in den Pool, aus dem andere Autoren ziehen.",
+      "noReviewsTitle": "Noch keine Besprechung geschrieben",
+      "noReviewsBody": "Jede abgeschlossene Besprechung bringt einen Credit für deine nächste Einreichung."
+    },
+    "submissions": {
+      "pages": "{count, plural, one {# Seite} other {# Seiten}}",
+      "reviewsProgress": "{count} / {min} Besprechungen",
+      "beingRead": "{count, plural, one {# Person liest gerade} other {# Personen lesen gerade}}",
+      "statusPooled": "Im Pool bis {date}",
+      "statusRetired": "Nicht mehr im Pool",
+      "statusShowcaseOnly": "Nur Showcase",
+      "statusRemoved": "Zurückgezogen",
+      "submittedOn": "Eingereicht am {date}",
+      "poolStatus": "{count} von {min} Besprechungen da — im Pool mindestens bis {date}",
+      "retiredStatus": "Am {date} aus dem Pool. Die Besprechungen bleiben hier.",
+      "proof": "Existenznachweis: SHA-256 {hash}… registriert am {date}",
+      "viewPdf": "PDF ansehen",
+      "hidePdf": "PDF ausblenden",
+      "reviewsTitle": "{count, plural, =0 {Besprechungen} one {# Besprechung} other {# Besprechungen}}",
+      "noReviewsTitle": "Noch keine Besprechung",
+      "noReviewsBodyPooled": "Besprechende haben ein Drehbuch mindestens eine Woche, bevor sie ihre Anmerkungen schicken können. Du bekommst eine E-Mail, sobald eine eintrifft.",
+      "noReviewsBodyRetired": "Dieses Drehbuch hat den Pool ohne Besprechung verlassen.",
+      "dangerTitle": "Zurückziehen",
+      "withdrawRefund": "Niemand hat dieses Drehbuch bisher übernommen: Zurückziehen erstattet deine {cost} Credits.",
+      "withdrawNoRefund": "Dieses Drehbuch wurde übernommen, daher werden die Credits beim Zurückziehen nicht erstattet. Laufende Besprechungen treffen trotzdem ein.",
+      "withdrawRetired": "Zurückziehen entfernt das PDF aus unserem Speicher. Erhaltene Besprechungen bleiben lesbar.",
+      "withdraw": "Dieses Drehbuch zurückziehen",
+      "withdrawYes": "Ja, zurückziehen",
+      "withdrawing": "Wird zurückgezogen…",
+      "withdrawFailed": "Zurückziehen fehlgeschlagen. Bitte erneut versuchen.",
+      "notFound": "Diese Einreichung existiert nicht oder gehört dir nicht."
+    },
+    "submit": {
+      "title": "Drehbuch einreichen",
+      "subtitle": "Lade das PDF hoch, das besprochen werden soll. Es wird so eingefroren, wie es ist: Spätere Änderungen wirken sich nie darauf aus.",
+      "dropTitle": "PDF hier ablegen oder klicken, um eines auszuwählen",
+      "dropBody": "Nur PDF, bis zu {mb} MB.",
+      "fileSize": "{mb} MB",
+      "titleLabel": "Titel",
+      "titlePlaceholder": "Der Titel, wie er auf dem Drehbuch steht",
+      "loglineLabel": "Logline oder Synopsis",
+      "loglinePlaceholder": "Was Besprechende sehen, bevor sie dein Drehbuch wählen. Ein bis drei Sätze.",
+      "loglineHint": "{count} Zeichen ({min}–{max})",
+      "formatHint": "Nur Spielfilm-Drehbücher, {min} bis {max} Seiten.",
+      "genresLabel": "Genres (bis zu {max})",
+      "costTitle": "{cost} Credits — du hast {balance}",
+      "costBody": "Dein Drehbuch bleibt im Pool, bis drei Autoren es besprochen haben, und mindestens einen Monat. Volle Erstattung, wenn du es zurückziehst, bevor jemand es übernimmt.",
+      "frozenNote": "Der Hash der Datei und das heutige Datum ({date}) werden als Nachweis gespeichert, dass dieses Drehbuch jetzt existierte.",
+      "cancel": "Abbrechen",
+      "submit": "Für {cost} Credits einreichen",
+      "rendering": "PDF wird erzeugt…",
+      "uploading": "Wird hochgeladen…",
+      "errors": {
+        "notPdf": "Wähle eine PDF-Datei.",
+        "tooLarge": "Das PDF ist größer als {mb} MB.",
+        "noFile": "Wähle zuerst ein PDF.",
+        "noTitle": "Gib dem Drehbuch einen Titel.",
+        "loglineShort": "Die Logline braucht mindestens {min} Zeichen.",
+        "noGenre": "Wähle mindestens ein Genre.",
+        "credits": "Einreichen kostet {cost} Credits; du hast {balance}. Besprich ein Drehbuch, um mehr zu verdienen.",
+        "duplicate": "Genau dieses PDF ist bereits in Coverage.",
+        "failed": "Einreichen fehlgeschlagen. Bitte erneut versuchen."
+      }
+    },
+    "offers": {
+      "title": "Wähle ein Drehbuch zum Besprechen",
+      "subtitle": "Fünf Drehbücher, für dich gezogen. Übernimm eines und du hast drei Wochen, um es zu lesen und deine Anmerkungen zu schreiben; abschicken kannst du nach einer.",
+      "pages": "{count, plural, one {# Seite} other {# Seiten}}",
+      "reviewsSoFar": "{count, plural, =0 {noch keine Besprechung} one {# Besprechung bisher} other {# Besprechungen bisher}}",
+      "claim": "Dieses besprechen",
+      "unavailable": "Nicht mehr verfügbar",
+      "reshuffle": "Fünf andere zeigen",
+      "reshuffleAt": "Neue Auswahl ab {time}",
+      "thinPool": "Der Pool ist gerade klein; weitere Drehbücher kommen, sobald Autoren sie einreichen.",
+      "emptyTitle": "Gerade nichts zu besprechen",
+      "emptyBody": "Jedes Drehbuch im Pool ist entweder deins oder eines, das du schon besprochen hast. Schau bald wieder vorbei.",
+      "claimFailed": "Dieses Drehbuch konnte nicht übernommen werden.",
+      "reshuffleFailed": "Neu mischen fehlgeschlagen."
+    },
+    "claim": {
+      "inProgress": "Du besprichst „{title}“",
+      "canSubmitNow": "Du kannst deine Besprechung jetzt abschicken",
+      "canSubmitFrom": "Du kannst deine Besprechung ab dem {date} abschicken",
+      "deadlineIn": "{days, plural, one {noch # Tag} other {noch # Tage}}",
+      "deadlineOn": "Fällig am {date} ({days, plural, one {noch # Tag} other {noch # Tage}})",
+      "continue": "Fortsetzen",
+      "autoSubmittedTag": "Automatisch gesendet",
+      "submittedBanner": "Deine Besprechung wurde gesendet. Du hast 1 Credit verdient.",
+      "releasedBanner": "Du hast das Drehbuch zurückgegeben. Kein Credit, keine Strafe.",
+      "goneBanner": "Diese Übernahme ist beendet: Die Besprechung wurde bereits gesendet oder die Frist ist abgelaufen."
+    },
+    "review": {
+      "worksWellLabel": "Was funktioniert",
+      "worksWellPlaceholder": "Die Momente, Figuren und Entscheidungen, die sitzen — und warum.",
+      "doesNotWorkLabel": "Was nicht funktioniert",
+      "doesNotWorkPlaceholder": "Wo dich das Drehbuch verliert: Struktur, Einsatz, Dialoge, Klarheit.",
+      "remarksLabel": "Weitere Anmerkungen",
+      "remarksPlaceholder": "Alles, was der Autor noch hören sollte: Vergleichstitel, Formathinweise, ein Fix, den du versuchen würdest.",
+      "wordCount": "{count} / {min} Wörter",
+      "saving": "Wird gespeichert…",
+      "savedAt": "Gespeichert {time}",
+      "unsaved": "Ungespeicherte Änderungen",
+      "saveFailed": "Entwurf konnte nicht gespeichert werden",
+      "signLabel": "Diese Besprechung unterschreiben",
+      "signHint": "Zeigt dem Autor deinen Künstlernamen. Standardmäßig aus: Besprechungen sind anonym.",
+      "floorPassed": "Die einwöchige Wartezeit ist vorbei. Schick deine Besprechung ab, wenn sie fertig ist.",
+      "autoSendNote": "Besprechungen können nach einer Woche gesendet werden. Ist dein gespeicherter Entwurf am {date} lang genug, wird er für dich gesendet.",
+      "release": "Dieses Drehbuch zurückgeben",
+      "releaseConfirm": "Zurückgeben? Dieses Drehbuch wird dir nicht wieder angeboten.",
+      "releaseYes": "Zurückgeben",
+      "releasing": "Wird zurückgegeben…",
+      "releaseFailed": "Das Drehbuch konnte nicht zurückgegeben werden.",
+      "submit": "Besprechung senden",
+      "submitting": "Wird gesendet…",
+      "submitFailed": "Die Besprechung konnte nicht gesendet werden.",
+      "opensOn": "Öffnet am {date}"
+    },
+    "reviews": {
+      "reviewerN": "Besprechung {n}",
+      "words": "{count} Wörter",
+      "autoSubmitted": "automatisch gesendet",
+      "worksWellLabel": "Was funktioniert",
+      "doesNotWorkLabel": "Was nicht funktioniert",
+      "remarksLabel": "Weitere Anmerkungen",
+      "ratePrompt": "War diese Besprechung nützlich?",
+      "rated": "Deine Bewertung dieser Besprechung: {rating}",
+      "rateFailed": "Deine Bewertung konnte nicht gespeichert werden.",
+      "report": "Melden",
+      "reported": "Gemeldet",
+      "reportReason": "Warum meldest du diese Besprechung?",
+      "reportDetails": "Sonst noch etwas, das wir wissen sollten (optional)",
+      "reportSend": "Meldung senden",
+      "reportFailed": "Die Meldung konnte nicht gesendet werden."
+    },
+    "viewer": {
+      "failed": "Das Drehbuch konnte nicht geladen werden.",
+      "retry": "Erneut versuchen"
+    },
+    "enums": {
+      "formats": {
+        "FEATURE": "Spielfilm",
+        "SHORT": "Kurzfilm",
+        "PILOT": "Pilot",
+        "OTHER": "Sonstiges"
+      },
+      "genres": {
+        "ACTION": "Action",
+        "ADVENTURE": "Abenteuer",
+        "ANIMATION": "Animation",
+        "COMEDY": "Komödie",
+        "CRIME": "Krimi",
+        "DRAMA": "Drama",
+        "FAMILY": "Familie",
+        "FANTASY": "Fantasy",
+        "HORROR": "Horror",
+        "MYSTERY": "Mystery",
+        "ROMANCE": "Romanze",
+        "SCIFI": "Science-Fiction",
+        "THRILLER": "Thriller",
+        "WESTERN": "Western",
+        "OTHER": "Sonstiges"
+      },
+      "ratings": {
+        "USEFUL": "Nützlich",
+        "NOT_USEFUL": "Nicht nützlich"
+      },
+      "claimStatus": {
+        "ACTIVE": "In Arbeit",
+        "SUBMITTED": "Gesendet",
+        "EXPIRED": "Abgelaufen",
+        "RELEASED": "Zurückgegeben"
+      },
+      "creditReasons": {
+        "STARTER": "Willkommens-Credits",
+        "SUBMISSION": "Drehbuch eingereicht",
+        "REVIEW_COMPLETED": "Besprechung abgeschlossen",
+        "SUBMISSION_REFUND": "Einreichung erstattet",
+        "ADMIN_ADJUST": "Anpassung"
+      },
+      "reportReasons": {
+        "ABUSIVE": "Beleidigend oder verletzend",
+        "OFF_TOPIC": "Geht nicht um dieses Drehbuch",
+        "LOW_EFFORT": "Lieblos",
+        "AI_GENERATED": "Wirkt maschinell erzeugt",
+        "OTHER": "Sonstiges"
+      }
+    },
+    "showcase": {
+      "comingSoonTitle": "Showcase kommt bald",
+      "comingSoonBody": "Eine öffentliche Wand mit Drehbüchern, die ihre Autoren teilen wollten. Noch nicht offen."
+    }
   }
 }

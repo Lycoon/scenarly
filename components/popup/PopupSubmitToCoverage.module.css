@@ -1,0 +1,22 @@
+/* Wider than the default popup: the submission form has a logline field and a
+   genre chip row that would wrap badly at 500px. Scrolls when the viewport is
+   short. */
+.container {
+    width: min(640px, 100%);
+    max-height: calc(100vh - 40px - var(--safe-top) - var(--safe-bottom));
+    display: flex;
+    flex-direction: column;
+}
+
+.body {
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 4px;
+}
+
+.body a {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

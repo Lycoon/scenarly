@@ -58,6 +58,58 @@
     height: auto;
 }
 
+/* Logo with an optional section name under it (Community). The wrapper takes
+   the logo's own box and the caption hangs below it out of flow, so the logo
+   sits at exactly the same spot as on the projects page. */
+.sidebar_brand {
+    position: relative;
+    display: flex;
+}
+
+.sidebar_subtitle {
+    position: absolute;
+    top: 100%;
+    left: 2px;
+    margin-top: 2px;
+    white-space: nowrap;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    opacity: 0.8;
+}
+
+/* Right end of the logo row: a page-level control (Community's home icon)
+   and, on phone, the drawer's close button. */
+.sidebar_top_right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Same footprint as the drawer close button so the two line up when both show. */
+.sidebar_icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar_icon:hover,
+.sidebar_icon_active {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}
+
 /* Phone drawer title — mirrors the dashboard settings drawer header
  * (DashboardModal.module.css .sidebarTitle) so the two drawers read the same. */
 .sidebar_title {
@@ -90,6 +142,10 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    /* Fills the rest of the column so a child with margin-top: auto (the
+       Community credit line) can sit at the bottom; the pills stay at the top. */
+    flex: 1;
+    min-height: 0;
     /* Matches the list's top padding so the buttons and the list header line up. */
     padding: 40px 4px 0;
 }

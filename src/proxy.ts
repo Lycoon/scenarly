@@ -13,6 +13,7 @@ const PUBLIC_API_PREFIXES = [
     "/api/contact", // Public contact form
     "/api/metrics", // Prometheus scrape (gated by bearer token in route handler)
     "/api/internal/", // Worker→app callbacks (gated by a Worker-signed JWT in the route)
+    "/api/community/public/", // Community reads meant for everyone (proof of existence, Showcase)
 ];
 
 function isPublicApiRoute(pathname: string): boolean {

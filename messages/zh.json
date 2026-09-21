@@ -422,7 +422,8 @@
       "title": "标题",
       "lastEdited": "最后编辑",
       "storage": "存储"
-    }
+    },
+    "communityBtn": "社区"
   },
   "editorSidebar": {
     "scenes": "场景",
@@ -575,7 +576,11 @@
     "passwordPlaceholder": "输入密码",
     "exportBtn": "导出",
     "exporting": "正在导出...",
-    "exportingProgress": "正在导出 ({progress}%)"
+    "exportingProgress": "正在导出 ({progress}%)",
+    "communityLabel": "社区",
+    "submitToCoverage": "提交到 Coverage",
+    "submitToCoverageDesc": "将此剧本导出为 PDF，交由其他编剧评阅（3 点数）。",
+    "submitToCoverageDescDesktop": "Coverage 在网页版中运行。将在浏览器中打开 scenarly.com。"
   },
   "layout": {
     "pageFormat": "页面格式",
@@ -765,6 +770,13 @@
       "replaceAnyway": "替换",
       "cancel": "取消",
       "ok": "确定"
+    },
+    "submitToCoverage": {
+      "title": "提交到 Coverage",
+      "done": "你的剧本已进入剧本池。评阅到达后会显示在它的 Coverage 页面上。",
+      "open": "打开 Coverage 页面",
+      "notMember": "Coverage 是 Scenarly 的评阅交换。请先在社区页面加入（只需一分钟），然后回到这里。",
+      "openCommunity": "打开社区"
     }
   },
   "board": {
@@ -877,5 +889,243 @@
     "daysAgo": "{days}天前",
     "monthsAgo": "{months} 个月前",
     "moreThanYearAgo": "1 年前"
+  },
+  "community": {
+    "nav": {
+      "community": "社区",
+      "coverage": "我的 Coverage",
+      "credits": "{count} 点数",
+      "creditsTitle": "你的 Coverage 点数",
+      "backToApp": "我的项目",
+      "submit": "提交剧本",
+      "review": "评阅剧本",
+      "showcase": "展示墙"
+    },
+    "gate": {
+      "signedOutTitle": "登录后进入 Coverage",
+      "signedOutBody": "Coverage 面向 Scenarly 账户。登录或创建账户，即可提交和评阅剧本。",
+      "signIn": "登录",
+      "unverifiedTitle": "请先验证邮箱",
+      "unverifiedBody": "Coverage 向已验证的账户开放。用我们发送到邮箱的链接登录后再回来。",
+      "tooRecentTitle": "就快好了",
+      "tooRecentBody": "Coverage 向注册至少一周的账户开放。你的账户将于 {date} 符合条件。",
+      "joinTitle": "加入 Coverage",
+      "joinBody": "取一个笔名即可加入，并获得 {credits} 点数用于提交你的第一部剧本。评阅默认匿名：只有当你选择为评阅署名时，笔名才会显示。",
+      "penName": "笔名",
+      "penNamePlaceholder": "其他编剧将以此称呼你",
+      "penNameHint": "之后可以修改。",
+      "penNameTooShort": "笔名至少需要 {min} 个字符。",
+      "join": "加入 Coverage",
+      "joining": "加入中…",
+      "joinFailed": "无法加入，请重试。"
+    },
+    "dashboard": {
+      "title": "Coverage",
+      "welcome": "已以 {name} 的身份登录",
+      "balance": "{count} 点数",
+      "submitCard": "提交剧本",
+      "submitCardBody": "上传 PDF，或从 Scenarly 项目的“导出”标签页提交。剧本会留在剧本池中，直到收到三篇评阅。",
+      "submitCost": "需要 {cost} 点数",
+      "reviewCard": "评阅剧本",
+      "reviewCardContinue": "继续你的评阅",
+      "reviewCardBody": "从五部剧本中选一部，阅读并写下你的意见。你有三周时间，一周后即可发送。",
+      "reviewReward": "获得 1 点数",
+      "tabs": {
+        "submissions": "我的剧本",
+        "reviews": "我写的评阅",
+        "credits": "点数"
+      },
+      "noSubmissionsTitle": "尚未提交剧本",
+      "noSubmissionsBody": "提交一部，它就会进入其他编剧抽取的剧本池。",
+      "noReviewsTitle": "尚未写过评阅",
+      "noReviewsBody": "每完成一篇评阅，就能为下一次提交赚得一点数。"
+    },
+    "submissions": {
+      "pages": "{count} 页",
+      "reviewsProgress": "评阅 {count} / {min}",
+      "beingRead": "{count} 位评阅者正在阅读",
+      "statusPooled": "在剧本池中直到 {date}",
+      "statusRetired": "已离开剧本池",
+      "statusShowcaseOnly": "仅展示",
+      "statusRemoved": "已撤回",
+      "submittedOn": "提交于 {date}",
+      "poolStatus": "已收到 {count} / {min} 篇评阅 — 至少在剧本池中保留到 {date}",
+      "retiredStatus": "于 {date} 离开剧本池。评阅仍保留在此。",
+      "proof": "存在证明：SHA-256 {hash}… 登记于 {date}",
+      "viewPdf": "查看 PDF",
+      "hidePdf": "隐藏 PDF",
+      "reviewsTitle": "{count} 篇评阅",
+      "noReviewsTitle": "尚无评阅",
+      "noReviewsBodyPooled": "评阅者拿到剧本后至少一周才能发送意见。评阅到达时你会收到邮件。",
+      "noReviewsBodyRetired": "这部剧本在没有评阅的情况下离开了剧本池。",
+      "dangerTitle": "撤回",
+      "withdrawRefund": "还没有人认领这部剧本：撤回将退还你的 {cost} 点数。",
+      "withdrawNoRefund": "这部剧本已被认领，撤回不会退还点数。进行中的评阅仍会送达。",
+      "withdrawRetired": "撤回会从我们的存储中删除 PDF。已收到的评阅仍可阅读。",
+      "withdraw": "撤回这部剧本",
+      "withdrawYes": "是，撤回",
+      "withdrawing": "撤回中…",
+      "withdrawFailed": "无法撤回，请重试。",
+      "notFound": "该提交不存在或不属于你。"
+    },
+    "submit": {
+      "title": "提交剧本",
+      "subtitle": "上传你希望被评阅的 PDF。提交后即被冻结：之后的修改不会改变它。",
+      "dropTitle": "将 PDF 拖到此处，或点击选择",
+      "dropBody": "仅限 PDF，最大 {mb} MB。",
+      "fileSize": "{mb} MB",
+      "titleLabel": "标题",
+      "titlePlaceholder": "剧本上的标题",
+      "loglineLabel": "故事梗概或简介",
+      "loglinePlaceholder": "评阅者在选择你的剧本之前看到的内容。一到三句话。",
+      "loglineHint": "{count} 个字符（{min}–{max}）",
+      "formatHint": "仅限长片剧本，{min} 至 {max} 页。",
+      "genresLabel": "题材（最多 {max} 个）",
+      "costTitle": "{cost} 点数 — 你有 {balance}",
+      "costBody": "你的剧本会留在剧本池中，直到三位编剧评阅过它，且至少保留一个月。若在有人认领前撤回，全额退还。",
+      "frozenNote": "文件的哈希值和今天的日期（{date}）将被记录，作为这部剧本此刻已存在的证明。",
+      "cancel": "取消",
+      "submit": "以 {cost} 点数提交",
+      "rendering": "正在生成 PDF…",
+      "uploading": "上传中…",
+      "errors": {
+        "notPdf": "请选择 PDF 文件。",
+        "tooLarge": "PDF 超过 {mb} MB。",
+        "noFile": "请先选择 PDF。",
+        "noTitle": "请给剧本起一个标题。",
+        "loglineShort": "故事梗概至少需要 {min} 个字符。",
+        "noGenre": "请至少选择一个题材。",
+        "credits": "提交需要 {cost} 点数；你有 {balance}。评阅一部剧本以赚取更多。",
+        "duplicate": "这份 PDF 已经在 Coverage 中。",
+        "failed": "提交失败，请重试。"
+      }
+    },
+    "offers": {
+      "title": "选择一部剧本评阅",
+      "subtitle": "为你抽取的五部剧本。认领一部后，你有三周时间阅读并写下意见；一周后即可发送。",
+      "pages": "{count} 页",
+      "reviewsSoFar": "{count, plural, =0 {尚无评阅} other {目前 # 篇评阅}}",
+      "claim": "评阅这一部",
+      "unavailable": "已不可用",
+      "reshuffle": "换五部看看",
+      "reshuffleAt": "{time} 后可换一批",
+      "thinPool": "目前剧本池较小；随着编剧提交，会有更多剧本加入。",
+      "emptyTitle": "目前没有可评阅的剧本",
+      "emptyBody": "剧本池中的每一部要么是你的，要么你已经评阅过。请稍后再来。",
+      "claimFailed": "无法认领这部剧本。",
+      "reshuffleFailed": "无法换一批。"
+    },
+    "claim": {
+      "inProgress": "你正在评阅《{title}》",
+      "canSubmitNow": "现在可以发送你的评阅",
+      "canSubmitFrom": "从 {date} 起可以发送你的评阅",
+      "deadlineIn": "剩余 {days} 天",
+      "deadlineOn": "截止 {date}（剩余 {days} 天）",
+      "continue": "继续",
+      "autoSubmittedTag": "自动发送",
+      "submittedBanner": "你的评阅已发送。获得 1 点数。",
+      "releasedBanner": "你已交还剧本。没有点数，也没有处罚。",
+      "goneBanner": "此次认领已结束：评阅已发送，或已过截止日期。"
+    },
+    "review": {
+      "worksWellLabel": "有效之处",
+      "worksWellPlaceholder": "打动人的时刻、人物和选择——以及原因。",
+      "doesNotWorkLabel": "不足之处",
+      "doesNotWorkPlaceholder": "剧本在哪里让你出戏：结构、冲突、对白、清晰度。",
+      "remarksLabel": "其他备注",
+      "remarksPlaceholder": "作者还应该听到的任何内容：可比作品、格式说明、你会尝试的修改。",
+      "wordCount": "{count} / {min} 词",
+      "saving": "保存中…",
+      "savedAt": "已于 {time} 保存",
+      "unsaved": "有未保存的修改",
+      "saveFailed": "无法保存草稿",
+      "signLabel": "为此评阅署名",
+      "signHint": "向作者显示你的笔名。默认关闭：评阅为匿名。",
+      "floorPassed": "一周的等待期已过。准备好后即可发送评阅。",
+      "autoSendNote": "评阅可在一周后发送。如果到 {date} 你保存的草稿足够长，将自动为你发送。",
+      "release": "交还这部剧本",
+      "releaseConfirm": "确定交还？这部剧本不会再向你推荐。",
+      "releaseYes": "交还",
+      "releasing": "交还中…",
+      "releaseFailed": "无法交还剧本。",
+      "submit": "发送评阅",
+      "submitting": "发送中…",
+      "submitFailed": "无法发送评阅。",
+      "opensOn": "{date} 开放"
+    },
+    "reviews": {
+      "reviewerN": "评阅者 {n}",
+      "words": "{count} 词",
+      "autoSubmitted": "自动发送",
+      "worksWellLabel": "有效之处",
+      "doesNotWorkLabel": "不足之处",
+      "remarksLabel": "其他备注",
+      "ratePrompt": "这篇评阅有帮助吗？",
+      "rated": "你对这篇评阅的评价：{rating}",
+      "rateFailed": "无法保存你的评价。",
+      "report": "举报",
+      "reported": "已举报",
+      "reportReason": "你为什么举报这篇评阅？",
+      "reportDetails": "还有什么想告诉我们的（可选）",
+      "reportSend": "发送举报",
+      "reportFailed": "无法发送举报。"
+    },
+    "viewer": {
+      "failed": "无法加载剧本。",
+      "retry": "重试"
+    },
+    "enums": {
+      "formats": {
+        "FEATURE": "长片",
+        "SHORT": "短片",
+        "PILOT": "试播集",
+        "OTHER": "其他"
+      },
+      "genres": {
+        "ACTION": "动作",
+        "ADVENTURE": "冒险",
+        "ANIMATION": "动画",
+        "COMEDY": "喜剧",
+        "CRIME": "犯罪",
+        "DRAMA": "剧情",
+        "FAMILY": "家庭",
+        "FANTASY": "奇幻",
+        "HORROR": "恐怖",
+        "MYSTERY": "悬疑",
+        "ROMANCE": "爱情",
+        "SCIFI": "科幻",
+        "THRILLER": "惊悚",
+        "WESTERN": "西部",
+        "OTHER": "其他"
+      },
+      "ratings": {
+        "USEFUL": "有帮助",
+        "NOT_USEFUL": "没帮助"
+      },
+      "claimStatus": {
+        "ACTIVE": "进行中",
+        "SUBMITTED": "已发送",
+        "EXPIRED": "已过期",
+        "RELEASED": "已交还"
+      },
+      "creditReasons": {
+        "STARTER": "欢迎点数",
+        "SUBMISSION": "提交剧本",
+        "REVIEW_COMPLETED": "完成评阅",
+        "SUBMISSION_REFUND": "提交退款",
+        "ADMIN_ADJUST": "调整"
+      },
+      "reportReasons": {
+        "ABUSIVE": "辱骂或侮辱",
+        "OFF_TOPIC": "与这部剧本无关",
+        "LOW_EFFORT": "敷衍了事",
+        "AI_GENERATED": "看起来像机器生成",
+        "OTHER": "其他"
+      }
+    },
+    "showcase": {
+      "comingSoonTitle": "展示墙即将上线",
+      "comingSoonBody": "作者选择公开分享的剧本公共墙。尚未开放。"
+    }
   }
 }

@@ -1,0 +1,37 @@
+/* Nav pills reuse ProjectPageContainer's .action_btn; this only adds what an
+   anchor needs on top of a button (no underline) plus the active state and the
+   two small extras under them. */
+
+.link {
+    text-decoration: none;
+}
+
+.active {
+    border-color: var(--tertiary);
+    background-color: var(--secondary);
+    color: var(--primary-text);
+}
+
+.divider {
+    height: 1px;
+    margin: 6px 8px;
+    background: var(--separator);
+}
+
+/* The actions box (.sidebar_actions) must fill the column for margin-top: auto
+   to push this to the bottom; LibrarySidebar sets that. */
+.credits {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: auto;
+    padding: 12px 0 calc(16px + var(--safe-bottom));
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+}
+
+.creditsIcon {
+    color: var(--warning);
+}
