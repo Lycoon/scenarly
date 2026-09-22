@@ -20,7 +20,7 @@
 
 /* The actions box (.sidebar_actions) must fill the column for margin-top: auto
    to push this to the bottom; LibrarySidebar sets that. */
-.credits {
+.tickets {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -32,6 +32,6 @@
     color: var(--secondary-text);
 }
 
-.creditsIcon {
+.ticketsIcon {
     color: var(--warning);
 }

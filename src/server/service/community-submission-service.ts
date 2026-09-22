@@ -13,7 +13,7 @@
  */
 
 import * as S3 from "@src/lib/s3";
-import * as CreditService from "@src/server/service/community-credit-service";
+import * as TicketService from "@src/server/service/community-ticket-service";
 import prisma from "@src/server/db";
 import { sha256Hex } from "@src/lib/assets/asset-hash";
 import { inspectPdf } from "@src/lib/community/pdf";
@@ -107,7 +107,7 @@ export async function createSubmission(authorId: string, bytes: Uint8Array, inpu
             },
             tx,
         );
-        if (pooled) await CreditService.chargeSubmission(authorId, created.id, tx);
+        if (pooled) await TicketService.chargeSubmission(authorId, created.id, tx);
 
         // Upload inside the transaction: a failed put rolls the charge back.
         const ok = await S3.putObject(submissionObjectKey(created.id), bytes, "application/pdf");
@@ -192,7 +192,7 @@ export async function withdraw(submissionId: string, authorId: string, now = new
 
         if (neverClaimed || !pooled) {
             await submissions.updateStatus(submissionId, CommunitySubmissionStatus.REMOVED, {}, tx);
-            if (pooled) await CreditService.refundSubmission(authorId, submissionId, SUBMISSION_COST, tx);
+            if (pooled) await TicketService.refundSubmission(authorId, submissionId, SUBMISSION_COST, tx);
         } else {
             await submissions.updateStatus(submissionId, CommunitySubmissionStatus.RETIRED, { retiredAt: now }, tx);
         }

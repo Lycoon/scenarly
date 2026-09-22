@@ -51,7 +51,7 @@ export const sendReviewReceivedEmail = async (email: string, submissionTitle: st
 /** Coverage: the reviewer's claim expires in about two days. */
 export const sendClaimExpiringEmail = async (email: string, submissionTitle: string, deadline: Date) => {
     const link = `${BASE_URL}/community/coverage/review`;
-    const content = `Your review of '${submissionTitle}' is due on ${deadline.toUTCString()}. Submit it before then to earn your credit; after the deadline the claim expires and this script cannot be claimed again.`;
+    const content = `Your review of '${submissionTitle}' is due on ${deadline.toUTCString()}. Submit it before then to earn your ticket; after the deadline the claim expires and this script cannot be claimed again.`;
 
     sendFormattedEmail(email, "Review due soon", "Your review is due soon", content, "Finish the review", link);
 };
@@ -59,7 +59,7 @@ export const sendClaimExpiringEmail = async (email: string, submissionTitle: str
 /** Coverage: a saved draft was sent automatically once the 7-day floor passed. */
 export const sendDraftAutoSubmittedEmail = async (email: string, submissionTitle: string) => {
     const link = `${BASE_URL}/community/coverage`;
-    const content = `Your saved review of '${submissionTitle}' was sent to its author now that the 7-day waiting period is over, and your credit has been added. You can pick another script whenever you like.`;
+    const content = `Your saved review of '${submissionTitle}' was sent to its author now that the 7-day waiting period is over, and your ticket has been added. You can pick another script whenever you like.`;
 
     sendFormattedEmail(email, "Review sent", "Your review was sent", content, "Open Coverage", link);
 };

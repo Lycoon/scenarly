@@ -1,4 +1,4 @@
-import { CommunityCreditReason, Prisma } from "../../generated/client/client";
+import { CommunityTicketReason, Prisma } from "../../generated/client/client";
 import prisma from "../db";
 
 /** Either the singleton client or the client of an interactive transaction. */
@@ -18,7 +18,7 @@ export class CommunityProfileRepository {
     }
 
     /**
-     * Serialise every credit movement of one user: a row lock on the profile
+     * Serialise every ticket movement of one user: a row lock on the profile
      * held until the surrounding transaction commits. Two concurrent charges
      * then read the ledger one after the other and the second sees the first.
      */
@@ -27,21 +27,21 @@ export class CommunityProfileRepository {
     }
 
     async balance(userId: string, db: Db = prisma): Promise<number> {
-        const agg = await db.communityCreditEntry.aggregate({ where: { userId }, _sum: { delta: true } });
+        const agg = await db.communityTicketEntry.aggregate({ where: { userId }, _sum: { delta: true } });
         return agg._sum.delta ?? 0;
     }
 
     /** Append a ledger row. Throws P2002 if `(userId, reason, refId)` already exists. */
-    appendCredit(userId: string, delta: number, reason: CommunityCreditReason, refId: string, db: Db = prisma) {
-        return db.communityCreditEntry.create({ data: { userId, delta, reason, refId } });
+    appendTicket(userId: string, delta: number, reason: CommunityTicketReason, refId: string, db: Db = prisma) {
+        return db.communityTicketEntry.create({ data: { userId, delta, reason, refId } });
     }
 
-    hasCredit(userId: string, reason: CommunityCreditReason, refId: string, db: Db = prisma) {
-        return db.communityCreditEntry.findUnique({ where: { userId_reason_refId: { userId, reason, refId } } });
+    hasTicket(userId: string, reason: CommunityTicketReason, refId: string, db: Db = prisma) {
+        return db.communityTicketEntry.findUnique({ where: { userId_reason_refId: { userId, reason, refId } } });
     }
 
-    listCredits(userId: string, take: number, cursor?: string) {
-        return prisma.communityCreditEntry.findMany({
+    listTickets(userId: string, take: number, cursor?: string) {
+        return prisma.communityTicketEntry.findMany({
             where: { userId },
             orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             take,

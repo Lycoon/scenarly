@@ -8,7 +8,7 @@ import Loading from "@components/utils/Loading";
 import { DashboardContext } from "@src/context/DashboardContext";
 import { useCommunityMe } from "@src/lib/community/hooks";
 import { isApiError, joinCommunity } from "@src/lib/community/requests";
-import { PEN_NAME_MAX_LENGTH, PEN_NAME_MIN_LENGTH, STARTER_CREDITS } from "@src/lib/community/constants";
+import { PEN_NAME_MAX_LENGTH, PEN_NAME_MIN_LENGTH, STARTER_TICKETS } from "@src/lib/community/constants";
 
 import styles from "./Community.module.css";
 import { formatDate } from "./format";
@@ -86,7 +86,7 @@ const CoverageGate = ({ children }: { children: ReactNode }) => {
     return (
         <Gated>
             <span className={styles.noticeTitle}>{t("joinTitle")}</span>
-            <p className={styles.muted}>{t("joinBody", { credits: STARTER_CREDITS })}</p>
+            <p className={styles.muted}>{t("joinBody", { tickets: STARTER_TICKETS })}</p>
             <div className={styles.field} style={{ width: "100%", maxWidth: 360 }}>
                 <label className={styles.label} htmlFor="community-pen-name">
                     {t("penName")}

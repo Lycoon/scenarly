@@ -580,7 +580,7 @@
     "exportingProgress": "Exportieren ({progress}%)",
     "communityLabel": "Community",
     "submitToCoverage": "Bei Coverage einreichen",
-    "submitToCoverageDesc": "Exportiert dieses Drehbuch als PDF und stellt es anderen Autoren zur Besprechung bereit (3 Credits).",
+    "submitToCoverageDesc": "Exportiert dieses Drehbuch als PDF und stellt es anderen Autoren zur Besprechung bereit (3 Tickets).",
     "submitToCoverageDescDesktop": "Coverage läuft in der Web-App. Öffnet scenarly.com in deinem Browser."
   },
   "layout": {
@@ -894,9 +894,9 @@
   "community": {
     "nav": {
       "community": "Community",
-      "coverage": "Mein Coverage",
-      "credits": "{count, plural, one {# Credit} other {# Credits}}",
-      "creditsTitle": "Deine Coverage-Credits",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# Ticket} other {# Tickets}}",
+      "ticketsTitle": "Deine Coverage-Tickets",
       "backToApp": "Meine Projekte",
       "submit": "Drehbuch einreichen",
       "review": "Drehbuch besprechen",
@@ -911,7 +911,7 @@
       "tooRecentTitle": "Fast geschafft",
       "tooRecentBody": "Coverage öffnet sich für Konten, die mindestens eine Woche alt sind. Deins ist ab dem {date} dabei.",
       "joinTitle": "Coverage beitreten",
-      "joinBody": "Wähle einen Künstlernamen und du bist drin, mit {credits} Credits für dein erstes Drehbuch. Besprechungen sind standardmäßig anonym: Dein Künstlername erscheint nur, wenn du eine Besprechung unterschreibst.",
+      "joinBody": "Wähle einen Künstlernamen und du bist drin, mit {tickets} Tickets für dein erstes Drehbuch. Besprechungen sind standardmäßig anonym: Dein Künstlername erscheint nur, wenn du eine Besprechung unterschreibst.",
       "penName": "Künstlername",
       "penNamePlaceholder": "So kennen dich andere Autoren",
       "penNameHint": "Kann später geändert werden.",
@@ -922,24 +922,23 @@
     },
     "dashboard": {
       "title": "Coverage",
-      "welcome": "Angemeldet als {name}",
-      "balance": "{count, plural, one {# Credit} other {# Credits}}",
+      "balance": "{count, plural, one {# Ticket} other {# Tickets}}",
       "submitCard": "Drehbuch einreichen",
       "submitCardBody": "Lade ein PDF hoch oder reiche ein Scenarly-Projekt über seinen Export-Tab ein. Es bleibt im Pool, bis es drei Besprechungen hat.",
-      "submitCost": "Kostet {cost} Credits",
+      "submitCost": "Braucht {cost} Tickets",
       "reviewCard": "Drehbuch besprechen",
       "reviewCardContinue": "Besprechung fortsetzen",
       "reviewCardBody": "Wähle eines von fünf Drehbüchern, lies es, schreib deine Anmerkungen. Du hast drei Wochen und kannst nach einer abschicken.",
-      "reviewReward": "Bringt 1 Credit",
+      "reviewReward": "Bringt 1 Ticket",
       "tabs": {
         "submissions": "Meine Drehbücher",
         "reviews": "Meine Besprechungen",
-        "credits": "Credits"
+        "tickets": "Tickets"
       },
       "noSubmissionsTitle": "Noch kein Drehbuch eingereicht",
       "noSubmissionsBody": "Reiche eines ein und es kommt in den Pool, aus dem andere Autoren ziehen.",
       "noReviewsTitle": "Noch keine Besprechung geschrieben",
-      "noReviewsBody": "Jede abgeschlossene Besprechung bringt einen Credit für deine nächste Einreichung."
+      "noReviewsBody": "Jede abgeschlossene Besprechung bringt ein Ticket für deine nächste Einreichung."
     },
     "submissions": {
       "pages": "{count, plural, one {# Seite} other {# Seiten}}",
@@ -960,8 +959,8 @@
       "noReviewsBodyPooled": "Besprechende haben ein Drehbuch mindestens eine Woche, bevor sie ihre Anmerkungen schicken können. Du bekommst eine E-Mail, sobald eine eintrifft.",
       "noReviewsBodyRetired": "Dieses Drehbuch hat den Pool ohne Besprechung verlassen.",
       "dangerTitle": "Zurückziehen",
-      "withdrawRefund": "Niemand hat dieses Drehbuch bisher übernommen: Zurückziehen erstattet deine {cost} Credits.",
-      "withdrawNoRefund": "Dieses Drehbuch wurde übernommen, daher werden die Credits beim Zurückziehen nicht erstattet. Laufende Besprechungen treffen trotzdem ein.",
+      "withdrawRefund": "Niemand hat dieses Drehbuch bisher übernommen: Zurückziehen gibt dir deine {cost} Tickets zurück.",
+      "withdrawNoRefund": "Dieses Drehbuch wurde übernommen, daher gibt das Zurückziehen die Tickets nicht zurück. Laufende Besprechungen treffen trotzdem ein.",
       "withdrawRetired": "Zurückziehen entfernt das PDF aus unserem Speicher. Erhaltene Besprechungen bleiben lesbar.",
       "withdraw": "Dieses Drehbuch zurückziehen",
       "withdrawYes": "Ja, zurückziehen",
@@ -982,11 +981,11 @@
       "loglineHint": "{count} Zeichen ({min}–{max})",
       "formatHint": "Nur Spielfilm-Drehbücher, {min} bis {max} Seiten.",
       "genresLabel": "Genres (bis zu {max})",
-      "costTitle": "{cost} Credits — du hast {balance}",
-      "costBody": "Dein Drehbuch bleibt im Pool, bis drei Autoren es besprochen haben, und mindestens einen Monat. Volle Erstattung, wenn du es zurückziehst, bevor jemand es übernimmt.",
+      "costTitle": "{cost} Tickets — du hast {balance}",
+      "costBody": "Dein Drehbuch bleibt im Pool, bis drei Autoren es besprochen haben, und mindestens einen Monat. Du bekommst alle zurück, wenn du es zurückziehst, bevor jemand es übernimmt.",
       "frozenNote": "Der Hash der Datei und das heutige Datum ({date}) werden als Nachweis gespeichert, dass dieses Drehbuch jetzt existierte.",
       "cancel": "Abbrechen",
-      "submit": "Für {cost} Credits einreichen",
+      "submit": "Mit {cost} Tickets einreichen",
       "rendering": "PDF wird erzeugt…",
       "uploading": "Wird hochgeladen…",
       "errors": {
@@ -996,7 +995,7 @@
         "noTitle": "Gib dem Drehbuch einen Titel.",
         "loglineShort": "Die Logline braucht mindestens {min} Zeichen.",
         "noGenre": "Wähle mindestens ein Genre.",
-        "credits": "Einreichen kostet {cost} Credits; du hast {balance}. Besprich ein Drehbuch, um mehr zu verdienen.",
+        "tickets": "Einreichen braucht {cost} Tickets; du hast {balance}. Besprich ein Drehbuch, um mehr zu bekommen.",
         "duplicate": "Genau dieses PDF ist bereits in Coverage.",
         "failed": "Einreichen fehlgeschlagen. Bitte erneut versuchen."
       }
@@ -1024,8 +1023,8 @@
       "deadlineOn": "Fällig am {date} ({days, plural, one {noch # Tag} other {noch # Tage}})",
       "continue": "Fortsetzen",
       "autoSubmittedTag": "Automatisch gesendet",
-      "submittedBanner": "Deine Besprechung wurde gesendet. Du hast 1 Credit verdient.",
-      "releasedBanner": "Du hast das Drehbuch zurückgegeben. Kein Credit, keine Strafe.",
+      "submittedBanner": "Deine Besprechung wurde gesendet. Du hast 1 Ticket bekommen.",
+      "releasedBanner": "Du hast das Drehbuch zurückgegeben. Kein Ticket, keine Strafe.",
       "goneBanner": "Diese Übernahme ist beendet: Die Besprechung wurde bereits gesendet oder die Frist ist abgelaufen."
     },
     "review": {
@@ -1109,11 +1108,11 @@
         "EXPIRED": "Abgelaufen",
         "RELEASED": "Zurückgegeben"
       },
-      "creditReasons": {
-        "STARTER": "Willkommens-Credits",
+      "ticketReasons": {
+        "STARTER": "Willkommens-Tickets",
         "SUBMISSION": "Drehbuch eingereicht",
         "REVIEW_COMPLETED": "Besprechung abgeschlossen",
-        "SUBMISSION_REFUND": "Einreichung erstattet",
+        "SUBMISSION_REFUND": "Tickets zurückgegeben",
         "ADMIN_ADJUST": "Anpassung"
       },
       "reportReasons": {

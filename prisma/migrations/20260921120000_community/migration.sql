@@ -8,7 +8,7 @@ CREATE TYPE "CommunityGenre" AS ENUM ('ACTION', 'ADVENTURE', 'ANIMATION', 'COMED
 CREATE TYPE "CommunitySubmissionStatus" AS ENUM ('POOLED', 'RETIRED', 'SHOWCASE_ONLY', 'REMOVED');
 
 -- CreateEnum
-CREATE TYPE "CommunityCreditReason" AS ENUM ('STARTER', 'SUBMISSION', 'REVIEW_COMPLETED', 'SUBMISSION_REFUND', 'ADMIN_ADJUST');
+CREATE TYPE "CommunityTicketReason" AS ENUM ('STARTER', 'SUBMISSION', 'REVIEW_COMPLETED', 'SUBMISSION_REFUND', 'ADMIN_ADJUST');
 
 -- CreateEnum
 CREATE TYPE "CommunityClaimStatus" AS ENUM ('ACTIVE', 'SUBMITTED', 'EXPIRED', 'RELEASED');
@@ -40,15 +40,15 @@ CREATE TABLE "CommunityProfile" (
 );
 
 -- CreateTable
-CREATE TABLE "CommunityCreditEntry" (
+CREATE TABLE "CommunityTicketEntry" (
     "id" TEXT NOT NULL,
     "delta" INTEGER NOT NULL,
-    "reason" "CommunityCreditReason" NOT NULL,
+    "reason" "CommunityTicketReason" NOT NULL,
     "refId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "userId" TEXT NOT NULL,
 
-    CONSTRAINT "CommunityCreditEntry_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "CommunityTicketEntry_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -167,10 +167,10 @@ CREATE TABLE "CommunityUpvote" (
 CREATE UNIQUE INDEX "CommunityProfile_activeClaimId_key" ON "CommunityProfile"("activeClaimId");
 
 -- CreateIndex
-CREATE INDEX "CommunityCreditEntry_userId_createdAt_idx" ON "CommunityCreditEntry"("userId", "createdAt");
+CREATE INDEX "CommunityTicketEntry_userId_createdAt_idx" ON "CommunityTicketEntry"("userId", "createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CommunityCreditEntry_userId_reason_refId_key" ON "CommunityCreditEntry"("userId", "reason", "refId");
+CREATE UNIQUE INDEX "CommunityTicketEntry_userId_reason_refId_key" ON "CommunityTicketEntry"("userId", "reason", "refId");
 
 -- CreateIndex
 CREATE INDEX "CommunitySubmission_sha256_idx" ON "CommunitySubmission"("sha256");
@@ -215,7 +215,7 @@ CREATE INDEX "CommunityShowcaseEntry_unpublishedAt_upvoteCount_idx" ON "Communit
 ALTER TABLE "CommunityProfile" ADD CONSTRAINT "CommunityProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CommunityCreditEntry" ADD CONSTRAINT "CommunityCreditEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "CommunityProfile"("userId") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CommunityTicketEntry" ADD CONSTRAINT "CommunityTicketEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "CommunityProfile"("userId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CommunitySubmission" ADD CONSTRAINT "CommunitySubmission_sourceProjectId_fkey" FOREIGN KEY ("sourceProjectId") REFERENCES "Project"("id") ON DELETE SET NULL ON UPDATE CASCADE;

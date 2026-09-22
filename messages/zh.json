@@ -579,7 +579,7 @@
     "exportingProgress": "正在导出 ({progress}%)",
     "communityLabel": "社区",
     "submitToCoverage": "提交到 Coverage",
-    "submitToCoverageDesc": "将此剧本导出为 PDF，交由其他编剧评阅（3 点数）。",
+    "submitToCoverageDesc": "将此剧本导出为 PDF，交由其他编剧评阅（3 张券）。",
     "submitToCoverageDescDesktop": "Coverage 在网页版中运行。将在浏览器中打开 scenarly.com。"
   },
   "layout": {
@@ -893,9 +893,9 @@
   "community": {
     "nav": {
       "community": "社区",
-      "coverage": "我的 Coverage",
-      "credits": "{count} 点数",
-      "creditsTitle": "你的 Coverage 点数",
+      "coverage": "Coverage",
+      "tickets": "{count} 张券",
+      "ticketsTitle": "你的 Coverage 换阅券",
       "backToApp": "我的项目",
       "submit": "提交剧本",
       "review": "评阅剧本",
@@ -910,7 +910,7 @@
       "tooRecentTitle": "就快好了",
       "tooRecentBody": "Coverage 向注册至少一周的账户开放。你的账户将于 {date} 符合条件。",
       "joinTitle": "加入 Coverage",
-      "joinBody": "取一个笔名即可加入，并获得 {credits} 点数用于提交你的第一部剧本。评阅默认匿名：只有当你选择为评阅署名时，笔名才会显示。",
+      "joinBody": "取一个笔名即可加入，并获得 {tickets} 张券用于提交你的第一部剧本。评阅默认匿名：只有当你选择为评阅署名时，笔名才会显示。",
       "penName": "笔名",
       "penNamePlaceholder": "其他编剧将以此称呼你",
       "penNameHint": "之后可以修改。",
@@ -921,24 +921,23 @@
     },
     "dashboard": {
       "title": "Coverage",
-      "welcome": "已以 {name} 的身份登录",
-      "balance": "{count} 点数",
+      "balance": "{count} 张券",
       "submitCard": "提交剧本",
       "submitCardBody": "上传 PDF，或从 Scenarly 项目的“导出”标签页提交。剧本会留在剧本池中，直到收到三篇评阅。",
-      "submitCost": "需要 {cost} 点数",
+      "submitCost": "使用 {cost} 张券",
       "reviewCard": "评阅剧本",
       "reviewCardContinue": "继续你的评阅",
       "reviewCardBody": "从五部剧本中选一部，阅读并写下你的意见。你有三周时间，一周后即可发送。",
-      "reviewReward": "获得 1 点数",
+      "reviewReward": "获得 1 张券",
       "tabs": {
         "submissions": "我的剧本",
         "reviews": "我写的评阅",
-        "credits": "点数"
+        "tickets": "换阅券"
       },
       "noSubmissionsTitle": "尚未提交剧本",
       "noSubmissionsBody": "提交一部，它就会进入其他编剧抽取的剧本池。",
       "noReviewsTitle": "尚未写过评阅",
-      "noReviewsBody": "每完成一篇评阅，就能为下一次提交赚得一点数。"
+      "noReviewsBody": "每完成一篇评阅，就能为下一次提交换得一张券。"
     },
     "submissions": {
       "pages": "{count} 页",
@@ -959,8 +958,8 @@
       "noReviewsBodyPooled": "评阅者拿到剧本后至少一周才能发送意见。评阅到达时你会收到邮件。",
       "noReviewsBodyRetired": "这部剧本在没有评阅的情况下离开了剧本池。",
       "dangerTitle": "撤回",
-      "withdrawRefund": "还没有人认领这部剧本：撤回将退还你的 {cost} 点数。",
-      "withdrawNoRefund": "这部剧本已被认领，撤回不会退还点数。进行中的评阅仍会送达。",
+      "withdrawRefund": "还没有人认领这部剧本：撤回会把你的 {cost} 张券还给你。",
+      "withdrawNoRefund": "这部剧本已被认领，撤回不会退还换阅券。进行中的评阅仍会送达。",
       "withdrawRetired": "撤回会从我们的存储中删除 PDF。已收到的评阅仍可阅读。",
       "withdraw": "撤回这部剧本",
       "withdrawYes": "是，撤回",
@@ -981,11 +980,11 @@
       "loglineHint": "{count} 个字符（{min}–{max}）",
       "formatHint": "仅限长片剧本，{min} 至 {max} 页。",
       "genresLabel": "题材（最多 {max} 个）",
-      "costTitle": "{cost} 点数 — 你有 {balance}",
-      "costBody": "你的剧本会留在剧本池中，直到三位编剧评阅过它，且至少保留一个月。若在有人认领前撤回，全额退还。",
+      "costTitle": "{cost} 张券 — 你有 {balance} 张",
+      "costBody": "你的剧本会留在剧本池中，直到三位编剧评阅过它，且至少保留一个月。若在有人认领前撤回，全部归还。",
       "frozenNote": "文件的哈希值和今天的日期（{date}）将被记录，作为这部剧本此刻已存在的证明。",
       "cancel": "取消",
-      "submit": "以 {cost} 点数提交",
+      "submit": "用 {cost} 张券提交",
       "rendering": "正在生成 PDF…",
       "uploading": "上传中…",
       "errors": {
@@ -995,7 +994,7 @@
         "noTitle": "请给剧本起一个标题。",
         "loglineShort": "故事梗概至少需要 {min} 个字符。",
         "noGenre": "请至少选择一个题材。",
-        "credits": "提交需要 {cost} 点数；你有 {balance}。评阅一部剧本以赚取更多。",
+        "tickets": "提交需要 {cost} 张券；你有 {balance} 张。评阅一部剧本即可换得更多。",
         "duplicate": "这份 PDF 已经在 Coverage 中。",
         "failed": "提交失败，请重试。"
       }
@@ -1023,8 +1022,8 @@
       "deadlineOn": "截止 {date}（剩余 {days} 天）",
       "continue": "继续",
       "autoSubmittedTag": "自动发送",
-      "submittedBanner": "你的评阅已发送。获得 1 点数。",
-      "releasedBanner": "你已交还剧本。没有点数，也没有处罚。",
+      "submittedBanner": "你的评阅已发送。获得 1 张券。",
+      "releasedBanner": "你已交还剧本。没有换阅券，也没有处罚。",
       "goneBanner": "此次认领已结束：评阅已发送，或已过截止日期。"
     },
     "review": {
@@ -1108,11 +1107,11 @@
         "EXPIRED": "已过期",
         "RELEASED": "已交还"
       },
-      "creditReasons": {
-        "STARTER": "欢迎点数",
+      "ticketReasons": {
+        "STARTER": "欢迎换阅券",
         "SUBMISSION": "提交剧本",
         "REVIEW_COMPLETED": "完成评阅",
-        "SUBMISSION_REFUND": "提交退款",
+        "SUBMISSION_REFUND": "换阅券归还",
         "ADMIN_ADJUST": "调整"
       },
       "reportReasons": {

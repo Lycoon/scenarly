@@ -1,8 +1,8 @@
-/* Width of the permanent left sidebar on desktop. The main content reserves this
- * much space; the sidebar itself is fixed-positioned so it can rise over the
- * navbar (which sits at z-index 50). */
+/* The permanent left sidebar on desktop is --projects-sidebar-width wide (set in
+ * globals.css, since the home navbar outside this layout has to clear it too).
+ * The main content reserves that much space; the sidebar itself is fixed-
+ * positioned so it can rise over the navbar (which sits at z-index 50). */
 .layout {
-    --projects-sidebar-width: 260px;
     /* Shared column template so the header row and every ProjectItem line up.
      * Cascades into ProjectItem (a descendant) which reads the same var. */
     /* The storage column carries its label plus, on a shared project, the
@@ -143,7 +143,7 @@
     flex-direction: column;
     gap: 8px;
     /* Fills the rest of the column so a child with margin-top: auto (the
-       Community credit line) can sit at the bottom; the pills stay at the top. */
+       Community ticket line) can sit at the bottom; the pills stay at the top. */
     flex: 1;
     min-height: 0;
     /* Matches the list's top padding so the buttons and the list header line up. */

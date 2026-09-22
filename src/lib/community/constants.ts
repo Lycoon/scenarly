@@ -2,19 +2,19 @@
  * Community (Coverage + Showcase) tunables.
  *
  * Shared by the client (form validation, countdowns, copy) and the server
- * (the source of truth). Plain constants — tune here. The credit economy is
+ * (the source of truth). Plain constants — tune here. The ticket economy is
  * closed on purpose: the only mints are the one-time starter grant and a
  * completed review, so every submission is backed by roughly three reviews.
  */
 
 import type { CommunityFormat } from "@src/generated/client/browser";
 
-/** Credits a submission costs. */
+/** Tickets a submission uses. */
 export const SUBMISSION_COST = 3;
-/** Credits a completed review earns. */
+/** Tickets a completed review earns. */
 export const REVIEW_REWARD = 1;
-/** Credits granted once, at join. */
-export const STARTER_CREDITS = 3;
+/** Tickets granted once, at join. */
+export const STARTER_TICKETS = 3;
 
 /** Scripts shown per offer set. */
 export const OFFER_SIZE = 5;
@@ -41,7 +41,7 @@ export const MAX_PDF_BYTES = 25 * 1024 ** 2; // 25 MB
 
 /**
  * Coverage takes feature-length screenplays only, so every submission asks
- * reviewers for comparable work and every review earns the same credit.
+ * reviewers for comparable work and every review earns the same ticket.
  * Shorts, pilots and the rest can still go to Showcase.
  */
 export const COVERAGE_FORMAT: CommunityFormat = "FEATURE";

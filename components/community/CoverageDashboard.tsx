@@ -6,13 +6,13 @@ import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
 
 import Loading from "@components/utils/Loading";
-import { useCommunityMe, useCredits, useEndedClaims, useMySubmissions } from "@src/lib/community/hooks";
+import { useCommunityMe, useTickets, useEndedClaims, useMySubmissions } from "@src/lib/community/hooks";
 
 import styles from "./Community.module.css";
 import SubmissionCard from "./SubmissionCard";
 import { daysUntil, formatDate } from "./format";
 
-type Tab = "submissions" | "reviews" | "credits";
+type Tab = "submissions" | "reviews" | "tickets";
 
 /** `/community/coverage`: balance, the claim in progress, and the member's history in three tabs. */
 const CoverageDashboard = () => {
@@ -23,7 +23,7 @@ const CoverageDashboard = () => {
     const [tab, setTab] = useState<Tab>("submissions");
     const { submissions, isLoading: loadingSubmissions } = useMySubmissions(tab === "submissions");
     const { claims, isLoading: loadingClaims } = useEndedClaims(tab === "reviews");
-    const { entries, isLoading: loadingCredits } = useCredits(tab === "credits");
+    const { entries, isLoading: loadingTickets } = useTickets(tab === "tickets");
 
     if (!me?.profile) return null;
     const claim = me.activeClaim;
@@ -31,10 +31,7 @@ const CoverageDashboard = () => {
     return (
         <div className={styles.page}>
             <div className={styles.pageInner}>
-                <div className={styles.section} style={{ gap: 6 }}>
-                    <h1 className={styles.pageTitle}>{t("title")}</h1>
-                    <p className={styles.pageSubtitle}>{t("welcome", { name: me.profile.penName })}</p>
-                </div>
+                <h1 className={styles.pageTitle}>{t("title")}</h1>
 
                 {claim && (
                     <div className={styles.banner}>
@@ -57,7 +54,7 @@ const CoverageDashboard = () => {
 
                 <div className={styles.section}>
                     <div className={styles.row}>
-                        {(["submissions", "reviews", "credits"] as Tab[]).map((id) => (
+                        {(["submissions", "reviews", "tickets"] as Tab[]).map((id) => (
                             <button
                                 key={id}
                                 className={`${styles.btn} ${tab === id ? "" : styles.btnOutline}`}
@@ -108,14 +105,14 @@ const CoverageDashboard = () => {
                             </div>
                         ))}
 
-                    {tab === "credits" &&
-                        (loadingCredits ? (
+                    {tab === "tickets" &&
+                        (loadingTickets ? (
                             <Loading />
                         ) : (
                             <div className={styles.card} style={{ gap: 8 }}>
                                 {entries?.map((e) => (
                                     <div key={e.id} className={styles.row} style={{ justifyContent: "space-between" }}>
-                                        <span>{tEnum(`creditReasons.${e.reason}`)}</span>
+                                        <span>{tEnum(`ticketReasons.${e.reason}`)}</span>
                                         <span className={styles.muted}>{formatDate(e.createdAt)}</span>
                                         <span style={{ fontWeight: 600, color: e.delta > 0 ? "var(--success)" : "var(--primary-text)" }}>
                                             {e.delta > 0 ? `+${e.delta}` : e.delta}

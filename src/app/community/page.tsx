@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** `/community` has no page of its own: Coverage is the front door. */
+/** `/community` has no page of its own: Showcase is the front door. */
 export default function CommunityPage() {
-    redirect("/community/coverage");
+    redirect("/community/showcase");
 }

@@ -76,7 +76,7 @@ const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitte
         if (!title.trim()) return t("errors.noTitle");
         if (logline.trim().length < LOGLINE_MIN_LENGTH) return t("errors.loglineShort", { min: LOGLINE_MIN_LENGTH });
         if (genres.length === 0) return t("errors.noGenre");
-        if (!canAfford) return t("errors.credits", { cost: SUBMISSION_COST, balance });
+        if (!canAfford) return t("errors.tickets", { cost: SUBMISSION_COST, balance });
         return null;
     };
 
@@ -103,7 +103,7 @@ const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitte
             onSubmitted(created.id);
         } catch (e) {
             if (isApiError(e) && e.code === "DUPLICATE_PDF") setError(t("errors.duplicate"));
-            else if (isApiError(e) && e.code === "INSUFFICIENT_CREDITS") setError(t("errors.credits", { cost: SUBMISSION_COST, balance }));
+            else if (isApiError(e) && e.code === "INSUFFICIENT_TICKETS") setError(t("errors.tickets", { cost: SUBMISSION_COST, balance }));
             else if (isApiError(e)) setError(e.message);
             else setError(t("errors.failed"));
         } finally {

@@ -6,6 +6,7 @@ import HomeNavbar from "@components/navbar/HomeNavbar";
 import DashboardModal from "@components/dashboard/DashboardModal";
 import Loading from "@components/utils/Loading";
 import CommunitySidebar from "./CommunitySidebar";
+import CommunityTabs from "./CommunityTabs";
 
 import page from "@components/projects/ProjectPageContainer.module.css";
 
@@ -21,7 +22,7 @@ const CommunityShell = ({ children }: { children: ReactNode }) => {
 
     return (
         <Suspense fallback={<Loading />}>
-            <HomeNavbar onToggleSidebar={() => setSidebarOpen((open) => !open)} />
+            <HomeNavbar onToggleSidebar={() => setSidebarOpen((open) => !open)} nav={<CommunityTabs />} />
             <div className={page.layout}>
                 <CommunitySidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
                 <main className={page.main}>{children}</main>

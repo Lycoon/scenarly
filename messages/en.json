@@ -579,7 +579,7 @@
     "exportingProgress": "Exporting ({progress}%)",
     "communityLabel": "Community",
     "submitToCoverage": "Submit to Coverage",
-    "submitToCoverageDesc": "Export this script as a PDF and put it up for review by other writers (3 credits).",
+    "submitToCoverageDesc": "Export this script as a PDF and put it up for review by other writers (3 tickets).",
     "submitToCoverageDescDesktop": "Coverage runs in the web app. Opens scenarly.com in your browser."
   },
   "layout": {
@@ -893,9 +893,9 @@
   "community": {
     "nav": {
       "community": "Community",
-      "coverage": "My Coverage",
-      "credits": "{count, plural, one {# credit} other {# credits}}",
-      "creditsTitle": "Your Coverage credits",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# ticket} other {# tickets}}",
+      "ticketsTitle": "Your Coverage tickets",
       "backToApp": "My projects",
       "submit": "Submit a script",
       "review": "Review a script",
@@ -910,7 +910,7 @@
       "tooRecentTitle": "Almost there",
       "tooRecentBody": "Coverage opens to accounts that are at least a week old. Yours qualifies on {date}.",
       "joinTitle": "Join Coverage",
-      "joinBody": "Pick a pen name and you're in, with {credits} credits to submit your first script. Reviews are blind by default: your pen name only shows when you choose to sign a review.",
+      "joinBody": "Pick a pen name and you're in, with {tickets} tickets to submit your first script. Reviews are blind by default: your pen name only shows when you choose to sign a review.",
       "penName": "Pen name",
       "penNamePlaceholder": "How other writers will know you",
       "penNameHint": "You can change it later.",
@@ -921,24 +921,23 @@
     },
     "dashboard": {
       "title": "Coverage",
-      "welcome": "Signed in as {name}",
-      "balance": "{count, plural, one {# credit} other {# credits}}",
+      "balance": "{count, plural, one {# ticket} other {# tickets}}",
       "submitCard": "Submit a screenplay",
       "submitCardBody": "Upload a PDF, or submit a Scenarly project from its Export tab. It stays in the pool until it has three reviews.",
-      "submitCost": "Costs {cost} credits",
+      "submitCost": "Uses {cost} tickets",
       "reviewCard": "Review a screenplay",
       "reviewCardContinue": "Continue your review",
       "reviewCardBody": "Pick one of five scripts, read it, write your notes. You have three weeks, and can send them after one.",
-      "reviewReward": "Earns 1 credit",
+      "reviewReward": "Earns 1 ticket",
       "tabs": {
         "submissions": "My scripts",
         "reviews": "Reviews I wrote",
-        "credits": "Credits"
+        "tickets": "Tickets"
       },
       "noSubmissionsTitle": "No script submitted yet",
       "noSubmissionsBody": "Submit one and it joins the pool other writers draw from.",
       "noReviewsTitle": "No review written yet",
-      "noReviewsBody": "Every review you complete earns a credit toward your next submission."
+      "noReviewsBody": "Every review you complete earns a ticket toward your next submission."
     },
     "submissions": {
       "pages": "{count, plural, one {# page} other {# pages}}",
@@ -959,8 +958,8 @@
       "noReviewsBodyPooled": "Reviewers have at least a week with a script before they can send their notes. You'll get an email when one lands.",
       "noReviewsBodyRetired": "This script left the pool without a review.",
       "dangerTitle": "Withdraw",
-      "withdrawRefund": "Nobody has claimed this script yet: withdrawing it refunds your {cost} credits.",
-      "withdrawNoRefund": "This script has been claimed, so withdrawing it does not refund the credits. Reviews in progress will still arrive.",
+      "withdrawRefund": "Nobody has claimed this script yet: withdrawing it gives your {cost} tickets back.",
+      "withdrawNoRefund": "This script has been claimed, so withdrawing it does not give the tickets back. Reviews in progress will still arrive.",
       "withdrawRetired": "Withdrawing removes the PDF from our storage. The reviews you received stay readable.",
       "withdraw": "Withdraw this script",
       "withdrawYes": "Yes, withdraw",
@@ -981,11 +980,11 @@
       "loglineHint": "{count} characters ({min}–{max})",
       "formatHint": "Feature screenplays only, {min} to {max} pages.",
       "genresLabel": "Genres (up to {max})",
-      "costTitle": "{cost} credits — you have {balance}",
-      "costBody": "Your script stays in the pool until three writers have reviewed it, and for at least a month. Refunded in full if you withdraw before anyone claims it.",
+      "costTitle": "{cost} tickets — you have {balance}",
+      "costBody": "Your script stays in the pool until three writers have reviewed it, and for at least a month. You get them all back if you withdraw before anyone claims it.",
       "frozenNote": "The file's hash and today's date ({date}) are recorded as proof this script existed now.",
       "cancel": "Cancel",
-      "submit": "Submit for {cost} credits",
+      "submit": "Submit with {cost} tickets",
       "rendering": "Rendering PDF…",
       "uploading": "Uploading…",
       "errors": {
@@ -995,7 +994,7 @@
         "noTitle": "Give the script a title.",
         "loglineShort": "The logline needs at least {min} characters.",
         "noGenre": "Pick at least one genre.",
-        "credits": "Submitting costs {cost} credits; you have {balance}. Review a script to earn more.",
+        "tickets": "Submitting takes {cost} tickets; you have {balance}. Review a script to earn more.",
         "duplicate": "This exact PDF is already in Coverage.",
         "failed": "Submission failed. Please try again."
       }
@@ -1023,8 +1022,8 @@
       "deadlineOn": "Due {date} ({days, plural, one {# day left} other {# days left}})",
       "continue": "Continue",
       "autoSubmittedTag": "Sent automatically",
-      "submittedBanner": "Your review was sent. You earned 1 credit.",
-      "releasedBanner": "You gave the script back. No credit, no penalty.",
+      "submittedBanner": "Your review was sent. You earned 1 ticket.",
+      "releasedBanner": "You gave the script back. No ticket, no penalty.",
       "goneBanner": "This claim has ended: the review was already sent or the deadline passed."
     },
     "review": {
@@ -1108,11 +1107,11 @@
         "EXPIRED": "Expired",
         "RELEASED": "Given back"
       },
-      "creditReasons": {
-        "STARTER": "Welcome credits",
+      "ticketReasons": {
+        "STARTER": "Welcome tickets",
         "SUBMISSION": "Script submitted",
         "REVIEW_COMPLETED": "Review completed",
-        "SUBMISSION_REFUND": "Submission refunded",
+        "SUBMISSION_REFUND": "Tickets given back",
         "ADMIN_ADJUST": "Adjustment"
       },
       "reportReasons": {

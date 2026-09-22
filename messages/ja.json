@@ -579,7 +579,7 @@
     "exportingProgress": "エクスポート中 ({progress}%)",
     "communityLabel": "コミュニティ",
     "submitToCoverage": "Coverage に提出",
-    "submitToCoverageDesc": "この脚本を PDF に書き出し、他の書き手による講評に出します（3 クレジット）。",
+    "submitToCoverageDesc": "この脚本を PDF に書き出し、他の書き手による講評に出します（チケット 3 枚）。",
     "submitToCoverageDescDesktop": "Coverage はウェブ版で動作します。ブラウザで scenarly.com を開きます。"
   },
   "layout": {
@@ -893,9 +893,9 @@
   "community": {
     "nav": {
       "community": "コミュニティ",
-      "coverage": "マイ Coverage",
-      "credits": "{count} クレジット",
-      "creditsTitle": "あなたの Coverage クレジット",
+      "coverage": "Coverage",
+      "tickets": "チケット {count} 枚",
+      "ticketsTitle": "あなたの Coverage チケット",
       "backToApp": "マイプロジェクト",
       "submit": "脚本を提出",
       "review": "脚本を講評",
@@ -910,7 +910,7 @@
       "tooRecentTitle": "もう少しです",
       "tooRecentBody": "Coverage は作成から 1 週間以上経ったアカウントに開かれます。あなたのアカウントは {date} から利用できます。",
       "joinTitle": "Coverage に参加",
-      "joinBody": "ペンネームを決めれば参加完了。最初の脚本を提出できる {credits} クレジットが付きます。講評は既定で匿名です。ペンネームは、講評に署名を選んだときだけ表示されます。",
+      "joinBody": "ペンネームを決めれば参加完了。最初の脚本を提出できるチケットが {tickets} 枚付きます。講評は既定で匿名です。ペンネームは、講評に署名を選んだときだけ表示されます。",
       "penName": "ペンネーム",
       "penNamePlaceholder": "他の書き手に知られる名前",
       "penNameHint": "後から変更できます。",
@@ -921,24 +921,23 @@
     },
     "dashboard": {
       "title": "Coverage",
-      "welcome": "{name} としてサインイン中",
-      "balance": "{count} クレジット",
+      "balance": "チケット {count} 枚",
       "submitCard": "脚本を提出",
       "submitCardBody": "PDF をアップロードするか、Scenarly プロジェクトの「書き出し」タブから提出します。講評が 3 本集まるまでプールに残ります。",
-      "submitCost": "{cost} クレジット必要",
+      "submitCost": "チケット {cost} 枚を使用",
       "reviewCard": "脚本を講評",
       "reviewCardContinue": "講評を続ける",
       "reviewCardBody": "5 本の脚本から 1 本選んで読み、意見を書きます。期限は 3 週間、送信は 1 週間後から可能です。",
-      "reviewReward": "1 クレジット獲得",
+      "reviewReward": "チケット 1 枚獲得",
       "tabs": {
         "submissions": "自分の脚本",
         "reviews": "書いた講評",
-        "credits": "クレジット"
+        "tickets": "チケット"
       },
       "noSubmissionsTitle": "まだ脚本を提出していません",
       "noSubmissionsBody": "提出すると、他の書き手が選ぶプールに入ります。",
       "noReviewsTitle": "まだ講評を書いていません",
-      "noReviewsBody": "講評を 1 本仕上げるごとに、次の提出に使えるクレジットが 1 つ得られます。"
+      "noReviewsBody": "講評を 1 本仕上げるごとに、次の提出に使えるチケットが 1 枚得られます。"
     },
     "submissions": {
       "pages": "{count} ページ",
@@ -959,8 +958,8 @@
       "noReviewsBodyPooled": "講評者は脚本を受け取ってから 1 週間以上経たないと送信できません。届いたらメールでお知らせします。",
       "noReviewsBodyRetired": "この脚本は講評を受けずにプールを退出しました。",
       "dangerTitle": "取り下げ",
-      "withdrawRefund": "まだ誰もこの脚本を引き受けていません。取り下げると {cost} クレジットが返金されます。",
-      "withdrawNoRefund": "この脚本はすでに引き受けられているため、取り下げてもクレジットは返金されません。進行中の講評は届きます。",
+      "withdrawRefund": "まだ誰もこの脚本を引き受けていません。取り下げるとチケット {cost} 枚が戻ります。",
+      "withdrawNoRefund": "この脚本はすでに引き受けられているため、取り下げてもチケットは戻りません。進行中の講評は届きます。",
       "withdrawRetired": "取り下げると PDF がストレージから削除されます。受け取った講評は引き続き読めます。",
       "withdraw": "この脚本を取り下げる",
       "withdrawYes": "はい、取り下げる",
@@ -981,11 +980,11 @@
       "loglineHint": "{count} 文字（{min}〜{max}）",
       "formatHint": "長編脚本のみ、{min}〜{max} ページ。",
       "genresLabel": "ジャンル（最大 {max}）",
-      "costTitle": "{cost} クレジット — 残高 {balance}",
-      "costBody": "脚本は 3 人の書き手が講評するまで、かつ最低 1 か月はプールに残ります。誰かが引き受ける前に取り下げれば全額返金されます。",
+      "costTitle": "チケット {cost} 枚 — 残り {balance} 枚",
+      "costBody": "脚本は 3 人の書き手が講評するまで、かつ最低 1 か月はプールに残ります。誰かが引き受ける前に取り下げれば、すべて戻ります。",
       "frozenNote": "ファイルのハッシュと本日の日付（{date}）が、この脚本がこの時点で存在した証明として記録されます。",
       "cancel": "キャンセル",
-      "submit": "{cost} クレジットで提出",
+      "submit": "チケット {cost} 枚で提出",
       "rendering": "PDF を生成中…",
       "uploading": "アップロード中…",
       "errors": {
@@ -995,7 +994,7 @@
         "noTitle": "脚本にタイトルを付けてください。",
         "loglineShort": "ログラインは {min} 文字以上必要です。",
         "noGenre": "ジャンルを 1 つ以上選んでください。",
-        "credits": "提出には {cost} クレジット必要ですが、残高は {balance} です。脚本を講評して獲得しましょう。",
+        "tickets": "提出にはチケットが {cost} 枚必要ですが、残りは {balance} 枚です。脚本を講評して獲得しましょう。",
         "duplicate": "この PDF はすでに Coverage にあります。",
         "failed": "提出に失敗しました。もう一度お試しください。"
       }
@@ -1023,8 +1022,8 @@
       "deadlineOn": "期限 {date}（残り {days} 日）",
       "continue": "続ける",
       "autoSubmittedTag": "自動送信",
-      "submittedBanner": "講評を送信しました。1 クレジット獲得です。",
-      "releasedBanner": "脚本を返却しました。クレジットもペナルティもありません。",
+      "submittedBanner": "講評を送信しました。チケット 1 枚を獲得しました。",
+      "releasedBanner": "脚本を返却しました。チケットもペナルティもありません。",
       "goneBanner": "この講評は終了しています。すでに送信されたか、期限が過ぎました。"
     },
     "review": {
@@ -1108,11 +1107,11 @@
         "EXPIRED": "期限切れ",
         "RELEASED": "返却済み"
       },
-      "creditReasons": {
-        "STARTER": "ウェルカムクレジット",
+      "ticketReasons": {
+        "STARTER": "ウェルカムチケット",
         "SUBMISSION": "脚本を提出",
         "REVIEW_COMPLETED": "講評を完了",
-        "SUBMISSION_REFUND": "提出の返金",
+        "SUBMISSION_REFUND": "チケット返却",
         "ADMIN_ADJUST": "調整"
       },
       "reportReasons": {

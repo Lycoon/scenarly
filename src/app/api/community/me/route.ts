@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import * as CreditService from "@src/server/service/community-credit-service";
+import * as TicketService from "@src/server/service/community-ticket-service";
 import * as ReviewService from "@src/server/service/community-review-service";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import { Success, validate } from "@src/lib/utils/api-utils";
@@ -21,14 +21,14 @@ const PatchSchema = z.object({
  */
 async function getMe(req: NextRequest, { user }: AuthApiContext) {
     const now = new Date();
-    const profile = await CreditService.getProfile(user.id);
+    const profile = await TicketService.getProfile(user.id);
     if (!profile) {
-        const eligibility = await CreditService.getUserEligibility(user.id, now);
+        const eligibility = await TicketService.getUserEligibility(user.id, now);
         return Success({ profile: null, eligibility, balance: 0, activeClaim: null });
     }
 
     const [balance, activeClaim] = await Promise.all([
-        CreditService.getBalance(user.id),
+        TicketService.getBalance(user.id),
         ReviewService.getActiveClaim(user.id, now),
     ]);
     return Success({
@@ -48,8 +48,8 @@ async function getMe(req: NextRequest, { user }: AuthApiContext) {
 /** PATCH `/community/me` — change the pen name. */
 async function patchMe(req: NextRequest, { user }: AuthApiContext) {
     const { penName } = validate(PatchSchema, await req.json());
-    await CreditService.requireProfile(user.id);
-    const profile = await CreditService.updatePenName(user.id, penName);
+    await TicketService.requireProfile(user.id);
+    const profile = await TicketService.updatePenName(user.id, penName);
     return Success({ penName: profile.penName });
 }
 

@@ -216,8 +216,8 @@ model ProjectInvitation {
 
 // ─── Community ───────────────────────────────────────────────────────────────
 //
-// Coverage (a credit-balanced review exchange) and Showcase (a public wall).
-// Credits live only in the append-only ledger; every counter on a profile or a
+// Coverage (a ticket-balanced review exchange) and Showcase (a public wall).
+// Tickets live only in the append-only ledger; every counter on a profile or a
 // submission is a cache the community tick can recompute from its source rows.
 
 enum CommunityFormat {
@@ -247,7 +247,7 @@ enum CommunityGenre {
 
 // POOLED: offered to reviewers. RETIRED: left the pool but its reviews and
 // Showcase entry stay readable. SHOWCASE_ONLY: uploaded straight to Showcase,
-// never pooled, no credits involved. REMOVED: withdrawn by the author; the file
+// never pooled, no tickets involved. REMOVED: withdrawn by the author; the file
 // is reclaimed by the tick, the row is kept for the ledger and the proof hash.
 enum CommunitySubmissionStatus {
   POOLED
@@ -260,7 +260,7 @@ enum CommunitySubmissionStatus {
 // REVIEW_COMPLETED: +1, refId = claim id. SUBMISSION_REFUND: +3 when a
 // submission is withdrawn before any claim (or 3 - reviews at the pool cap),
 // refId = submission id. ADMIN_ADJUST: manual, refId = free text.
-enum CommunityCreditReason {
+enum CommunityTicketReason {
   STARTER
   SUBMISSION
   REVIEW_COMPLETED
@@ -317,7 +317,7 @@ model CommunityProfile {
   reviewsCompleted    Int                   @default(0)
   lastReshuffleAt     DateTime?
 
-  credits             CommunityCreditEntry[]
+  tickets             CommunityTicketEntry[]
   submissions         CommunitySubmission[]
   claims              CommunityClaim[]
   offerSets           CommunityOfferSet[]
@@ -327,10 +327,10 @@ model CommunityProfile {
 
 // Append-only. Balance = sum(delta). The unique makes every mint and charge
 // idempotent: a retried request or a re-run tick can never double-post.
-model CommunityCreditEntry {
+model CommunityTicketEntry {
   id                  String                @id @default(uuid(7))
   delta               Int
-  reason              CommunityCreditReason
+  reason              CommunityTicketReason
   refId               String
   createdAt           DateTime              @default(now())
 

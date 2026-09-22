@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { useCookieUser } from "@src/lib/utils/hooks";
-import type { ClaimView, CommunityMe, CreditEntry, MySubmission, OfferSetView, SubmissionDetail } from "./types";
+import type { ClaimView, CommunityMe, TicketEntry, MySubmission, OfferSetView, SubmissionDetail } from "./types";
 
 /**
  * Community SWR hooks. Every key is null until the session resolves to a user,
@@ -59,10 +59,10 @@ export const useEndedClaims = (enabled = true) => {
     return { claims: data?.claims, isLoading };
 };
 
-export const useCredits = (enabled = true) => {
+export const useTickets = (enabled = true) => {
     const { user } = useCookieUser();
-    const { data, isLoading } = useSWR<{ balance: number; entries: CreditEntry[] }>(
-        enabled ? memberKey(user, "/api/community/credits") : null,
+    const { data, isLoading } = useSWR<{ balance: number; entries: TicketEntry[] }>(
+        enabled ? memberKey(user, "/api/community/tickets") : null,
     );
     return { balance: data?.balance, entries: data?.entries, isLoading };
 };

@@ -580,7 +580,7 @@
     "exportingProgress": "Exportation ({progress}%)",
     "communityLabel": "Communauté",
     "submitToCoverage": "Proposer à Coverage",
-    "submitToCoverageDesc": "Exporte ce scénario en PDF et le soumet à la relecture d'autres auteurs (3 crédits).",
+    "submitToCoverageDesc": "Exporte ce scénario en PDF et le soumet à la relecture d'autres auteurs (3 tickets).",
     "submitToCoverageDescDesktop": "Coverage fonctionne dans l'application web. Ouvre scenarly.com dans votre navigateur."
   },
   "layout": {
@@ -894,9 +894,9 @@
   "community": {
     "nav": {
       "community": "Communauté",
-      "coverage": "Mon Coverage",
-      "credits": "{count, plural, one {# crédit} other {# crédits}}",
-      "creditsTitle": "Vos crédits Coverage",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# ticket} other {# tickets}}",
+      "ticketsTitle": "Vos tickets Coverage",
       "backToApp": "Mes projets",
       "submit": "Proposer un scénario",
       "review": "Relire un scénario",
@@ -911,7 +911,7 @@
       "tooRecentTitle": "Encore un peu de patience",
       "tooRecentBody": "Coverage s'ouvre aux comptes vieux d'au moins une semaine. Le vôtre y aura droit le {date}.",
       "joinTitle": "Rejoindre Coverage",
-      "joinBody": "Choisissez un nom de plume et c'est parti, avec {credits} crédits pour proposer votre premier scénario. Les relectures sont anonymes par défaut : votre nom de plume n'apparaît que si vous choisissez de signer.",
+      "joinBody": "Choisissez un nom de plume et c'est parti, avec {tickets} tickets pour proposer votre premier scénario. Les relectures sont anonymes par défaut : votre nom de plume n'apparaît que si vous choisissez de signer.",
       "penName": "Nom de plume",
       "penNamePlaceholder": "Comment les autres auteurs vous connaîtront",
       "penNameHint": "Modifiable plus tard.",
@@ -922,24 +922,23 @@
     },
     "dashboard": {
       "title": "Coverage",
-      "welcome": "Connecté en tant que {name}",
-      "balance": "{count, plural, one {# crédit} other {# crédits}}",
+      "balance": "{count, plural, one {# ticket} other {# tickets}}",
       "submitCard": "Proposer un scénario",
       "submitCardBody": "Envoyez un PDF, ou proposez un projet Scenarly depuis son onglet Export. Il reste dans la file jusqu'à trois relectures.",
-      "submitCost": "Coûte {cost} crédits",
+      "submitCost": "Utilise {cost} tickets",
       "reviewCard": "Relire un scénario",
       "reviewCardContinue": "Reprendre votre relecture",
       "reviewCardBody": "Choisissez l'un des cinq scénarios, lisez-le, écrivez vos notes. Vous avez trois semaines, et pouvez les envoyer après une.",
-      "reviewReward": "Rapporte 1 crédit",
+      "reviewReward": "Rapporte 1 ticket",
       "tabs": {
         "submissions": "Mes scénarios",
         "reviews": "Mes relectures",
-        "credits": "Crédits"
+        "tickets": "Tickets"
       },
       "noSubmissionsTitle": "Aucun scénario proposé",
       "noSubmissionsBody": "Proposez-en un et il rejoint la file dans laquelle les autres auteurs piochent.",
       "noReviewsTitle": "Aucune relecture écrite",
-      "noReviewsBody": "Chaque relecture terminée rapporte un crédit pour votre prochaine proposition."
+      "noReviewsBody": "Chaque relecture terminée rapporte un ticket pour votre prochaine proposition."
     },
     "submissions": {
       "pages": "{count, plural, one {# page} other {# pages}}",
@@ -960,8 +959,8 @@
       "noReviewsBodyPooled": "Les relecteurs gardent un scénario au moins une semaine avant de pouvoir envoyer leurs notes. Vous recevrez un e-mail à chaque arrivée.",
       "noReviewsBodyRetired": "Ce scénario a quitté la file sans relecture.",
       "dangerTitle": "Retirer",
-      "withdrawRefund": "Personne n'a encore pris ce scénario : le retirer vous rembourse vos {cost} crédits.",
-      "withdrawNoRefund": "Ce scénario a été pris : le retirer ne rembourse pas les crédits. Les relectures en cours arriveront quand même.",
+      "withdrawRefund": "Personne n'a encore pris ce scénario : le retirer vous rend vos {cost} tickets.",
+      "withdrawNoRefund": "Ce scénario a été pris : le retirer ne rend pas les tickets. Les relectures en cours arriveront quand même.",
       "withdrawRetired": "Le retirer supprime le PDF de notre stockage. Les relectures reçues restent lisibles.",
       "withdraw": "Retirer ce scénario",
       "withdrawYes": "Oui, retirer",
@@ -982,11 +981,11 @@
       "loglineHint": "{count} caractères ({min}–{max})",
       "formatHint": "Longs métrages uniquement, {min} à {max} pages.",
       "genresLabel": "Genres (jusqu'à {max})",
-      "costTitle": "{cost} crédits — vous en avez {balance}",
-      "costBody": "Votre scénario reste dans la file jusqu'à ce que trois auteurs l'aient relu, et au moins un mois. Remboursé intégralement si vous le retirez avant que quelqu'un le prenne.",
+      "costTitle": "{cost} tickets — vous en avez {balance}",
+      "costBody": "Votre scénario reste dans la file jusqu'à ce que trois auteurs l'aient relu, et au moins un mois. Vous les récupérez tous si vous le retirez avant que quelqu'un le prenne.",
       "frozenNote": "L'empreinte du fichier et la date du jour ({date}) sont enregistrées comme preuve que ce scénario existait maintenant.",
       "cancel": "Annuler",
-      "submit": "Proposer pour {cost} crédits",
+      "submit": "Proposer avec {cost} tickets",
       "rendering": "Génération du PDF…",
       "uploading": "Envoi…",
       "errors": {
@@ -996,7 +995,7 @@
         "noTitle": "Donnez un titre au scénario.",
         "loglineShort": "Le pitch doit faire au moins {min} caractères.",
         "noGenre": "Choisissez au moins un genre.",
-        "credits": "Proposer coûte {cost} crédits ; vous en avez {balance}. Relisez un scénario pour en gagner.",
+        "tickets": "Proposer demande {cost} tickets ; vous en avez {balance}. Relisez un scénario pour en gagner.",
         "duplicate": "Ce PDF exact est déjà dans Coverage.",
         "failed": "Échec de la proposition. Réessayez."
       }
@@ -1024,8 +1023,8 @@
       "deadlineOn": "Échéance le {date} ({days, plural, one {# jour restant} other {# jours restants}})",
       "continue": "Reprendre",
       "autoSubmittedTag": "Envoyée automatiquement",
-      "submittedBanner": "Votre relecture a été envoyée. Vous gagnez 1 crédit.",
-      "releasedBanner": "Vous avez rendu le scénario. Ni crédit, ni pénalité.",
+      "submittedBanner": "Votre relecture a été envoyée. Vous gagnez 1 ticket.",
+      "releasedBanner": "Vous avez rendu le scénario. Ni ticket, ni pénalité.",
       "goneBanner": "Cette prise est terminée : la relecture a déjà été envoyée ou l'échéance est passée."
     },
     "review": {
@@ -1109,11 +1108,11 @@
         "EXPIRED": "Expirée",
         "RELEASED": "Rendue"
       },
-      "creditReasons": {
-        "STARTER": "Crédits de bienvenue",
+      "ticketReasons": {
+        "STARTER": "Tickets de bienvenue",
         "SUBMISSION": "Scénario proposé",
         "REVIEW_COMPLETED": "Relecture terminée",
-        "SUBMISSION_REFUND": "Proposition remboursée",
+        "SUBMISSION_REFUND": "Tickets rendus",
         "ADMIN_ADJUST": "Ajustement"
       },
       "reportReasons": {

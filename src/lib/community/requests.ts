@@ -1,7 +1,7 @@
 /**
  * Community API calls, on the same client as `utils/requests.ts`. Every call
  * returns the envelope's `data` or throws `{ status, message, code }`, so the
- * pages can branch on `code` (INSUFFICIENT_CREDITS, HAS_ACTIVE_CLAIM, ...).
+ * pages can branch on `code` (INSUFFICIENT_TICKETS, HAS_ACTIVE_CLAIM, ...).
  */
 
 import { apiFetch } from "@src/lib/api-client";

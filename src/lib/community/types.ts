@@ -123,7 +123,7 @@ export interface SubmissionDetail extends Omit<MySubmission, "activeClaims" | "s
     reviews: ReceivedReview[];
 }
 
-export interface CreditEntry {
+export interface TicketEntry {
     id: string;
     delta: number;
     reason: string;

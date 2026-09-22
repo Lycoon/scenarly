@@ -579,7 +579,7 @@
     "exportingProgress": "Exportando ({progress}%)",
     "communityLabel": "Comunidad",
     "submitToCoverage": "Enviar a Coverage",
-    "submitToCoverageDesc": "Exporta este guion en PDF y lo pone a disposición de otros guionistas para su lectura (3 créditos).",
+    "submitToCoverageDesc": "Exporta este guion en PDF y lo pone a disposición de otros guionistas para su lectura (3 tickets).",
     "submitToCoverageDescDesktop": "Coverage funciona en la aplicación web. Abre scenarly.com en tu navegador."
   },
   "layout": {
@@ -893,9 +893,9 @@
   "community": {
     "nav": {
       "community": "Comunidad",
-      "coverage": "Mi Coverage",
-      "credits": "{count, plural, one {# crédito} other {# créditos}}",
-      "creditsTitle": "Tus créditos de Coverage",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# ticket} other {# tickets}}",
+      "ticketsTitle": "Tus tickets de Coverage",
       "backToApp": "Mis proyectos",
       "submit": "Enviar un guion",
       "review": "Leer un guion",
@@ -910,7 +910,7 @@
       "tooRecentTitle": "Ya casi",
       "tooRecentBody": "Coverage se abre a cuentas con al menos una semana de antigüedad. La tuya podrá entrar el {date}.",
       "joinTitle": "Unirse a Coverage",
-      "joinBody": "Elige un seudónimo y ya estás dentro, con {credits} créditos para enviar tu primer guion. Las lecturas son anónimas por defecto: tu seudónimo solo aparece si decides firmar una lectura.",
+      "joinBody": "Elige un seudónimo y ya estás dentro, con {tickets} tickets para enviar tu primer guion. Las lecturas son anónimas por defecto: tu seudónimo solo aparece si decides firmar una lectura.",
       "penName": "Seudónimo",
       "penNamePlaceholder": "Cómo te conocerán los demás guionistas",
       "penNameHint": "Puedes cambiarlo más tarde.",
@@ -921,24 +921,23 @@
     },
     "dashboard": {
       "title": "Coverage",
-      "welcome": "Sesión iniciada como {name}",
-      "balance": "{count, plural, one {# crédito} other {# créditos}}",
+      "balance": "{count, plural, one {# ticket} other {# tickets}}",
       "submitCard": "Enviar un guion",
       "submitCardBody": "Sube un PDF o envía un proyecto de Scenarly desde su pestaña Exportar. Permanece en la bolsa hasta tener tres lecturas.",
-      "submitCost": "Cuesta {cost} créditos",
+      "submitCost": "Usa {cost} tickets",
       "reviewCard": "Leer un guion",
       "reviewCardContinue": "Continuar tu lectura",
       "reviewCardBody": "Elige uno de cinco guiones, léelo y escribe tus notas. Tienes tres semanas y puedes enviarlas después de una.",
-      "reviewReward": "Da 1 crédito",
+      "reviewReward": "Da 1 ticket",
       "tabs": {
         "submissions": "Mis guiones",
         "reviews": "Lecturas que escribí",
-        "credits": "Créditos"
+        "tickets": "Tickets"
       },
       "noSubmissionsTitle": "Aún no has enviado ningún guion",
       "noSubmissionsBody": "Envía uno y entrará en la bolsa de la que eligen los demás guionistas.",
       "noReviewsTitle": "Aún no has escrito ninguna lectura",
-      "noReviewsBody": "Cada lectura que completes da un crédito para tu próximo envío."
+      "noReviewsBody": "Cada lectura que completes da un ticket para tu próximo envío."
     },
     "submissions": {
       "pages": "{count, plural, one {# página} other {# páginas}}",
@@ -959,8 +958,8 @@
       "noReviewsBodyPooled": "Los lectores tienen al menos una semana con un guion antes de poder enviar sus notas. Recibirás un correo cuando llegue una.",
       "noReviewsBodyRetired": "Este guion salió de la bolsa sin lecturas.",
       "dangerTitle": "Retirar",
-      "withdrawRefund": "Nadie ha tomado este guion todavía: retirarlo te devuelve tus {cost} créditos.",
-      "withdrawNoRefund": "Este guion ya fue tomado, así que retirarlo no devuelve los créditos. Las lecturas en curso llegarán igualmente.",
+      "withdrawRefund": "Nadie ha tomado este guion todavía: retirarlo te devuelve tus {cost} tickets.",
+      "withdrawNoRefund": "Este guion ya fue tomado, así que retirarlo no devuelve los tickets. Las lecturas en curso llegarán igualmente.",
       "withdrawRetired": "Retirarlo elimina el PDF de nuestro almacenamiento. Las lecturas recibidas seguirán siendo legibles.",
       "withdraw": "Retirar este guion",
       "withdrawYes": "Sí, retirar",
@@ -981,11 +980,11 @@
       "loglineHint": "{count} caracteres ({min}–{max})",
       "formatHint": "Solo guiones de largometraje, de {min} a {max} páginas.",
       "genresLabel": "Géneros (hasta {max})",
-      "costTitle": "{cost} créditos — tienes {balance}",
-      "costBody": "Tu guion permanece en la bolsa hasta que tres guionistas lo hayan leído, y al menos un mes. Reembolso completo si lo retiras antes de que alguien lo tome.",
+      "costTitle": "{cost} tickets — tienes {balance}",
+      "costBody": "Tu guion permanece en la bolsa hasta que tres guionistas lo hayan leído, y al menos un mes. Los recuperas todos si lo retiras antes de que alguien lo tome.",
       "frozenNote": "El hash del archivo y la fecha de hoy ({date}) quedan registrados como prueba de que este guion existía ahora.",
       "cancel": "Cancelar",
-      "submit": "Enviar por {cost} créditos",
+      "submit": "Enviar con {cost} tickets",
       "rendering": "Generando PDF…",
       "uploading": "Subiendo…",
       "errors": {
@@ -995,7 +994,7 @@
         "noTitle": "Ponle un título al guion.",
         "loglineShort": "El logline necesita al menos {min} caracteres.",
         "noGenre": "Elige al menos un género.",
-        "credits": "Enviar cuesta {cost} créditos; tienes {balance}. Lee un guion para ganar más.",
+        "tickets": "Enviar requiere {cost} tickets; tienes {balance}. Lee un guion para ganar más.",
         "duplicate": "Este mismo PDF ya está en Coverage.",
         "failed": "El envío falló. Inténtalo de nuevo."
       }
@@ -1023,8 +1022,8 @@
       "deadlineOn": "Vence el {date} ({days, plural, one {queda # día} other {quedan # días}})",
       "continue": "Continuar",
       "autoSubmittedTag": "Enviada automáticamente",
-      "submittedBanner": "Tu lectura se ha enviado. Has ganado 1 crédito.",
-      "releasedBanner": "Has devuelto el guion. Ni crédito ni penalización.",
+      "submittedBanner": "Tu lectura se ha enviado. Has ganado 1 ticket.",
+      "releasedBanner": "Has devuelto el guion. Ni ticket ni penalización.",
       "goneBanner": "Esta lectura ha terminado: ya se envió o pasó el plazo."
     },
     "review": {
@@ -1108,11 +1107,11 @@
         "EXPIRED": "Caducada",
         "RELEASED": "Devuelta"
       },
-      "creditReasons": {
-        "STARTER": "Créditos de bienvenida",
+      "ticketReasons": {
+        "STARTER": "Tickets de bienvenida",
         "SUBMISSION": "Guion enviado",
         "REVIEW_COMPLETED": "Lectura completada",
-        "SUBMISSION_REFUND": "Envío reembolsado",
+        "SUBMISSION_REFUND": "Tickets devueltos",
         "ADMIN_ADJUST": "Ajuste"
       },
       "reportReasons": {

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import * as CreditService from "@src/server/service/community-credit-service";
+import * as TicketService from "@src/server/service/community-ticket-service";
 import * as SubmissionService from "@src/server/service/community-submission-service";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import { BodyFieldError, Success, SuccessCreated, validate } from "@src/lib/utils/api-utils";
@@ -28,7 +28,7 @@ const FieldsSchema = z.object({
 
 /** GET `/community/submissions` — the caller's submissions, newest first. */
 async function listSubmissions(req: NextRequest, { user }: AuthApiContext) {
-    await CreditService.requireProfile(user.id);
+    await TicketService.requireProfile(user.id);
     const submissions = await SubmissionService.listMine(user.id);
     return Success({
         submissions: submissions.map((s) => ({
@@ -53,11 +53,11 @@ async function listSubmissions(req: NextRequest, { user }: AuthApiContext) {
  *
  * Fields: `file` (the PDF), `title`, `logline`, `genres` (repeated),
  * `format?`, `sourceProjectId?`, `destination?` (COVERAGE | SHOWCASE_ONLY).
- * Charges 3 credits for COVERAGE, which takes feature screenplays only. 422 on size/pages/fields, 409
- * `DUPLICATE_PDF` / `INSUFFICIENT_CREDITS`.
+ * Uses 3 tickets for COVERAGE, which takes feature screenplays only. 422 on size/pages/fields, 409
+ * `DUPLICATE_PDF` / `INSUFFICIENT_TICKETS`.
  */
 async function createSubmission(req: NextRequest, { user }: AuthApiContext) {
-    await CreditService.requireProfile(user.id);
+    await TicketService.requireProfile(user.id);
 
     // Reject oversized bodies before reading them into memory.
     const declared = Number(req.headers.get("content-length") ?? 0);

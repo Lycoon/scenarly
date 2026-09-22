@@ -8,7 +8,7 @@ import z from "zod";
 
 const ParamsSchema = z.object({ claimId: z.string() });
 
-/** POST `/community/claims/[claimId]/release` — give the script up without a review; no credit, no penalty. */
+/** POST `/community/claims/[claimId]/release` — give the script up without a review; no ticket, no penalty. */
 async function releaseClaim(req: NextRequest, { user, routeParams }: AuthApiContext) {
     const { claimId } = validate(ParamsSchema, routeParams);
     await ReviewService.releaseOwnClaim(claimId, user.id);

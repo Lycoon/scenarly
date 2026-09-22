@@ -16,7 +16,7 @@
 import { after } from "next/server";
 
 import * as S3 from "@src/lib/s3";
-import * as CreditService from "@src/server/service/community-credit-service";
+import * as TicketService from "@src/server/service/community-ticket-service";
 import prisma from "@src/server/db";
 import { watermarkPdf } from "@src/lib/community/pdf";
 import { reputation, selectOffers } from "@src/lib/community/selection";
@@ -64,7 +64,7 @@ class ClaimStateError extends AppError {
 
 async function makeOfferSet(reviewerId: string, now: Date) {
     const [profile, candidates] = await Promise.all([
-        CreditService.requireProfile(reviewerId),
+        TicketService.requireProfile(reviewerId),
         submissions.listCandidatesFor(reviewerId, now),
     ]);
     const rho = reputation(profile.usefulCount, profile.notUsefulCount);
@@ -87,7 +87,7 @@ async function makeOfferSet(reviewerId: string, now: Date) {
 
 /** The reviewer's current set, made on demand. 409 while a claim is active. */
 export async function getOffers(reviewerId: string, now = new Date()) {
-    const profile = await CreditService.requireProfile(reviewerId);
+    const profile = await TicketService.requireProfile(reviewerId);
     if (profile.activeClaimId) throw new ClaimStateError("Finish your current review first", "HAS_ACTIVE_CLAIM");
 
     const latest = await reviews.findLatestOfferSet(reviewerId);
@@ -97,7 +97,7 @@ export async function getOffers(reviewerId: string, now = new Date()) {
 
 /** A fresh set, once per 24 h. */
 export async function reshuffle(reviewerId: string, now = new Date()) {
-    const profile = await CreditService.requireProfile(reviewerId);
+    const profile = await TicketService.requireProfile(reviewerId);
     if (profile.activeClaimId) throw new ClaimStateError("Finish your current review first", "HAS_ACTIVE_CLAIM");
 
     const retryAt = profile.lastReshuffleAt
@@ -129,7 +129,7 @@ const toOfferView = (set: OfferSet, lastReshuffleAt: Date | null, now: Date) => 
 // ── Claims ────────────────────────────────────────────────────────────────────
 
 export async function claim(reviewerId: string, submissionId: string, now = new Date()) {
-    await CreditService.requireProfile(reviewerId);
+    await TicketService.requireProfile(reviewerId);
     const set = await reviews.findLatestOfferSet(reviewerId);
     const offered = set && !set.consumedAt && set.items.some((i) => i.submissionId === submissionId);
     if (!offered) throw new ClaimStateError("This script is not in your current offers", "NOT_OFFERED");
@@ -270,7 +270,7 @@ export async function submitReview(claimId: string, now: Date, autoSubmitted: bo
         await reviews.submitReview(claimId, now, autoSubmitted, tx);
         await reviews.endClaim(claimId, CommunityClaimStatus.SUBMITTED, now, tx);
         await profiles.clearActiveClaim(row.reviewerId, claimId, tx);
-        await CreditService.payReview(row.reviewerId, claimId, tx);
+        await TicketService.payReview(row.reviewerId, claimId, tx);
         await submissions.incrementCounters(row.submissionId, { completedReviewCount: 1 }, tx);
         await profiles.incrementReviewsCompleted(row.reviewerId, tx);
 

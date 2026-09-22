@@ -579,7 +579,7 @@
     "exportingProgress": "Eksportowanie ({progress}%)",
     "communityLabel": "Społeczność",
     "submitToCoverage": "Zgłoś do Coverage",
-    "submitToCoverageDesc": "Eksportuje ten scenariusz do PDF i oddaje go do recenzji innym autorom (3 kredyty).",
+    "submitToCoverageDesc": "Eksportuje ten scenariusz do PDF i oddaje go do recenzji innym autorom (3 bilety).",
     "submitToCoverageDescDesktop": "Coverage działa w aplikacji webowej. Otwiera scenarly.com w przeglądarce."
   },
   "layout": {
@@ -893,9 +893,9 @@
   "community": {
     "nav": {
       "community": "Społeczność",
-      "coverage": "Moje Coverage",
-      "credits": "{count, plural, one {# kredyt} few {# kredyty} other {# kredytów}}",
-      "creditsTitle": "Twoje kredyty Coverage",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# bilet} few {# bilety} other {# biletów}}",
+      "ticketsTitle": "Twoje bilety Coverage",
       "backToApp": "Moje projekty",
       "submit": "Zgłoś scenariusz",
       "review": "Zrecenzuj scenariusz",
@@ -910,7 +910,7 @@
       "tooRecentTitle": "Już prawie",
       "tooRecentBody": "Coverage otwiera się dla kont mających co najmniej tydzień. Twoje będzie się kwalifikować od {date}.",
       "joinTitle": "Dołącz do Coverage",
-      "joinBody": "Wybierz pseudonim i gotowe — z {credits} kredytami na zgłoszenie pierwszego scenariusza. Recenzje są domyślnie anonimowe: pseudonim pojawia się tylko wtedy, gdy zdecydujesz się podpisać recenzję.",
+      "joinBody": "Wybierz pseudonim i gotowe — z {tickets} biletami na zgłoszenie pierwszego scenariusza. Recenzje są domyślnie anonimowe: pseudonim pojawia się tylko wtedy, gdy zdecydujesz się podpisać recenzję.",
       "penName": "Pseudonim",
       "penNamePlaceholder": "Jak będą Cię znać inni autorzy",
       "penNameHint": "Możesz go później zmienić.",
@@ -921,24 +921,23 @@
     },
     "dashboard": {
       "title": "Coverage",
-      "welcome": "Zalogowano jako {name}",
-      "balance": "{count, plural, one {# kredyt} few {# kredyty} other {# kredytów}}",
+      "balance": "{count, plural, one {# bilet} few {# bilety} other {# biletów}}",
       "submitCard": "Zgłoś scenariusz",
       "submitCardBody": "Prześlij PDF lub zgłoś projekt Scenarly z jego karty Eksport. Zostaje w puli, aż zbierze trzy recenzje.",
-      "submitCost": "Kosztuje {cost} kredyty",
+      "submitCost": "Wymaga {cost} biletów",
       "reviewCard": "Zrecenzuj scenariusz",
       "reviewCardContinue": "Kontynuuj recenzję",
       "reviewCardBody": "Wybierz jeden z pięciu scenariuszy, przeczytaj go i napisz uwagi. Masz trzy tygodnie, a wysłać możesz po jednym.",
-      "reviewReward": "Daje 1 kredyt",
+      "reviewReward": "Daje 1 bilet",
       "tabs": {
         "submissions": "Moje scenariusze",
         "reviews": "Moje recenzje",
-        "credits": "Kredyty"
+        "tickets": "Bilety"
       },
       "noSubmissionsTitle": "Nie zgłoszono jeszcze scenariusza",
       "noSubmissionsBody": "Zgłoś jeden, a trafi do puli, z której losują inni autorzy.",
       "noReviewsTitle": "Nie napisano jeszcze recenzji",
-      "noReviewsBody": "Każda ukończona recenzja daje kredyt na Twoje następne zgłoszenie."
+      "noReviewsBody": "Każda ukończona recenzja daje bilet na Twoje następne zgłoszenie."
     },
     "submissions": {
       "pages": "{count, plural, one {# strona} few {# strony} other {# stron}}",
@@ -959,8 +958,8 @@
       "noReviewsBodyPooled": "Recenzenci mają scenariusz co najmniej tydzień, zanim mogą wysłać uwagi. Dostaniesz e-mail, gdy jakaś nadejdzie.",
       "noReviewsBodyRetired": "Ten scenariusz opuścił pulę bez recenzji.",
       "dangerTitle": "Wycofaj",
-      "withdrawRefund": "Nikt jeszcze nie wziął tego scenariusza: wycofanie zwraca Twoje {cost} kredyty.",
-      "withdrawNoRefund": "Ten scenariusz został już wzięty, więc wycofanie nie zwraca kredytów. Trwające recenzje i tak nadejdą.",
+      "withdrawRefund": "Nikt jeszcze nie wziął tego scenariusza: wycofanie oddaje Twoje {cost} biletów.",
+      "withdrawNoRefund": "Ten scenariusz został już wzięty, więc wycofanie nie oddaje biletów. Trwające recenzje i tak nadejdą.",
       "withdrawRetired": "Wycofanie usuwa PDF z naszego magazynu. Otrzymane recenzje pozostają czytelne.",
       "withdraw": "Wycofaj ten scenariusz",
       "withdrawYes": "Tak, wycofaj",
@@ -981,11 +980,11 @@
       "loglineHint": "{count} znaków ({min}–{max})",
       "formatHint": "Tylko scenariusze pełnometrażowe, od {min} do {max} stron.",
       "genresLabel": "Gatunki (do {max})",
-      "costTitle": "{cost} kredyty — masz {balance}",
-      "costBody": "Twój scenariusz zostaje w puli, aż zrecenzuje go trzech autorów, i co najmniej miesiąc. Pełny zwrot, jeśli wycofasz go, zanim ktoś go weźmie.",
+      "costTitle": "{cost} biletów — masz {balance}",
+      "costBody": "Twój scenariusz zostaje w puli, aż zrecenzuje go trzech autorów, i co najmniej miesiąc. Odzyskujesz wszystkie, jeśli wycofasz go, zanim ktoś go weźmie.",
       "frozenNote": "Skrót pliku i dzisiejsza data ({date}) zostają zapisane jako dowód, że ten scenariusz istniał teraz.",
       "cancel": "Anuluj",
-      "submit": "Zgłoś za {cost} kredyty",
+      "submit": "Zgłoś z {cost} biletami",
       "rendering": "Generowanie PDF…",
       "uploading": "Przesyłanie…",
       "errors": {
@@ -995,7 +994,7 @@
         "noTitle": "Nadaj scenariuszowi tytuł.",
         "loglineShort": "Logline musi mieć co najmniej {min} znaków.",
         "noGenre": "Wybierz co najmniej jeden gatunek.",
-        "credits": "Zgłoszenie kosztuje {cost} kredyty; masz {balance}. Zrecenzuj scenariusz, aby zdobyć więcej.",
+        "tickets": "Zgłoszenie wymaga {cost} biletów; masz {balance}. Zrecenzuj scenariusz, aby zdobyć więcej.",
         "duplicate": "Dokładnie ten PDF jest już w Coverage.",
         "failed": "Zgłoszenie nie powiodło się. Spróbuj ponownie."
       }
@@ -1023,8 +1022,8 @@
       "deadlineOn": "Termin {date} ({days, plural, one {został # dzień} other {zostało # dni}})",
       "continue": "Kontynuuj",
       "autoSubmittedTag": "Wysłana automatycznie",
-      "submittedBanner": "Twoja recenzja została wysłana. Zdobywasz 1 kredyt.",
-      "releasedBanner": "Oddano scenariusz. Bez kredytu, bez kary.",
+      "submittedBanner": "Twoja recenzja została wysłana. Zdobywasz 1 bilet.",
+      "releasedBanner": "Oddano scenariusz. Bez biletu, bez kary.",
       "goneBanner": "To zgłoszenie się zakończyło: recenzja została już wysłana albo minął termin."
     },
     "review": {
@@ -1108,11 +1107,11 @@
         "EXPIRED": "Wygasła",
         "RELEASED": "Oddana"
       },
-      "creditReasons": {
-        "STARTER": "Kredyty powitalne",
+      "ticketReasons": {
+        "STARTER": "Bilety powitalne",
         "SUBMISSION": "Zgłoszono scenariusz",
         "REVIEW_COMPLETED": "Ukończono recenzję",
-        "SUBMISSION_REFUND": "Zwrot za zgłoszenie",
+        "SUBMISSION_REFUND": "Bilety oddane",
         "ADMIN_ADJUST": "Korekta"
       },
       "reportReasons": {

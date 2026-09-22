@@ -579,7 +579,7 @@
     "exportingProgress": "내보내는 중 ({progress}%)",
     "communityLabel": "커뮤니티",
     "submitToCoverage": "Coverage에 제출",
-    "submitToCoverageDesc": "이 시나리오를 PDF로 내보내 다른 작가들의 리뷰를 받습니다 (3 크레딧).",
+    "submitToCoverageDesc": "이 시나리오를 PDF로 내보내 다른 작가들의 리뷰를 받습니다 (티켓 3장).",
     "submitToCoverageDescDesktop": "Coverage는 웹 앱에서 동작합니다. 브라우저에서 scenarly.com을 엽니다."
   },
   "layout": {
@@ -893,9 +893,9 @@
   "community": {
     "nav": {
       "community": "커뮤니티",
-      "coverage": "내 Coverage",
-      "credits": "{count} 크레딧",
-      "creditsTitle": "내 Coverage 크레딧",
+      "coverage": "Coverage",
+      "tickets": "티켓 {count}장",
+      "ticketsTitle": "내 Coverage 티켓",
       "backToApp": "내 프로젝트",
       "submit": "시나리오 제출",
       "review": "시나리오 리뷰",
@@ -910,7 +910,7 @@
       "tooRecentTitle": "거의 다 됐습니다",
       "tooRecentBody": "Coverage는 만든 지 최소 일주일이 지난 계정에 열립니다. 회원님의 계정은 {date}부터 이용할 수 있습니다.",
       "joinTitle": "Coverage 가입",
-      "joinBody": "필명을 정하면 바로 가입되며, 첫 시나리오를 제출할 수 있는 {credits} 크레딧이 주어집니다. 리뷰는 기본적으로 익명입니다. 필명은 리뷰에 서명하기로 선택할 때만 표시됩니다.",
+      "joinBody": "필명을 정하면 바로 가입되며, 첫 시나리오를 제출할 수 있는 티켓 {tickets}장이 주어집니다. 리뷰는 기본적으로 익명입니다. 필명은 리뷰에 서명하기로 선택할 때만 표시됩니다.",
       "penName": "필명",
       "penNamePlaceholder": "다른 작가들에게 알려질 이름",
       "penNameHint": "나중에 바꿀 수 있습니다.",
@@ -921,24 +921,23 @@
     },
     "dashboard": {
       "title": "Coverage",
-      "welcome": "{name}(으)로 로그인됨",
-      "balance": "{count} 크레딧",
+      "balance": "티켓 {count}장",
       "submitCard": "시나리오 제출",
       "submitCardBody": "PDF를 업로드하거나 Scenarly 프로젝트의 내보내기 탭에서 제출하세요. 리뷰 세 개가 모일 때까지 풀에 남습니다.",
-      "submitCost": "{cost} 크레딧 소요",
+      "submitCost": "티켓 {cost}장 사용",
       "reviewCard": "시나리오 리뷰",
       "reviewCardContinue": "리뷰 계속하기",
       "reviewCardBody": "다섯 편 중 하나를 골라 읽고 의견을 쓰세요. 기한은 3주이며, 1주 후부터 보낼 수 있습니다.",
-      "reviewReward": "1 크레딧 획득",
+      "reviewReward": "티켓 1장 획득",
       "tabs": {
         "submissions": "내 시나리오",
         "reviews": "내가 쓴 리뷰",
-        "credits": "크레딧"
+        "tickets": "티켓"
       },
       "noSubmissionsTitle": "아직 제출한 시나리오가 없습니다",
       "noSubmissionsBody": "제출하면 다른 작가들이 고르는 풀에 들어갑니다.",
       "noReviewsTitle": "아직 쓴 리뷰가 없습니다",
-      "noReviewsBody": "리뷰를 하나 완료할 때마다 다음 제출에 쓸 크레딧 하나를 얻습니다."
+      "noReviewsBody": "리뷰를 하나 완료할 때마다 다음 제출에 쓸 티켓 한 장을 얻습니다."
     },
     "submissions": {
       "pages": "{count}페이지",
@@ -959,8 +958,8 @@
       "noReviewsBodyPooled": "리뷰어는 시나리오를 받고 최소 일주일이 지나야 의견을 보낼 수 있습니다. 리뷰가 도착하면 이메일로 알려 드립니다.",
       "noReviewsBodyRetired": "이 시나리오는 리뷰 없이 풀에서 나갔습니다.",
       "dangerTitle": "철회",
-      "withdrawRefund": "아직 아무도 이 시나리오를 맡지 않았습니다. 철회하면 {cost} 크레딧이 환불됩니다.",
-      "withdrawNoRefund": "이 시나리오는 이미 맡겨졌으므로 철회해도 크레딧은 환불되지 않습니다. 진행 중인 리뷰는 도착합니다.",
+      "withdrawRefund": "아직 아무도 이 시나리오를 맡지 않았습니다. 철회하면 티켓 {cost}장이 돌아옵니다.",
+      "withdrawNoRefund": "이 시나리오는 이미 맡겨졌으므로 철회해도 티켓은 돌아오지 않습니다. 진행 중인 리뷰는 도착합니다.",
       "withdrawRetired": "철회하면 PDF가 저장소에서 삭제됩니다. 받은 리뷰는 계속 읽을 수 있습니다.",
       "withdraw": "이 시나리오 철회",
       "withdrawYes": "예, 철회합니다",
@@ -981,11 +980,11 @@
       "loglineHint": "{count}자 ({min}–{max})",
       "formatHint": "장편 시나리오만, {min}~{max}페이지.",
       "genresLabel": "장르 (최대 {max}개)",
-      "costTitle": "{cost} 크레딧 — 보유 {balance}",
-      "costBody": "시나리오는 작가 세 명이 리뷰할 때까지, 그리고 최소 한 달 동안 풀에 남습니다. 누군가 맡기 전에 철회하면 전액 환불됩니다.",
+      "costTitle": "티켓 {cost}장 — 보유 {balance}장",
+      "costBody": "시나리오는 작가 세 명이 리뷰할 때까지, 그리고 최소 한 달 동안 풀에 남습니다. 누군가 맡기 전에 철회하면 모두 돌려받습니다.",
       "frozenNote": "파일의 해시와 오늘 날짜({date})가 이 시나리오가 지금 존재했다는 증거로 기록됩니다.",
       "cancel": "취소",
-      "submit": "{cost} 크레딧으로 제출",
+      "submit": "티켓 {cost}장으로 제출",
       "rendering": "PDF 생성 중…",
       "uploading": "업로드 중…",
       "errors": {
@@ -995,7 +994,7 @@
         "noTitle": "시나리오에 제목을 붙이세요.",
         "loglineShort": "로그라인은 최소 {min}자여야 합니다.",
         "noGenre": "장르를 하나 이상 고르세요.",
-        "credits": "제출에는 {cost} 크레딧이 필요하지만 보유 크레딧은 {balance}입니다. 시나리오를 리뷰해서 크레딧을 얻으세요.",
+        "tickets": "제출에는 티켓 {cost}장이 필요하지만 보유 티켓은 {balance}장입니다. 시나리오를 리뷰해서 티켓을 얻으세요.",
         "duplicate": "이 PDF는 이미 Coverage에 있습니다.",
         "failed": "제출에 실패했습니다. 다시 시도해 주세요."
       }
@@ -1023,8 +1022,8 @@
       "deadlineOn": "기한 {date} ({days}일 남음)",
       "continue": "계속",
       "autoSubmittedTag": "자동 전송됨",
-      "submittedBanner": "리뷰를 보냈습니다. 1 크레딧을 얻었습니다.",
-      "releasedBanner": "시나리오를 돌려보냈습니다. 크레딧도 불이익도 없습니다.",
+      "submittedBanner": "리뷰를 보냈습니다. 티켓 한 장을 얻었습니다.",
+      "releasedBanner": "시나리오를 돌려보냈습니다. 티켓도 불이익도 없습니다.",
       "goneBanner": "이 리뷰는 종료되었습니다. 이미 전송되었거나 기한이 지났습니다."
     },
     "review": {
@@ -1108,11 +1107,11 @@
         "EXPIRED": "만료됨",
         "RELEASED": "돌려보냄"
       },
-      "creditReasons": {
-        "STARTER": "환영 크레딧",
+      "ticketReasons": {
+        "STARTER": "환영 티켓",
         "SUBMISSION": "시나리오 제출",
         "REVIEW_COMPLETED": "리뷰 완료",
-        "SUBMISSION_REFUND": "제출 환불",
+        "SUBMISSION_REFUND": "티켓 반환",
         "ADMIN_ADJUST": "조정"
       },
       "reportReasons": {
