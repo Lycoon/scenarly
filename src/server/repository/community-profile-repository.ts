@@ -9,12 +9,8 @@ export class CommunityProfileRepository {
         return db.communityProfile.findUnique({ where: { userId } });
     }
 
-    create(userId: string, penName: string, db: Db = prisma) {
-        return db.communityProfile.create({ data: { userId, penName } });
-    }
-
-    updatePenName(userId: string, penName: string) {
-        return prisma.communityProfile.update({ where: { userId }, data: { penName } });
+    create(userId: string, db: Db = prisma) {
+        return db.communityProfile.create({ data: { userId } });
     }
 
     /**

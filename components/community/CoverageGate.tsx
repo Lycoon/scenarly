@@ -1,33 +1,25 @@
 "use client";
 
-import { ReactNode, useContext, useState } from "react";
+import { ReactNode, useContext } from "react";
 import { useTranslations } from "next-intl";
-import { useSWRConfig } from "swr";
 
 import Loading from "@components/utils/Loading";
 import { DashboardContext } from "@src/context/DashboardContext";
 import { useCommunityMe } from "@src/lib/community/hooks";
-import { isApiError, joinCommunity } from "@src/lib/community/requests";
-import { PEN_NAME_MAX_LENGTH, PEN_NAME_MIN_LENGTH, STARTER_TICKETS } from "@src/lib/community/constants";
 
 import styles from "./Community.module.css";
 import { formatDate } from "./format";
 
 /**
- * Wraps every Coverage page. Resolves, in order: session → entry gate → membership,
- * and renders the matching card instead of the page until all three pass. The
- * page itself is rendered dimmed behind a gate card so a visitor sees what they
- * will get.
+ * Wraps every Coverage page. Resolves, in order: session → entry gate, and
+ * renders the matching card instead of the page until both pass (`/community/me`
+ * creates the profile of an eligible user). The page itself is rendered dimmed
+ * behind a gate card so a visitor sees what they will get.
  */
 const CoverageGate = ({ children }: { children: ReactNode }) => {
     const t = useTranslations("community.gate");
-    const { me, user, isLoading, mutate } = useCommunityMe();
+    const { me, user, isLoading } = useCommunityMe();
     const { openDashboard } = useContext(DashboardContext);
-    const { mutate: mutateGlobal } = useSWRConfig();
-
-    const [penName, setPenName] = useState("");
-    const [joining, setJoining] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     if (isLoading) {
         return (
@@ -53,59 +45,13 @@ const CoverageGate = ({ children }: { children: ReactNode }) => {
 
     if (me.profile) return <>{children}</>;
 
-    if (!me.eligibility.ok) {
-        const unverified = me.eligibility.reason === "UNVERIFIED";
-        return (
-            <Gated>
-                <span className={styles.noticeTitle}>{unverified ? t("unverifiedTitle") : t("tooRecentTitle")}</span>
-                <p className={styles.muted}>
-                    {unverified
-                        ? t("unverifiedBody")
-                        : t("tooRecentBody", { date: formatDate(me.eligibility.eligibleAt) })}
-                </p>
-            </Gated>
-        );
-    }
-
-    const onJoin = async () => {
-        const name = penName.trim();
-        if (name.length < PEN_NAME_MIN_LENGTH) return setError(t("penNameTooShort", { min: PEN_NAME_MIN_LENGTH }));
-        setJoining(true);
-        setError(null);
-        try {
-            await joinCommunity(name);
-            await mutate();
-            await mutateGlobal("/api/community/submissions");
-        } catch (e) {
-            setError(isApiError(e) ? e.message : t("joinFailed"));
-        } finally {
-            setJoining(false);
-        }
-    };
-
+    const unverified = me.eligibility.reason === "UNVERIFIED";
     return (
         <Gated>
-            <span className={styles.noticeTitle}>{t("joinTitle")}</span>
-            <p className={styles.muted}>{t("joinBody", { tickets: STARTER_TICKETS })}</p>
-            <div className={styles.field} style={{ width: "100%", maxWidth: 360 }}>
-                <label className={styles.label} htmlFor="community-pen-name">
-                    {t("penName")}
-                </label>
-                <input
-                    id="community-pen-name"
-                    className={styles.input}
-                    value={penName}
-                    maxLength={PEN_NAME_MAX_LENGTH}
-                    placeholder={t("penNamePlaceholder")}
-                    onChange={(e) => setPenName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && onJoin()}
-                />
-                <span className={styles.hint}>{t("penNameHint")}</span>
-            </div>
-            {error && <span className={styles.error}>{error}</span>}
-            <button className={styles.btn} onClick={onJoin} disabled={joining}>
-                {joining ? t("joining") : t("join")}
-            </button>
+            <span className={styles.noticeTitle}>{unverified ? t("unverifiedTitle") : t("tooRecentTitle")}</span>
+            <p className={styles.muted}>
+                {unverified ? t("unverifiedBody") : t("tooRecentBody", { date: formatDate(me.eligibility.eligibleAt) })}
+            </p>
         </Gated>
     );
 };

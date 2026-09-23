@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FileText, Upload } from "lucide-react";
+import { FileText, Ticket, Upload } from "lucide-react";
 import { useSWRConfig } from "swr";
 
-import { CommunityGenre } from "@src/generated/client/browser";
+import BackButton from "@components/utils/BackButton";
+import { CommunityFormat, CommunityGenre } from "@src/generated/client/browser";
 import { createSubmission, isApiError } from "@src/lib/community/requests";
 import { useCommunityMe } from "@src/lib/community/hooks";
 import {
@@ -14,34 +15,50 @@ import {
     LOGLINE_MAX_LENGTH,
     LOGLINE_MIN_LENGTH,
     MAX_PDF_BYTES,
+    PAGE_BOUNDS,
     SUBMISSION_COST,
     TITLE_MAX_LENGTH,
 } from "@src/lib/community/constants";
 
+import form from "@components/utils/Form.module.css";
 import styles from "./Community.module.css";
-import { formatDate } from "./format";
 
 /** Where the PDF comes from: a file the user picks, or the open project's export. */
 export type SubmitSource =
     | { kind: "upload" }
     | { kind: "project"; projectId: string; buildPdf: () => Promise<Blob> };
 
+/** Coverage: feature only, costs tickets, gets reviewed. Showcase only: any format, free. */
+export type SubmitDestination = "COVERAGE" | "SHOWCASE_ONLY";
+
 interface SubmitFormProps {
     source: SubmitSource;
+    destination?: SubmitDestination;
     initialTitle?: string;
     initialLogline?: string;
     onSubmitted: (submissionId: string) => void;
     onCancel?: () => void;
+    /** Shown at the start of the action row, opposite the submit button. */
+    onBack?: () => void;
 }
 
 /**
- * The Coverage submission form both paths share. The upload path adds a file
- * field; the project path renders the PDF with `buildPdf` at submit time.
- * Coverage takes feature screenplays only, so there is no format to pick:
- * the page bounds are the one rule the file has to meet. Field rules mirror
- * the API's zod schema through the shared constants.
+ * The submission form both paths share. The upload path adds a file field; the
+ * project path renders the PDF with `buildPdf` at submit time. Coverage takes
+ * feature scripts only, so there is no format to pick and the page bounds are
+ * fixed; a Showcase-only submission picks its format, which sets the bounds,
+ * and costs nothing. Field rules mirror the API's zod schema through the
+ * shared constants.
  */
-const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitted, onCancel }: SubmitFormProps) => {
+const SubmitForm = ({
+    source,
+    destination = "COVERAGE",
+    initialTitle = "",
+    initialLogline = "",
+    onSubmitted,
+    onCancel,
+    onBack,
+}: SubmitFormProps) => {
     const t = useTranslations("community.submit");
     const tEnum = useTranslations("community.enums");
     const { me, mutate: mutateMe } = useCommunityMe();
@@ -52,11 +69,16 @@ const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitte
     const [title, setTitle] = useState(initialTitle);
     const [logline, setLogline] = useState(initialLogline);
     const [genres, setGenres] = useState<CommunityGenre[]>([]);
+    const [format, setFormat] = useState<CommunityFormat | null>(null);
     const [busy, setBusy] = useState<"idle" | "rendering" | "uploading">("idle");
     const [error, setError] = useState<string | null>(null);
 
+    const coverage = destination === "COVERAGE";
+    const cost = coverage ? SUBMISSION_COST : 0;
     const balance = me?.balance ?? 0;
-    const canAfford = balance >= SUBMISSION_COST;
+    const canAfford = balance >= cost;
+    const bounds = coverage ? COVERAGE_PAGE_BOUNDS : format ? PAGE_BOUNDS[format] : null;
+    const maxMb = Math.round(MAX_PDF_BYTES / 1024 ** 2);
 
     const toggleGenre = (g: CommunityGenre) =>
         setGenres((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : prev.length < GENRES_MAX ? [...prev, g] : prev));
@@ -67,16 +89,17 @@ const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitte
         if (picked.type !== "application/pdf" && !picked.name.toLowerCase().endsWith(".pdf")) {
             return setError(t("errors.notPdf"));
         }
-        if (picked.size > MAX_PDF_BYTES) return setError(t("errors.tooLarge", { mb: Math.round(MAX_PDF_BYTES / 1024 ** 2) }));
+        if (picked.size > MAX_PDF_BYTES) return setError(t("errors.tooLarge", { mb: maxMb }));
         setFile(picked);
     };
 
     const validate = (): string | null => {
+        if (!coverage && !format) return t("errors.noFormat");
         if (source.kind === "upload" && !file) return t("errors.noFile");
         if (!title.trim()) return t("errors.noTitle");
         if (logline.trim().length < LOGLINE_MIN_LENGTH) return t("errors.loglineShort", { min: LOGLINE_MIN_LENGTH });
         if (genres.length === 0) return t("errors.noGenre");
-        if (!canAfford) return t("errors.tickets", { cost: SUBMISSION_COST, balance });
+        if (!canAfford) return t("errors.tickets", { cost, balance });
         return null;
     };
 
@@ -97,13 +120,15 @@ const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitte
                 title: title.trim(),
                 logline: logline.trim(),
                 genres,
+                format: format ?? undefined,
                 sourceProjectId: source.kind === "project" ? source.projectId : undefined,
+                destination,
             });
             await Promise.all([mutateMe(), mutate("/api/community/submissions")]);
             onSubmitted(created.id);
         } catch (e) {
             if (isApiError(e) && e.code === "DUPLICATE_PDF") setError(t("errors.duplicate"));
-            else if (isApiError(e) && e.code === "INSUFFICIENT_TICKETS") setError(t("errors.tickets", { cost: SUBMISSION_COST, balance }));
+            else if (isApiError(e) && e.code === "INSUFFICIENT_TICKETS") setError(t("errors.tickets", { cost, balance }));
             else if (isApiError(e)) setError(e.message);
             else setError(t("errors.failed"));
         } finally {
@@ -113,6 +138,19 @@ const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitte
 
     return (
         <div className={styles.section} style={{ gap: 18 }}>
+            {!coverage && (
+                <div className={styles.field}>
+                    <label className={form.label}>{t("formatLabel")}</label>
+                    <div className={styles.row} style={{ gap: 6 }}>
+                        {Object.values(CommunityFormat).map((f) => (
+                            <Chip key={f} on={format === f} onClick={() => setFormat(f)}>
+                                {tEnum(`formats.${f}`)}
+                            </Chip>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {source.kind === "upload" && (
                 <div
                     className={styles.notice}
@@ -133,30 +171,35 @@ const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitte
                     />
                     {file ? <FileText size={22} /> : <Upload size={22} />}
                     <span className={styles.noticeTitle}>{file ? file.name : t("dropTitle")}</span>
-                    <span className={styles.muted}>
+                    <span className={styles.hint}>
                         {file
                             ? t("fileSize", { mb: (file.size / 1024 ** 2).toFixed(1) })
-                            : t("dropBody", { mb: Math.round(MAX_PDF_BYTES / 1024 ** 2) })}
-                    </span>
-                    <span className={styles.hint}>
-                        {t("formatHint", { min: COVERAGE_PAGE_BOUNDS.min, max: COVERAGE_PAGE_BOUNDS.max })}
+                            : coverage
+                              ? t("dropHint", { min: COVERAGE_PAGE_BOUNDS.min, max: COVERAGE_PAGE_BOUNDS.max, mb: maxMb })
+                              : bounds
+                                ? t("dropHintPages", { min: bounds.min, max: bounds.max, mb: maxMb })
+                                : t("dropHintAny", { mb: maxMb })}
                     </span>
                 </div>
             )}
 
             <div className={styles.field}>
-                <label className={styles.label}>{t("titleLabel")}</label>
+                <label className={form.label}>{t("titleLabel")}</label>
                 <input
                     className={styles.input}
                     value={title}
                     maxLength={TITLE_MAX_LENGTH}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder={t("titlePlaceholder")}
                 />
             </div>
 
             <div className={styles.field}>
-                <label className={styles.label}>{t("loglineLabel")}</label>
+                <div className={styles.labelRow}>
+                    <label className={form.label}>{t("loglineLabel")}</label>
+                    <span className={styles.hint}>
+                        {t("loglineHint", { count: logline.trim().length, min: LOGLINE_MIN_LENGTH, max: LOGLINE_MAX_LENGTH })}
+                    </span>
+                </div>
                 <textarea
                     className={styles.textarea}
                     style={{ minHeight: 100 }}
@@ -165,50 +208,64 @@ const SubmitForm = ({ source, initialTitle = "", initialLogline = "", onSubmitte
                     onChange={(e) => setLogline(e.target.value)}
                     placeholder={t("loglinePlaceholder")}
                 />
-                <span className={styles.hint}>{t("loglineHint", { count: logline.trim().length, min: LOGLINE_MIN_LENGTH, max: LOGLINE_MAX_LENGTH })}</span>
             </div>
 
             <div className={styles.field}>
-                <label className={styles.label}>{t("genresLabel", { max: GENRES_MAX })}</label>
+                <label className={form.label}>{t("genresLabel", { max: GENRES_MAX })}</label>
                 <div className={styles.row} style={{ gap: 6 }}>
-                    {Object.values(CommunityGenre).map((g) => {
-                        const on = genres.includes(g);
-                        return (
-                            <button
-                                key={g}
-                                type="button"
-                                className={`${styles.btn} ${on ? "" : styles.btnOutline}`}
-                                style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-                                onClick={() => toggleGenre(g)}
-                                aria-pressed={on}
-                            >
-                                {tEnum(`genres.${g}`)}
-                            </button>
-                        );
-                    })}
+                    {Object.values(CommunityGenre).map((g) => (
+                        <Chip key={g} on={genres.includes(g)} onClick={() => toggleGenre(g)}>
+                            {tEnum(`genres.${g}`)}
+                        </Chip>
+                    ))}
                 </div>
             </div>
 
-            <div className={styles.card} style={{ gap: 6 }}>
-                <span style={{ fontWeight: 600 }}>{t("costTitle", { cost: SUBMISSION_COST, balance })}</span>
-                <span className={styles.muted}>{t("costBody")}</span>
-                <span className={styles.muted}>{t("frozenNote", { date: formatDate(new Date()) })}</span>
-            </div>
-
-            {error && <span className={styles.error}>{error}</span>}
-
-            <div className={`${styles.row} ${styles.rowEnd}`}>
-                {onCancel && (
-                    <button type="button" className={`${styles.btn} ${styles.btnQuiet}`} onClick={onCancel} disabled={busy !== "idle"}>
-                        {t("cancel")}
+            <div className={styles.actions}>
+                <div className={`${styles.row} ${styles.rowEnd} ${styles.actionRow}`}>
+                    {onBack && (
+                        <div className={styles.actionBack}>
+                            <BackButton onClick={onBack} />
+                        </div>
+                    )}
+                    {onCancel && (
+                        <button type="button" className={`${styles.btn} ${styles.btnQuiet}`} onClick={onCancel} disabled={busy !== "idle"}>
+                            {t("cancel")}
+                        </button>
+                    )}
+                    <button type="button" className={`${styles.btn} ${styles.btnWide}`} onClick={onSubmit} disabled={busy !== "idle" || !canAfford}>
+                        {busy === "rendering" ? (
+                            t("rendering")
+                        ) : busy === "uploading" ? (
+                            t("uploading")
+                        ) : (
+                            <>
+                                {t("submit")}
+                                <span className={styles.btnCost}>
+                                    <Ticket size={15} />
+                                    {cost}
+                                </span>
+                            </>
+                        )}
                     </button>
-                )}
-                <button type="button" className={styles.btn} onClick={onSubmit} disabled={busy !== "idle" || !canAfford}>
-                    {busy === "rendering" ? t("rendering") : busy === "uploading" ? t("uploading") : t("submit", { cost: SUBMISSION_COST })}
-                </button>
+                </div>
+                {error && <span className={`${styles.error} ${styles.actionError}`}>{error}</span>}
             </div>
         </div>
     );
 };
+
+/** A toggle in the format and genre pickers. */
+const Chip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) => (
+    <button
+        type="button"
+        className={`${styles.btn} ${on ? "" : styles.btnOutline}`}
+        style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+        onClick={onClick}
+        aria-pressed={on}
+    >
+        {children}
+    </button>
+);
 
 export default SubmitForm;

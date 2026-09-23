@@ -17,8 +17,10 @@ const CommunityTabs = () => {
     const t = useTranslations("community.nav");
     const pathname = usePathname() ?? "";
     // Everything that is not Coverage is the public side, so `/community` itself
-    // lights the first tab while it redirects.
+    // lights the first tab while it redirects. `/community/submit` feeds both
+    // halves, so it lights neither.
     const inCoverage = pathname.startsWith("/community/coverage");
+    const inShowcase = !inCoverage && !pathname.startsWith("/community/submit");
 
     const tab = (href: string, label: string, active: boolean) => (
         <Link href={href} className={join(styles.tab, active ? styles.active : "")} aria-current={active ? "page" : undefined}>
@@ -28,7 +30,7 @@ const CommunityTabs = () => {
 
     return (
         <div className={styles.tabs}>
-            {tab("/community/showcase", t("showcase"), !inCoverage)}
+            {tab("/community/showcase", t("showcase"), inShowcase)}
             {tab("/community/coverage", t("coverage"), inCoverage)}
         </div>
     );

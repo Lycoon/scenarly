@@ -31,8 +31,6 @@ const CoverageDashboard = () => {
     return (
         <div className={styles.page}>
             <div className={styles.pageInner}>
-                <h1 className={styles.pageTitle}>{t("title")}</h1>
-
                 {claim && (
                     <div className={styles.banner}>
                         <div className={styles.section} style={{ gap: 4 }}>
@@ -53,7 +51,7 @@ const CoverageDashboard = () => {
                 )}
 
                 <div className={styles.section}>
-                    <div className={styles.row}>
+                    <div className={`${styles.row} ${styles.tabRow}`}>
                         {(["submissions", "reviews", "tickets"] as Tab[]).map((id) => (
                             <button
                                 key={id}
@@ -109,12 +107,12 @@ const CoverageDashboard = () => {
                         (loadingTickets ? (
                             <Loading />
                         ) : (
-                            <div className={styles.card} style={{ gap: 8 }}>
+                            <div className={styles.ledger}>
                                 {entries?.map((e) => (
-                                    <div key={e.id} className={styles.row} style={{ justifyContent: "space-between" }}>
+                                    <div key={e.id} className={styles.ledgerRow}>
                                         <span>{tEnum(`ticketReasons.${e.reason}`)}</span>
                                         <span className={styles.muted}>{formatDate(e.createdAt)}</span>
-                                        <span style={{ fontWeight: 600, color: e.delta > 0 ? "var(--success)" : "var(--primary-text)" }}>
+                                        <span className={`${styles.ledgerDelta} ${e.delta > 0 ? styles.ledgerCredit : ""}`}>
                                             {e.delta > 0 ? `+${e.delta}` : e.delta}
                                         </span>
                                     </div>

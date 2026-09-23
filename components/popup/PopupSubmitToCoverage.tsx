@@ -16,8 +16,8 @@ import Loading from "@components/utils/Loading";
 
 /**
  * "Submit this project to Coverage": the shared submission form over the
- * editor's own PDF export. Members see the form; everyone else is pointed to
- * the Community pages, where the entry gate and the join step live.
+ * editor's own PDF export. Members see the form; a user who fails the entry
+ * gate is pointed to the Community pages, which say when they qualify.
  */
 const PopupSubmitToCoverage = ({ data }: PopupData<PopupSubmitToCoverageData>) => {
     const userCtx = useContext(UserContext);

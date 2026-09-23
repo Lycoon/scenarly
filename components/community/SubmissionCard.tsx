@@ -36,10 +36,12 @@ const SubmissionCard = ({ submission }: { submission: MySubmission }) => {
                     <FileText size={12} style={{ verticalAlign: -2, marginRight: 4 }} />
                     {t("pages", { count: submission.pageCount })}
                 </span>
-                <span>
-                    <MessageSquare size={12} style={{ verticalAlign: -2, marginRight: 4 }} />
-                    {t("reviewsProgress", { count: submission.completedReviewCount, min: MIN_COMPLETED_REVIEWS })}
-                </span>
+                {submission.status !== "SHOWCASE_ONLY" && (
+                    <span>
+                        <MessageSquare size={12} style={{ verticalAlign: -2, marginRight: 4 }} />
+                        {t("reviewsProgress", { count: submission.completedReviewCount, min: MIN_COMPLETED_REVIEWS })}
+                    </span>
+                )}
                 {submission.activeClaims > 0 && <span>{t("beingRead", { count: submission.activeClaims })}</span>}
                 <span>{statusLabel}</span>
             </div>

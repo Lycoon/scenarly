@@ -55,6 +55,8 @@ const SubmissionDetail = ({ submissionId }: { submissionId: string }) => {
     }
 
     const pooled = submission.status === "POOLED";
+    // Never went through Coverage: no reviews to show or keep.
+    const showcaseOnly = submission.status === "SHOWCASE_ONLY";
     const neverClaimed = submission.activeClaims === 0 && submission.reviews.length === 0;
 
     const onWithdraw = async () => {
@@ -116,17 +118,19 @@ const SubmissionDetail = ({ submissionId }: { submissionId: string }) => {
 
                 {showPdf && <PdfViewer getUrl={() => getSubmissionPdfUrl(submission.id)} />}
 
-                <div className={styles.section}>
-                    <span className={styles.sectionTitle}>{t("reviewsTitle", { count: submission.reviews.length })}</span>
-                    {submission.reviews.length === 0 ? (
-                        <div className={styles.notice}>
-                            <span className={styles.noticeTitle}>{t("noReviewsTitle")}</span>
-                            <p className={styles.muted}>{pooled ? t("noReviewsBodyPooled") : t("noReviewsBodyRetired")}</p>
-                        </div>
-                    ) : (
-                        submission.reviews.map((r) => <ReviewCard key={r.claimId} review={r} onChanged={() => refresh()} />)
-                    )}
-                </div>
+                {!showcaseOnly && (
+                    <div className={styles.section}>
+                        <span className={styles.sectionTitle}>{t("reviewsTitle", { count: submission.reviews.length })}</span>
+                        {submission.reviews.length === 0 ? (
+                            <div className={styles.notice}>
+                                <span className={styles.noticeTitle}>{t("noReviewsTitle")}</span>
+                                <p className={styles.muted}>{pooled ? t("noReviewsBodyPooled") : t("noReviewsBodyRetired")}</p>
+                            </div>
+                        ) : (
+                            submission.reviews.map((r) => <ReviewCard key={r.claimId} review={r} onChanged={() => refresh()} />)
+                        )}
+                    </div>
+                )}
 
                 <div className={styles.section}>
                     <span className={styles.sectionTitle}>{t("dangerTitle")}</span>
@@ -136,7 +140,9 @@ const SubmissionDetail = ({ submissionId }: { submissionId: string }) => {
                                 ? t("withdrawRefund", { cost: SUBMISSION_COST })
                                 : pooled
                                   ? t("withdrawNoRefund")
-                                  : t("withdrawRetired")}
+                                  : showcaseOnly
+                                    ? t("withdrawShowcase")
+                                    : t("withdrawRetired")}
                         </p>
                         {actionError && <span className={styles.error}>{actionError}</span>}
                         {confirmWithdraw ? (

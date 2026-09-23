@@ -9,7 +9,7 @@
  * commit leaves nothing charged and only an orphan object to delete.
  *
  * Author-facing reads never select a reviewer's id; the review label is the
- * reviewer's position or, when they signed, their pen name.
+ * reviewer's position or, when they signed, their username.
  */
 
 import * as S3 from "@src/lib/s3";
@@ -147,7 +147,7 @@ export async function getForAuthor(submissionId: string, authorId: string) {
                     reports: { where: { reporterId: authorId }, select: { id: true } },
                 },
             },
-            reviewer: { select: { penName: true } },
+            reviewer: { select: { user: { select: { username: true } } } },
         },
     });
 
@@ -158,8 +158,8 @@ export async function getForAuthor(submissionId: string, authorId: string) {
     const reviews = claims.map((c, i) => ({
         claimId: c.id,
         // "Reviewer n" keeps blind reviews distinguishable across visits; a
-        // signed review shows the pen name (null if that account is gone).
-        reviewer: c.review!.signed ? c.reviewer?.penName ?? null : null,
+        // signed review shows the username (null if unset or the account is gone).
+        reviewer: c.review!.signed ? c.reviewer?.user.username ?? null : null,
         position: i + 1,
         worksWell: c.review!.worksWell,
         doesNotWork: c.review!.doesNotWork,

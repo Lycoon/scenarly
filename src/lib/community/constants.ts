@@ -63,8 +63,6 @@ export const LOGLINE_MIN_LENGTH = 40;
 export const LOGLINE_MAX_LENGTH = 800;
 export const GENRES_MIN = 1;
 export const GENRES_MAX = 3;
-export const PEN_NAME_MIN_LENGTH = 2;
-export const PEN_NAME_MAX_LENGTH = 40;
 
 /** Lifetime of a presigned PDF URL. */
 export const PRESIGN_TTL_S = 300;

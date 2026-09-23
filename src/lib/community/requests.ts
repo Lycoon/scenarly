@@ -35,12 +35,6 @@ const json = (method: string, body?: object): RequestInit => ({
 export const isApiError = (e: unknown): e is ApiError =>
     typeof e === "object" && e !== null && "status" in e && "message" in e;
 
-// ── Membership ──────────────────────────────────────────────────────────────
-
-export const joinCommunity = (penName: string) => call<{ penName: string }>("/api/community/join", json("POST", { penName }));
-
-export const updatePenName = (penName: string) => call<{ penName: string }>("/api/community/me", json("PATCH", { penName }));
-
 // ── Submissions ─────────────────────────────────────────────────────────────
 
 export interface SubmissionFields {

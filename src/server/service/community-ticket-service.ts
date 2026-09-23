@@ -11,7 +11,7 @@
 
 import prisma from "@src/server/db";
 import * as UserService from "@src/server/service/user-service";
-import { ConflictError, InsufficientTicketsError, NotEligibleError, NotFoundError } from "@src/lib/utils/api-utils";
+import { InsufficientTicketsError, NotFoundError } from "@src/lib/utils/api-utils";
 import { getEligibility, type Eligibility } from "@src/lib/community/rules";
 import {
     ENTRY_MIN_ACCOUNT_AGE_MS,
@@ -40,7 +40,7 @@ const entryMinAgeMs = (): number => {
 };
 
 /**
- * Entry gate for a user who has not joined yet. Admins skip the account-age
+ * Entry gate for a user who has no profile yet. Admins skip the account-age
  * rule so the feature can be exercised on a fresh account; the verified-email
  * part still applies to them.
  */
@@ -57,32 +57,31 @@ export const getProfile = (userId: string) => profiles.findByUserId(userId);
 /** Profile or 404: for routes that need a member. */
 export async function requireProfile(userId: string) {
     const profile = await profiles.findByUserId(userId);
-    if (!profile) throw new NotFoundError("Join Community first");
+    if (!profile) throw new NotFoundError("Open Coverage first");
     return profile;
 }
 
 /**
- * Create the profile and grant the starter tickets in one transaction. A
- * second join is a 409, and the ledger unique means the grant can never
- * happen twice even if the profile row somehow survived a partial failure.
+ * Create the profile and grant the starter tickets in one transaction, the
+ * first time an eligible user opens Coverage. Two concurrent first visits
+ * race on the profile's primary key: the loser reads the winner's row. The
+ * ledger unique means the grant can never happen twice even if the profile
+ * row somehow survived a partial failure.
  */
-export async function join(userId: string, penName: string, now = new Date()) {
-    const eligibility = await getUserEligibility(userId, now);
-    if (!eligibility.ok) throw new NotEligibleError();
-
+export async function createProfile(userId: string) {
     try {
         return await prisma.$transaction(async (tx) => {
-            const profile = await profiles.create(userId, penName, tx);
+            const profile = await profiles.create(userId, tx);
             await profiles.appendTicket(userId, STARTER_TICKETS, CommunityTicketReason.STARTER, userId, tx);
             return profile;
         });
     } catch (e) {
-        if (isUniqueViolation(e)) throw new ConflictError("Already a member of Community");
-        throw e;
+        if (!isUniqueViolation(e)) throw e;
+        const profile = await profiles.findByUserId(userId);
+        if (!profile) throw e;
+        return profile;
     }
 }
-
-export const updatePenName = (userId: string, penName: string) => profiles.updatePenName(userId, penName);
 
 export const getBalance = (userId: string) => profiles.balance(userId);
 

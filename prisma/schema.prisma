@@ -300,14 +300,13 @@ enum CommunityReportReason {
   OTHER
 }
 
-// One row per user who joined Community. Created together with the STARTER
-// ledger row once the entry gate (verified email of a minimum age) passes.
+// One row per Community member. Created together with the STARTER ledger row
+// the first time the user opens Coverage once the entry gate (verified email
+// of a minimum age) passes.
 model CommunityProfile {
   userId              String                @id
   user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt           DateTime              @default(now())
-  // Public name on Showcase and on signed reviews. Never shown on blind reviews.
-  penName             String
   // The one ACTIVE claim. Nullable unique is the "one claim at a time" guard:
   // claiming is `updateMany where activeClaimId is null`, count 0 = conflict.
   activeClaimId       String?               @unique
@@ -451,7 +450,7 @@ model CommunityReview {
   doesNotWork         String                @default("") @db.Text
   remarks             String                @default("") @db.Text
   wordCount           Int                   @default(0)
-  // Reviewer chose to reveal their pen name to the author.
+  // Reviewer chose to reveal their username to the author.
   signed              Boolean               @default(false)
   autoSubmitted       Boolean               @default(false)
   createdAt           DateTime              @default(now())

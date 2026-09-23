@@ -20,7 +20,7 @@ interface CommunitySidebarProps {
 /**
  * The library sidebar with Community's navigation in place of the project
  * actions: the way back to the projects library, then — for a member — the two
- * things they can do in Coverage, and their balance. Switching between
+ * things they can do (submit to Showcase or Coverage, review), and their balance. Switching between
  * Showcase and Coverage is the navbar's job (see [CommunityTabs]).
  */
 const CommunitySidebar = ({ sidebarOpen, setSidebarOpen }: CommunitySidebarProps) => {
@@ -47,7 +47,7 @@ const CommunitySidebar = ({ sidebarOpen, setSidebarOpen }: CommunitySidebarProps
             {me?.profile && (
                 <>
                     <div className={styles.divider} />
-                    {item("/community/coverage/submit", <Upload size={16} />, t("submit"), pathname.startsWith("/community/coverage/submit"))}
+                    {item("/community/submit", <Upload size={16} />, t("submit"), pathname.startsWith("/community/submit"))}
                     {item("/community/coverage/review", <PenLine size={16} />, t("review"), pathname.startsWith("/community/coverage/review"))}
                     {/* Pinned to the bottom of the column: the sidebar is a flex
                         column and this is the only item that grows. */}

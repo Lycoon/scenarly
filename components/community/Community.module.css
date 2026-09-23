@@ -22,6 +22,11 @@
     max-width: 620px;
 }
 
+/* Single-column forms (the submit page). */
+.pageInnerForm {
+    max-width: 480px;
+}
+
 .pageHeader {
     display: flex;
     flex-wrap: wrap;
@@ -79,6 +84,103 @@
     color: var(--secondary-text);
 }
 
+/* A card that is a choice (the submit page's destinations). */
+.option {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px;
+    border-radius: 12px;
+    background: var(--secondary);
+    border: 2px solid var(--tertiary);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.2s ease;
+}
+
+.option:hover {
+    border-color: var(--secondary-text);
+}
+
+/* The destinations stacked full width, so each bullet fits on one line. */
+.optionList {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.optionPoints {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 0 8px;
+    padding-left: 18px;
+    line-height: 1.4;
+}
+
+/* What the destination accepts, set apart from the description as a footer. */
+.optionFormats {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--tertiary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--primary-text);
+}
+
+.optionFormats svg {
+    flex-shrink: 0;
+    color: var(--secondary-text);
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    color: var(--secondary-text);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.backLink:hover {
+    color: var(--primary-text);
+}
+
+/* Ticket ledger: plain rows on the page background, split by hairlines. */
+.ledger {
+    display: flex;
+    flex-direction: column;
+    /* Three short columns: at full page width the date and delta drift far
+       from their label. Same cap as the narrow pages. */
+    max-width: 620px;
+}
+
+.ledgerRow {
+    display: grid;
+    grid-template-columns: 1fr auto 4ch;
+    align-items: baseline;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--separator);
+}
+
+.ledgerRow:last-child {
+    border-bottom: none;
+}
+
+.ledgerDelta {
+    font-weight: 600;
+    text-align: right;
+    color: var(--primary-text);
+}
+
+.ledgerCredit {
+    color: var(--success);
+}
+
 .muted {
     color: var(--secondary-text);
     font-size: 0.85rem;
@@ -99,6 +201,12 @@
 
 .rowEnd {
     justify-content: flex-end;
+}
+
+/* The Coverage dashboard's tab buttons, split from the tab's content. */
+.tabRow {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--separator);
 }
 
 .tag {
@@ -131,6 +239,23 @@
     cursor: pointer;
     transition: opacity 0.2s ease;
     white-space: nowrap;
+}
+
+/* Ticket cost inside a button label, after the verb: Submit [ticket] 3. */
+.btnCost {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+}
+
+/* Same orange as the balance in the Community sidebar. */
+.btnCost svg {
+    color: var(--warning);
+}
+
+.btnWide {
+    padding-inline: 28px;
 }
 
 .btn:hover:not(:disabled) {
@@ -171,6 +296,14 @@
     color: var(--secondary-text);
 }
 
+/* A field's label with a counter or note pushed to the right. */
+.labelRow {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .hint {
     font-size: 0.75rem;
     color: var(--secondary-text);
@@ -202,6 +335,29 @@
 .error {
     color: var(--error);
     font-size: 0.85rem;
+}
+
+/* Buttons row under a separator like the project settings form
+   (.formActions), with the form's error right-aligned below it. */
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid var(--separator);
+    padding-top: 24px;
+}
+
+.actionRow {
+    flex-wrap: nowrap;
+}
+
+/* Holds the Back button to the left, opposite the submit button. */
+.actionBack {
+    margin-right: auto;
+}
+
+.actionError {
+    text-align: right;
 }
 
 .success {

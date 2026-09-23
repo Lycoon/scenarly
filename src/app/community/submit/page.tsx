@@ -1,5 +1,5 @@
 import SubmitPage from "@components/community/SubmitPage";
 
-export default function CoverageSubmitPage() {
+export default function CommunitySubmitPage() {
     return <SubmitPage />;
 }

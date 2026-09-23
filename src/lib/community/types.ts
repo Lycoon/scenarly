@@ -21,7 +21,6 @@ export interface CommunityEligibility {
 }
 
 export interface CommunityProfileView {
-    penName: string;
     createdAt: string;
     reviewsCompleted: number;
     usefulCount: number;
@@ -101,7 +100,7 @@ export interface MySubmission {
 
 export interface ReceivedReview {
     claimId: string;
-    /** Pen name when the reviewer signed, else null (shown as "Reviewer n"). */
+    /** Username when the reviewer signed, else null (shown as "Reviewer n"). */
     reviewer: string | null;
     position: number;
     worksWell: string;

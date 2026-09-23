@@ -775,7 +775,7 @@
       "title": "Submit to Coverage",
       "done": "Your script is in the pool. Reviews will appear on its Coverage page as they arrive.",
       "open": "Open Coverage page",
-      "notMember": "Coverage is Scenarly's review exchange. Join it on the Community pages first — it takes a minute — then come back here.",
+      "notMember": "Coverage is Scenarly's review exchange, open to verified accounts at least a week old. Yours doesn't qualify yet: the Community pages show when it will.",
       "openCommunity": "Open Community"
     }
   },
@@ -897,8 +897,8 @@
       "tickets": "{count, plural, one {# ticket} other {# tickets}}",
       "ticketsTitle": "Your Coverage tickets",
       "backToApp": "My projects",
-      "submit": "Submit a script",
-      "review": "Review a script",
+      "submit": "Submit",
+      "review": "Review",
       "showcase": "Showcase"
     },
     "gate": {
@@ -908,24 +908,14 @@
       "unverifiedTitle": "Verify your email first",
       "unverifiedBody": "Coverage is open to verified accounts. Sign in with the link we email you and come back.",
       "tooRecentTitle": "Almost there",
-      "tooRecentBody": "Coverage opens to accounts that are at least a week old. Yours qualifies on {date}.",
-      "joinTitle": "Join Coverage",
-      "joinBody": "Pick a pen name and you're in, with {tickets} tickets to submit your first script. Reviews are blind by default: your pen name only shows when you choose to sign a review.",
-      "penName": "Pen name",
-      "penNamePlaceholder": "How other writers will know you",
-      "penNameHint": "You can change it later.",
-      "penNameTooShort": "A pen name needs at least {min} characters.",
-      "join": "Join Coverage",
-      "joining": "Joining…",
-      "joinFailed": "Could not join. Please try again."
+      "tooRecentBody": "Coverage opens to accounts that are at least a week old. Yours qualifies on {date}."
     },
     "dashboard": {
-      "title": "Coverage",
       "balance": "{count, plural, one {# ticket} other {# tickets}}",
-      "submitCard": "Submit a screenplay",
+      "submitCard": "Submit a script",
       "submitCardBody": "Upload a PDF, or submit a Scenarly project from its Export tab. It stays in the pool until it has three reviews.",
       "submitCost": "Uses {cost} tickets",
-      "reviewCard": "Review a screenplay",
+      "reviewCard": "Review a script",
       "reviewCardContinue": "Continue your review",
       "reviewCardBody": "Pick one of five scripts, read it, write your notes. You have three weeks, and can send them after one.",
       "reviewReward": "Earns 1 ticket",
@@ -961,6 +951,7 @@
       "withdrawRefund": "Nobody has claimed this script yet: withdrawing it gives your {cost} tickets back.",
       "withdrawNoRefund": "This script has been claimed, so withdrawing it does not give the tickets back. Reviews in progress will still arrive.",
       "withdrawRetired": "Withdrawing removes the PDF from our storage. The reviews you received stay readable.",
+      "withdrawShowcase": "Withdrawing takes the script off Showcase and removes the PDF from our storage.",
       "withdraw": "Withdraw this script",
       "withdrawYes": "Yes, withdraw",
       "withdrawing": "Withdrawing…",
@@ -968,26 +959,32 @@
       "notFound": "This submission does not exist or is not yours."
     },
     "submit": {
-      "title": "Submit a screenplay",
-      "subtitle": "Upload the PDF you want reviewed. It is frozen as submitted: later edits never change it.",
+      "title": "Submit a script",
+      "titleShowcase": "Submit to Showcase",
+      "titleCoverage": "Submit to Coverage",
+      "showcaseOptionPoint1": "Share your work publicly",
+      "showcaseOptionPoint2": "Submissions can only be upvoted",
+      "showcaseOptionFormats": "Feature, pilot, short or other",
+      "coverageOptionPoint1": "Share your feature script for review",
+      "coverageOptionPoint2": "Get detailed feedback on what's good or not",
+      "coverageOptionFormats": "Feature scripts only",
+      "formatLabel": "Format",
       "dropTitle": "Drop a PDF here, or click to choose one",
-      "dropBody": "PDF only, up to {mb} MB.",
+      "dropHint": "Feature script, {min}–{max} pages, up to {mb} MB",
+      "dropHintPages": "{min}–{max} pages, up to {mb} MB",
+      "dropHintAny": "Up to {mb} MB",
       "fileSize": "{mb} MB",
       "titleLabel": "Title",
-      "titlePlaceholder": "The title as it appears on the script",
-      "loglineLabel": "Logline or synopsis",
-      "loglinePlaceholder": "What reviewers see before they choose your script. One to three sentences.",
+      "loglineLabel": "Logline",
+      "loglinePlaceholder": "One to three sentences.",
       "loglineHint": "{count} characters ({min}–{max})",
-      "formatHint": "Feature screenplays only, {min} to {max} pages.",
       "genresLabel": "Genres (up to {max})",
-      "costTitle": "{cost} tickets — you have {balance}",
-      "costBody": "Your script stays in the pool until three writers have reviewed it, and for at least a month. You get them all back if you withdraw before anyone claims it.",
-      "frozenNote": "The file's hash and today's date ({date}) are recorded as proof this script existed now.",
       "cancel": "Cancel",
-      "submit": "Submit with {cost} tickets",
+      "submit": "Submit",
       "rendering": "Rendering PDF…",
       "uploading": "Uploading…",
       "errors": {
+        "noFormat": "Pick a format.",
         "notPdf": "Choose a PDF file.",
         "tooLarge": "The PDF is over {mb} MB.",
         "noFile": "Choose a PDF first.",
@@ -1039,7 +1036,7 @@
       "unsaved": "Unsaved changes",
       "saveFailed": "Could not save the draft",
       "signLabel": "Sign this review",
-      "signHint": "Show the author your pen name. Off by default: reviews are blind.",
+      "signHint": "Show the author your username. Off by default: reviews are blind.",
       "floorPassed": "The one-week wait is over. Send your review when it's ready.",
       "autoSendNote": "Reviews can be sent after one week. If your saved draft is long enough on {date}, it is sent for you.",
       "release": "Give this script back",
@@ -1124,7 +1121,7 @@
     },
     "showcase": {
       "comingSoonTitle": "Showcase is coming",
-      "comingSoonBody": "A public wall of screenplays their authors chose to share. Not open yet."
+      "comingSoonBody": "A public wall of scripts their authors chose to share. Not open yet."
     }
   }
 }

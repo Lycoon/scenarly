@@ -87,11 +87,6 @@ export class InsufficientTicketsError extends AppError {
         super(409, message, "INSUFFICIENT_TICKETS");
     }
 }
-export class NotEligibleError extends AppError {
-    constructor(message = "Not eligible for Community yet") {
-        super(403, message, "NOT_ELIGIBLE");
-    }
-}
 
 export const SuccessNoContent = () => {
     return new NextResponse(null, { status: 204 });
