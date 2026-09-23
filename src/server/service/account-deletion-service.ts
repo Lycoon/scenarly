@@ -12,8 +12,11 @@
  *     Auth.js verification tokens, pending invitations addressed to them).
  *     None of these can be a foreign key: all three are written for addresses
  *     that have no account yet — sign-up links and invitations to strangers.
- *  4. the User row itself, which cascades Account, Session and the remaining
- *     ProjectMember rows.
+ *  4. Community files and caches the cascade cannot reach (R2 objects of their
+ *     submissions, a claim in flight, unsent drafts, upvote counts, Showcase
+ *     pages) — see community-account-service.
+ *  5. the User row itself, which cascades Account, Session, the remaining
+ *     ProjectMember rows and every Community row.
  *
  * External cleanup (Cloudflare, Stripe) is best-effort: it is logged on
  * failure but never blocks the deletion, otherwise a Worker outage would leave
@@ -21,6 +24,7 @@
  */
 
 import * as CollabUtils from "@src/lib/cloud/utils";
+import * as CommunityAccountService from "@src/server/service/community-account-service";
 import * as S3 from "@src/lib/s3";
 import * as MagicLinkService from "@src/server/service/magic-link-service";
 import * as ProjectService from "@src/server/service/project-service";
@@ -61,6 +65,12 @@ export async function deleteAccount(userId: string): Promise<boolean> {
         // Any GDPR export zip still sitting in R2 (best-effort, logged inside).
         S3.destroyPrefix(`gdpr-exports/${userId}/`),
     ]);
+
+    try {
+        await CommunityAccountService.prepareAccountDeletion(userId);
+    } catch (e) {
+        logger.error("[AccountDeletion] Community cleanup failed", { userId, error: e });
+    }
 
     await UserService.deleteUserFromId(userId);
     logger.info("[AccountDeletion] Deleted account", { userId, projects: memberships.length });

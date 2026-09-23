@@ -9,6 +9,7 @@ import {
     PopupImportFileData,
     PopupSaveToFileData,
     PopupSceneData,
+    PopupSubmitToCoverageData,
     PopupType,
     PopupUnlockDraftData,
     PopupUnlockPagesData,
@@ -26,6 +27,7 @@ import PopupUploadToCloud from "./PopupUploadToCloud";
 import PopupSaveToFile from "./PopupSaveToFile";
 import PopupAutoSave from "./PopupAutoSave";
 import PopupConfirmFileBind from "./PopupConfirmFileBind";
+import PopupSubmitToCoverage from "./PopupSubmitToCoverage";
 
 export const Popup = () => {
     const { popup } = useContext(UserContext);
@@ -54,6 +56,8 @@ export const Popup = () => {
             return <PopupAutoSave {...(popup as PopupData<PopupAutoSaveData>)} />;
         case PopupType.ConfirmFileBind:
             return <PopupConfirmFileBind {...(popup as PopupData<PopupConfirmFileBindData>)} />;
+        case PopupType.SubmitToCoverage:
+            return <PopupSubmitToCoverage {...(popup as PopupData<PopupSubmitToCoverageData>)} />;
         default:
             return null;
     }

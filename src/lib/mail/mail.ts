@@ -40,6 +40,30 @@ export const sendMagicLinkEmail = async (email: string, token: string) => {
     sendFormattedEmail(email, "Sign in to Scenarly", "Your sign-in link", content, "Sign in", link);
 };
 
+/** Coverage: a review landed on the author's submission. Carries no review text. */
+export const sendReviewReceivedEmail = async (email: string, submissionTitle: string, submissionId: string) => {
+    const link = `${BASE_URL}/community/submissions/${submissionId}`;
+    const content = `A new review of '${submissionTitle}' has arrived on Coverage. Read it, then tell the reviewer whether it was useful — that is what keeps the exchange honest.`;
+
+    sendFormattedEmail(email, "New review", "You received a review", content, "Read the review", link);
+};
+
+/** Coverage: the reviewer's claim expires in about two days. */
+export const sendClaimExpiringEmail = async (email: string, submissionTitle: string, deadline: Date) => {
+    const link = `${BASE_URL}/community/coverage/review`;
+    const content = `Your review of '${submissionTitle}' is due on ${deadline.toUTCString()}. Submit it before then to earn your ticket; after the deadline the claim expires and this script cannot be claimed again.`;
+
+    sendFormattedEmail(email, "Review due soon", "Your review is due soon", content, "Finish the review", link);
+};
+
+/** Coverage: a saved draft was sent automatically once the 7-day floor passed. */
+export const sendDraftAutoSubmittedEmail = async (email: string, submissionTitle: string) => {
+    const link = `${BASE_URL}/community/coverage`;
+    const content = `Your saved review of '${submissionTitle}' was sent to its author now that the 7-day waiting period is over, and your ticket has been added. You can pick another script whenever you like.`;
+
+    sendFormattedEmail(email, "Review sent", "Your review was sent", content, "Open Coverage", link);
+};
+
 const sendFormattedEmail = async (
     email: string,
     welcomeMessage: string,

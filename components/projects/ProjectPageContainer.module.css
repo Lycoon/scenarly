@@ -1,8 +1,8 @@
-/* Width of the permanent left sidebar on desktop. The main content reserves this
- * much space; the sidebar itself is fixed-positioned so it can rise over the
- * navbar (which sits at z-index 50). */
+/* The permanent left sidebar on desktop is --projects-sidebar-width wide (set in
+ * globals.css, since the home navbar outside this layout has to clear it too).
+ * The main content reserves that much space; the sidebar itself is fixed-
+ * positioned so it can rise over the navbar (which sits at z-index 50). */
 .layout {
-    --projects-sidebar-width: 260px;
     /* Shared column template so the header row and every ProjectItem line up.
      * Cascades into ProjectItem (a descendant) which reads the same var. */
     /* The storage column carries its label plus, on a shared project, the
@@ -58,6 +58,64 @@
     height: auto;
 }
 
+/* A linked logo keeps the bare logo's box: no inline gap under the SVG. */
+.logo_link {
+    display: flex;
+    color: inherit;
+}
+
+/* Logo with an optional section name under it (Community). The wrapper takes
+   the logo's own box and the caption hangs below it out of flow, so the logo
+   sits at exactly the same spot as on the projects page. */
+.sidebar_brand {
+    position: relative;
+    display: flex;
+}
+
+.sidebar_subtitle {
+    position: absolute;
+    top: 100%;
+    left: 2px;
+    margin-top: 2px;
+    white-space: nowrap;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    opacity: 0.8;
+}
+
+/* Right end of the logo row: a page-level control (Community's home icon)
+   and, on phone, the drawer's close button. */
+.sidebar_top_right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Same footprint as the drawer close button so the two line up when both show. */
+.sidebar_icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar_icon:hover,
+.sidebar_icon_active {
+    background-color: var(--secondary-hover);
+    color: var(--primary-text);
+}
+
 /* Phone drawer title — mirrors the dashboard settings drawer header
  * (DashboardModal.module.css .sidebarTitle) so the two drawers read the same. */
 .sidebar_title {
@@ -90,8 +148,23 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    /* Fills the rest of the column so .sidebar_footer can sit at the bottom;
+       the pills stay at the top. */
+    flex: 1;
+    min-height: 0;
     /* Matches the list's top padding so the buttons and the list header line up. */
     padding: 40px 4px 0;
+}
+
+/* Bottom of the sidebar column: the way over to the other place (Community
+   from the projects library, the projects library from Community), and in
+   Community the ticket balance. Shared so both sit at exactly the same spot. */
+.sidebar_footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+    padding-bottom: calc(16px + var(--safe-bottom));
 }
 
 /* Subtle, quiet pills — thin separator-coloured outline, muted text, light

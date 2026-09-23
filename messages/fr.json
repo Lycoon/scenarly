@@ -423,7 +423,8 @@
       "title": "Titre",
       "lastEdited": "Dernière modif.",
       "storage": "Stockage"
-    }
+    },
+    "communityBtn": "Communauté"
   },
   "editorSidebar": {
     "scenes": "Scènes",
@@ -576,7 +577,11 @@
     "passwordPlaceholder": "Entrer le mot de passe",
     "exportBtn": "Exporter",
     "exporting": "Exportation...",
-    "exportingProgress": "Exportation ({progress}%)"
+    "exportingProgress": "Exportation ({progress}%)",
+    "communityLabel": "Communauté",
+    "submitToCoverage": "Proposer à Coverage",
+    "submitToCoverageDesc": "Exporte ce scénario en PDF et le soumet à la relecture d'autres auteurs (3 tickets).",
+    "submitToCoverageDescDesktop": "Coverage fonctionne dans l'application web. Ouvre scenarly.com dans votre navigateur."
   },
   "layout": {
     "pageFormat": "Format de page",
@@ -766,6 +771,13 @@
       "replaceAnyway": "Remplacer",
       "cancel": "Annuler",
       "ok": "OK"
+    },
+    "submitToCoverage": {
+      "title": "Proposer à Coverage",
+      "done": "Votre scénario est dans la file. Les retours apparaîtront sur sa page Coverage au fur et à mesure.",
+      "open": "Ouvrir la page Coverage",
+      "notMember": "Coverage est l'échange de relectures de Scenarly, ouvert aux comptes vérifiés. Le vôtre ne l'est pas encore : les pages Communauté expliquent comment le vérifier.",
+      "openCommunity": "Ouvrir la Communauté"
     }
   },
   "board": {
@@ -878,5 +890,291 @@
     "daysAgo": "{days, plural, one {il y a # jour} other {il y a # jours}}",
     "monthsAgo": "Il y a {months, plural, one {# mois} other {# mois}}",
     "moreThanYearAgo": "Il y a plus d'un an"
+  },
+  "community": {
+    "nav": {
+      "community": "Communauté",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# ticket} other {# tickets}}",
+      "ticketsTitle": "Vos tickets Coverage",
+      "mySubmissions": "Mes propositions",
+      "submit": "Proposer",
+      "review": "Relire",
+      "showcase": "Showcase"
+    },
+    "gate": {
+      "signedOutTitle": "Connectez-vous pour entrer dans Coverage",
+      "signedOutBody": "Coverage est réservé aux comptes Scenarly. Connectez-vous, ou créez un compte, pour proposer et relire des scénarios.",
+      "signIn": "Se connecter",
+      "unverifiedTitle": "Vérifiez d'abord votre e-mail",
+      "unverifiedBody": "Coverage est ouvert aux comptes vérifiés. Connectez-vous avec le lien que nous vous envoyons par e-mail, puis revenez."
+    },
+    "dashboard": {
+      "balance": "{count, plural, one {# ticket} other {# tickets}}",
+      "submitCard": "Proposer un scénario",
+      "submitCardBody": "Envoyez un PDF, ou proposez un projet Scenarly depuis son onglet Export. Il reste dans la file jusqu'à trois relectures.",
+      "submitCost": "Utilise {cost} tickets",
+      "reviewCard": "Relire un scénario",
+      "reviewCardContinue": "Reprendre votre relecture",
+      "reviewCardBody": "Choisissez l'un des cinq scénarios, lisez-le, écrivez vos notes. Vous avez trois semaines, et pouvez les envoyer après une.",
+      "reviewReward": "Rapporte 1 ticket",
+      "tabs": {
+        "reviews": "Mes relectures",
+        "tickets": "Tickets"
+      },
+      "noReviewsTitle": "Aucune relecture écrite",
+      "noReviewsBody": "Chaque relecture terminée rapporte un ticket pour votre prochaine proposition."
+    },
+    "mySubmissions": {
+      "emptyTitle": "Aucun scénario proposé",
+      "emptyBody": "Partagez-en un sur Showcase, ou proposez-le à Coverage pour recevoir des relectures.",
+      "columns": {
+        "title": "Titre",
+        "submitted": "Proposé le",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
+    },
+    "submissions": {
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "reviewsProgress": "{count} / {min} relectures",
+      "beingRead": "{count, plural, one {# relecteur en cours} other {# relecteurs en cours}}",
+      "statusPooled": "Dans la file jusqu'au {date}",
+      "statusRetired": "Sorti de la file",
+      "statusShowcaseOnly": "Showcase uniquement",
+      "statusRemoved": "Retiré",
+      "submittedOn": "Proposé le {date}",
+      "poolStatus": "{count} relecture(s) sur {min} — dans la file au moins jusqu'au {date}",
+      "retiredStatus": "Sorti de la file le {date}. Les relectures restent ici.",
+      "proof": "Preuve d'antériorité : SHA-256 {hash}… enregistré le {date}",
+      "viewPdf": "Voir le PDF",
+      "hidePdf": "Masquer le PDF",
+      "reviewsTitle": "{count, plural, =0 {Relectures} one {# relecture} other {# relectures}}",
+      "noReviewsTitle": "Pas encore de relecture",
+      "noReviewsBodyPooled": "Les relecteurs gardent un scénario au moins une semaine avant de pouvoir envoyer leurs notes. Vous recevrez un e-mail à chaque arrivée.",
+      "noReviewsBodyRetired": "Ce scénario a quitté la file sans relecture.",
+      "dangerTitle": "Retirer",
+      "withdrawRefund": "Personne n'a encore pris ce scénario : le retirer vous rend vos {cost} tickets.",
+      "withdrawNoRefund": "Ce scénario a été pris : le retirer ne rend pas les tickets. Les relectures en cours arriveront quand même.",
+      "withdrawRetired": "Le retirer supprime le PDF de notre stockage. Les relectures reçues restent lisibles.",
+      "withdrawShowcase": "Le retrait enlève le scénario de Showcase et supprime le PDF de notre stockage.",
+      "withdraw": "Retirer ce scénario",
+      "withdrawYes": "Oui, retirer",
+      "withdrawing": "Retrait…",
+      "withdrawFailed": "Impossible de retirer. Réessayez.",
+      "notFound": "Cette proposition n'existe pas ou ne vous appartient pas.",
+      "onShowcase": "Sur Showcase",
+      "upvotes": "{count, plural, one {# vote} other {# votes}}",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "Sur Showcase en tant que {kind}",
+      "showcaseOpen": "Ouvrir sa page",
+      "showcaseOff": "Pas sur Showcase. Publiez-le et tout le monde pourra le lire et voter ; votre nom n'apparaît jamais.",
+      "showcasePublish": "Publier sur Showcase",
+      "showcasePublishing": "Publication…",
+      "showcaseUnpublish": "Retirer de Showcase",
+      "showcaseUnpublishing": "Retrait…",
+      "showcaseFailed": "Impossible de mettre à jour Showcase. Veuillez réessayer."
+    },
+    "submit": {
+      "title": "Proposer un scénario",
+      "titleShowcase": "Proposer à Showcase",
+      "titleCoverage": "Proposer à Coverage",
+      "showcaseOptionPoint1": "Partagez votre travail publiquement",
+      "showcaseOptionPoint2": "Les propositions ne peuvent recevoir que des votes positifs",
+      "showcaseOptionFormats": "Long métrage, pilote, court métrage ou autre",
+      "unlimited": "Illimité",
+      "coverageOptionPoint1": "Proposez votre long métrage à la relecture",
+      "coverageOptionPoint2": "Recevez des retours détaillés sur ce qui fonctionne ou non",
+      "coverageOptionFormats": "Longs métrages uniquement",
+      "coverageTooRecent": "Votre compte est trop récent pour soumettre à Coverage. Ce sera possible à partir du {date}.",
+      "formatLabel": "Format",
+      "dropTitle": "Importez votre PDF",
+      "dropHint": "Long métrage, {min} à {max} pages, {mb} Mo max",
+      "dropHintPages": "{min} à {max} pages, {mb} Mo max",
+      "dropHintAny": "{mb} Mo max",
+      "fileSize": "{mb} Mo",
+      "titleLabel": "Titre",
+      "loglineLabel": "Pitch",
+      "loglinePlaceholder": "Une à trois phrases.",
+      "loglineHint": "{count} caractères ({min}–{max})",
+      "genresLabel": "Genres (jusqu'à {max})",
+      "cancel": "Annuler",
+      "submit": "Proposer",
+      "rendering": "Génération du PDF…",
+      "uploading": "Envoi…",
+      "errors": {
+        "noFormat": "Choisissez un format.",
+        "notPdf": "Choisissez un fichier PDF.",
+        "tooLarge": "Le PDF dépasse {mb} Mo.",
+        "noFile": "Choisissez d'abord un PDF.",
+        "noTitle": "Donnez un titre au scénario.",
+        "loglineShort": "Le pitch doit faire au moins {min} caractères.",
+        "noGenre": "Choisissez au moins un genre.",
+        "tickets": "Proposer demande {cost} tickets ; vous en avez {balance}. Relisez un scénario pour en gagner.",
+        "duplicate": "Ce PDF exact est déjà dans Coverage.",
+        "failed": "Échec de la proposition. Réessayez."
+      },
+      "showLabel": "Afficher uniquement",
+      "showScript": "Le scénario",
+      "showLogline": "Le pitch"
+    },
+    "offers": {
+      "title": "Choisissez un scénario à relire",
+      "subtitle": "Cinq scénarios, tirés pour vous. Prenez-en un : vous avez trois semaines pour le lire et écrire vos notes, envoyables après une.",
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "reviewsSoFar": "{count, plural, =0 {aucune relecture} one {# relecture} other {# relectures}}",
+      "claim": "Relire celui-ci",
+      "unavailable": "Plus disponible",
+      "reshuffle": "Cinq autres",
+      "reshuffleAt": "Nouveau tirage {time}",
+      "thinPool": "La file est petite en ce moment ; d'autres scénarios arrivent au fil des propositions.",
+      "emptyTitle": "Rien à relire pour l'instant",
+      "emptyBody": "Chaque scénario de la file est le vôtre ou un que vous avez déjà relu. Repassez bientôt.",
+      "claimFailed": "Impossible de prendre ce scénario.",
+      "reshuffleFailed": "Impossible de retirer."
+    },
+    "claim": {
+      "inProgress": "Vous relisez « {title} »",
+      "canSubmitNow": "Vous pouvez envoyer votre relecture",
+      "canSubmitFrom": "Vous pourrez envoyer votre relecture à partir du {date}",
+      "deadlineIn": "{days, plural, one {# jour restant} other {# jours restants}}",
+      "deadlineOn": "Échéance le {date} ({days, plural, one {# jour restant} other {# jours restants}})",
+      "continue": "Reprendre",
+      "autoSubmittedTag": "Envoyée automatiquement",
+      "submittedBanner": "Votre relecture a été envoyée. Vous gagnez 1 ticket.",
+      "releasedBanner": "Vous avez rendu le scénario. Ni ticket, ni pénalité.",
+      "goneBanner": "Cette prise est terminée : la relecture a déjà été envoyée ou l'échéance est passée."
+    },
+    "review": {
+      "worksWellLabel": "Ce qui fonctionne",
+      "worksWellPlaceholder": "Les moments, personnages et choix qui font mouche — et pourquoi.",
+      "doesNotWorkLabel": "Ce qui ne fonctionne pas",
+      "doesNotWorkPlaceholder": "Là où le scénario vous perd : structure, enjeux, dialogues, clarté.",
+      "remarksLabel": "Remarques complémentaires",
+      "remarksPlaceholder": "Tout ce que l'auteur devrait entendre : références, notes de format, une piste à essayer.",
+      "wordCount": "{count} / {min} mots",
+      "saving": "Enregistrement…",
+      "savedAt": "Enregistré {time}",
+      "unsaved": "Modifications non enregistrées",
+      "saveFailed": "Impossible d'enregistrer le brouillon",
+      "signLabel": "Signer cette relecture",
+      "signHint": "Montrer votre nom d'utilisateur à l'auteur. Désactivé par défaut : les relectures sont anonymes.",
+      "floorPassed": "La semaine d'attente est passée. Envoyez votre relecture quand elle est prête.",
+      "autoSendNote": "Une relecture peut être envoyée après une semaine. Si votre brouillon est assez long le {date}, il est envoyé pour vous.",
+      "release": "Rendre ce scénario",
+      "releaseConfirm": "Le rendre ? Ce scénario ne vous sera plus proposé.",
+      "releaseYes": "Rendre",
+      "releasing": "Retour…",
+      "releaseFailed": "Impossible de rendre le scénario.",
+      "submit": "Envoyer la relecture",
+      "submitting": "Envoi…",
+      "submitFailed": "Impossible d'envoyer la relecture.",
+      "opensOn": "Ouvre le {date}"
+    },
+    "reviews": {
+      "reviewerN": "Relecteur {n}",
+      "words": "{count} mots",
+      "autoSubmitted": "envoyée automatiquement",
+      "worksWellLabel": "Ce qui fonctionne",
+      "doesNotWorkLabel": "Ce qui ne fonctionne pas",
+      "remarksLabel": "Remarques complémentaires",
+      "ratePrompt": "Cette relecture était-elle utile ?",
+      "rated": "Votre avis sur cette relecture : {rating}",
+      "rateFailed": "Impossible d'enregistrer votre avis.",
+      "report": "Signaler",
+      "reported": "Signalée",
+      "reportReason": "Pourquoi signalez-vous cette relecture ?",
+      "reportDetails": "Autre chose à nous dire (facultatif)",
+      "reportSend": "Envoyer le signalement",
+      "reportFailed": "Impossible d'envoyer le signalement."
+    },
+    "viewer": {
+      "failed": "Le scénario n'a pas pu être chargé.",
+      "retry": "Réessayer",
+      "zoomIn": "Zoom avant",
+      "zoomOut": "Zoom arrière",
+      "resetZoom": "Réinitialiser le zoom",
+      "fullscreen": "Plein écran",
+      "exitFullscreen": "Quitter le plein écran"
+    },
+    "enums": {
+      "formats": {
+        "FEATURE": "Long métrage",
+        "SHORT": "Court métrage",
+        "PILOT": "Pilote",
+        "OTHER": "Autre"
+      },
+      "genres": {
+        "ACTION": "Action",
+        "ADVENTURE": "Aventure",
+        "ANIMATION": "Animation",
+        "COMEDY": "Comédie",
+        "CRIME": "Policier",
+        "DRAMA": "Drame",
+        "FAMILY": "Famille",
+        "FANTASY": "Fantastique",
+        "HORROR": "Horreur",
+        "MYSTERY": "Mystère",
+        "ROMANCE": "Romance",
+        "SCIFI": "Science-fiction",
+        "THRILLER": "Thriller",
+        "WESTERN": "Western",
+        "OTHER": "Autre"
+      },
+      "ratings": {
+        "USEFUL": "Utile",
+        "NOT_USEFUL": "Pas utile"
+      },
+      "claimStatus": {
+        "ACTIVE": "En cours",
+        "SUBMITTED": "Envoyée",
+        "EXPIRED": "Expirée",
+        "RELEASED": "Rendue"
+      },
+      "ticketReasons": {
+        "STARTER": "Tickets de bienvenue",
+        "SUBMISSION": "Scénario proposé",
+        "REVIEW_COMPLETED": "Relecture terminée",
+        "SUBMISSION_REFUND": "Tickets rendus",
+        "ADMIN_ADJUST": "Ajustement"
+      },
+      "reportReasons": {
+        "ABUSIVE": "Injurieuse ou insultante",
+        "OFF_TOPIC": "Ne parle pas de ce scénario",
+        "LOW_EFFORT": "Bâclée",
+        "AI_GENERATED": "Semble générée par une machine",
+        "OTHER": "Autre"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "Scénario complet",
+        "PILOT": "Pilote",
+        "SHORT": "Court métrage",
+        "LOGLINE": "Pitch"
+      }
+    },
+    "showcase": {
+      "title": "Showcase",
+      "subtitle": "Des scénarios que leurs auteurs ont choisi de partager. Lisez-les ici et votez pour ceux que vous recommanderiez.",
+      "sortLabel": "Trier",
+      "sortTop": "Populaires",
+      "sortNew": "Récents",
+      "kindLabel": "Type",
+      "kindAll": "Tous",
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "publishedOn": "Publié le {date}",
+      "writtenWith": "Écrit avec Scenarly",
+      "upvote": "Voter",
+      "upvoteSignIn": "Connectez-vous pour voter",
+      "upvoteNotEligible": "Le vote est ouvert aux comptes vérifiés",
+      "upvoteFailed": "Impossible d'enregistrer votre vote",
+      "emptyTitle": "Rien de publié pour l'instant",
+      "emptyBody": "Les auteurs partagent ici leurs scénarios quand ils sont prêts. Besoin de retours d'abord ? Échangez des relectures dans Coverage.",
+      "emptyCta": "Aller à Coverage",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageOf": "Page {page} sur {count}",
+      "backToWall": "Tous les scénarios",
+      "loglineOnly": "L'auteur n'a partagé que le pitch."
+    }
   }
 }

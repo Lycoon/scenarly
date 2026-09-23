@@ -4,12 +4,21 @@ import z from "zod";
 export interface ApiResponse<T = unknown> {
     status: "success" | "error";
     message?: string;
+    /** Machine-readable reason, when a client must branch on it (see `AppError.code`). */
+    code?: string;
     data?: T;
 }
 
 export class AppError extends Error {
-    constructor(public statusCode: number, public message: string) {
+    /**
+     * Stable identifier a client can branch on instead of the English message
+     * (e.g. `INSUFFICIENT_TICKETS`). Optional: most errors are shown as-is.
+     */
+    public code?: string;
+
+    constructor(public statusCode: number, public message: string, code?: string) {
         super(message);
+        this.code = code;
         Object.setPrototypeOf(this, AppError.prototype);
     }
 }
@@ -71,6 +80,11 @@ export class InternalServerError extends AppError {
 export class StorageQuotaExceededError extends AppError {
     constructor(message = "Storage limit reached") {
         super(507, message);
+    }
+}
+export class InsufficientTicketsError extends AppError {
+    constructor(message = "Not enough tickets") {
+        super(409, message, "INSUFFICIENT_TICKETS");
     }
 }
 

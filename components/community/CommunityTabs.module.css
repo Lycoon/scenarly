@@ -1,0 +1,58 @@
+/* Community's two sections in the navbar. Not a control: the same capslock
+   treatment the sidebar gives its section label (.sidebar_subtitle in
+   ProjectPageContainer.module.css), so the bar reads as a quiet label row and
+   the section you are on is simply the brighter of the two. */
+
+.tabs {
+    position: absolute;
+    /* Left-aligned with the page content below: past the fixed sidebar, which
+       overlaps the bar, plus .page's own gutter (Community.module.css). */
+    left: calc(var(--projects-sidebar-width) + 48px);
+    /* .container's box includes the top safe-area inset, so centre on the
+       content row rather than the padding box — both terms are 0 without one. */
+    top: calc(50% + var(--safe-top) / 2);
+    transform: translateY(-50%);
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 22px;
+}
+
+.tab {
+    /* The sidebar label's capslock treatment (.sidebar_subtitle), a few steps up:
+       this is the bar's only navigation, not a caption under a logo. */
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-decoration: none;
+    color: var(--secondary-text);
+    /* Dimmer than the sidebar label's 0.8 so the active one clearly out-reads it. */
+    opacity: 0.45;
+    /* Padding only for the tap target; the text keeps its own footprint. */
+    padding-block: 6px;
+    transition:
+        opacity 0.15s ease,
+        color 0.15s ease;
+}
+
+.tab:hover {
+    opacity: 0.75;
+}
+
+.active,
+.active:hover {
+    color: var(--primary-text);
+    opacity: 1;
+}
+
+@media (max-width: 767px) {
+    .tabs {
+        /* The sidebar is a drawer here, so the only thing to clear is the
+           navbar's burger pill (.home_burger, 48px at a 10px gutter). */
+        left: calc(68px + var(--safe-left));
+        gap: 18px;
+    }
+}

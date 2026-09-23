@@ -361,6 +361,7 @@ jobs:
               run: npm run cloud:deploy:staging
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
     deploy-webapp:
         runs-on: ubuntu-latest

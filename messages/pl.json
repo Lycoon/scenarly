@@ -422,7 +422,8 @@
       "title": "Tytuł",
       "lastEdited": "Ostatnia edycja",
       "storage": "Pamięć"
-    }
+    },
+    "communityBtn": "Społeczność"
   },
   "editorSidebar": {
     "scenes": "Sceny",
@@ -575,7 +576,11 @@
     "passwordPlaceholder": "Wprowadź hasło",
     "exportBtn": "Eksportuj",
     "exporting": "Eksportowanie...",
-    "exportingProgress": "Eksportowanie ({progress}%)"
+    "exportingProgress": "Eksportowanie ({progress}%)",
+    "communityLabel": "Społeczność",
+    "submitToCoverage": "Zgłoś do Coverage",
+    "submitToCoverageDesc": "Eksportuje ten scenariusz do PDF i oddaje go do recenzji innym autorom (3 bilety).",
+    "submitToCoverageDescDesktop": "Coverage działa w aplikacji webowej. Otwiera scenarly.com w przeglądarce."
   },
   "layout": {
     "pageFormat": "Format strony",
@@ -765,6 +770,13 @@
       "replaceAnyway": "Zastąp",
       "cancel": "Anuluj",
       "ok": "OK"
+    },
+    "submitToCoverage": {
+      "title": "Zgłoś do Coverage",
+      "done": "Twój scenariusz jest w puli. Recenzje pojawią się na jego stronie Coverage, gdy tylko nadejdą.",
+      "open": "Otwórz stronę Coverage",
+      "notMember": "Coverage to wymiana recenzji Scenarly, otwarta dla zweryfikowanych kont. Twoje nie jest jeszcze zweryfikowane: strony Społeczności pokażą, jak to zrobić.",
+      "openCommunity": "Otwórz Społeczność"
     }
   },
   "board": {
@@ -877,5 +889,291 @@
     "daysAgo": "{days, plural, one {# dzień temu} few {# dni temu} other {# dni temu}}",
     "monthsAgo": "{months, plural, one {# miesiąc} few {# miesiące} many {# miesięcy} other {# miesięcy}} temu",
     "moreThanYearAgo": "Ponad rok temu"
+  },
+  "community": {
+    "nav": {
+      "community": "Społeczność",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# bilet} few {# bilety} other {# biletów}}",
+      "ticketsTitle": "Twoje bilety Coverage",
+      "mySubmissions": "Moje zgłoszenia",
+      "submit": "Zgłoś",
+      "review": "Zrecenzuj",
+      "showcase": "Showcase"
+    },
+    "gate": {
+      "signedOutTitle": "Zaloguj się, aby wejść do Coverage",
+      "signedOutBody": "Coverage jest dla kont Scenarly. Zaloguj się lub załóż konto, aby zgłaszać i recenzować scenariusze.",
+      "signIn": "Zaloguj się",
+      "unverifiedTitle": "Najpierw potwierdź adres e-mail",
+      "unverifiedBody": "Coverage jest otwarte dla zweryfikowanych kont. Zaloguj się linkiem, który wysyłamy e-mailem, i wróć."
+    },
+    "dashboard": {
+      "balance": "{count, plural, one {# bilet} few {# bilety} other {# biletów}}",
+      "submitCard": "Zgłoś scenariusz",
+      "submitCardBody": "Prześlij PDF lub zgłoś projekt Scenarly z jego karty Eksport. Zostaje w puli, aż zbierze trzy recenzje.",
+      "submitCost": "Wymaga {cost} biletów",
+      "reviewCard": "Zrecenzuj scenariusz",
+      "reviewCardContinue": "Kontynuuj recenzję",
+      "reviewCardBody": "Wybierz jeden z pięciu scenariuszy, przeczytaj go i napisz uwagi. Masz trzy tygodnie, a wysłać możesz po jednym.",
+      "reviewReward": "Daje 1 bilet",
+      "tabs": {
+        "reviews": "Moje recenzje",
+        "tickets": "Bilety"
+      },
+      "noReviewsTitle": "Nie napisano jeszcze recenzji",
+      "noReviewsBody": "Każda ukończona recenzja daje bilet na Twoje następne zgłoszenie."
+    },
+    "mySubmissions": {
+      "emptyTitle": "Nie zgłoszono jeszcze scenariusza",
+      "emptyBody": "Udostępnij scenariusz w Showcase albo zgłoś go do Coverage, aby otrzymać recenzje.",
+      "columns": {
+        "title": "Tytuł",
+        "submitted": "Zgłoszono",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
+    },
+    "submissions": {
+      "pages": "{count, plural, one {# strona} few {# strony} other {# stron}}",
+      "reviewsProgress": "{count} / {min} recenzji",
+      "beingRead": "{count, plural, one {# osoba czyta} few {# osoby czytają} other {# osób czyta}}",
+      "statusPooled": "W puli do {date}",
+      "statusRetired": "Poza pulą",
+      "statusShowcaseOnly": "Tylko Showcase",
+      "statusRemoved": "Wycofany",
+      "submittedOn": "Zgłoszony {date}",
+      "poolStatus": "{count} z {min} recenzji — w puli co najmniej do {date}",
+      "retiredStatus": "Opuścił pulę {date}. Recenzje zostają tutaj.",
+      "proof": "Dowód istnienia: SHA-256 {hash}… zarejestrowano {date}",
+      "viewPdf": "Pokaż PDF",
+      "hidePdf": "Ukryj PDF",
+      "reviewsTitle": "{count, plural, =0 {Recenzje} one {# recenzja} few {# recenzje} other {# recenzji}}",
+      "noReviewsTitle": "Brak recenzji",
+      "noReviewsBodyPooled": "Recenzenci mają scenariusz co najmniej tydzień, zanim mogą wysłać uwagi. Dostaniesz e-mail, gdy jakaś nadejdzie.",
+      "noReviewsBodyRetired": "Ten scenariusz opuścił pulę bez recenzji.",
+      "dangerTitle": "Wycofaj",
+      "withdrawRefund": "Nikt jeszcze nie wziął tego scenariusza: wycofanie oddaje Twoje {cost} biletów.",
+      "withdrawNoRefund": "Ten scenariusz został już wzięty, więc wycofanie nie oddaje biletów. Trwające recenzje i tak nadejdą.",
+      "withdrawRetired": "Wycofanie usuwa PDF z naszego magazynu. Otrzymane recenzje pozostają czytelne.",
+      "withdrawShowcase": "Wycofanie zdejmuje scenariusz z Showcase i usuwa PDF z naszego magazynu.",
+      "withdraw": "Wycofaj ten scenariusz",
+      "withdrawYes": "Tak, wycofaj",
+      "withdrawing": "Wycofywanie…",
+      "withdrawFailed": "Nie udało się wycofać. Spróbuj ponownie.",
+      "notFound": "To zgłoszenie nie istnieje lub nie jest Twoje.",
+      "onShowcase": "W Showcase",
+      "upvotes": "{count, plural, one {# głos} few {# głosy} other {# głosów}}",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "W Showcase jako {kind}",
+      "showcaseOpen": "Otwórz jego stronę",
+      "showcaseOff": "Nie ma go w Showcase. Opublikuj go, a każdy będzie mógł go przeczytać i zagłosować; Twoje nazwisko nigdy nie jest pokazywane.",
+      "showcasePublish": "Opublikuj w Showcase",
+      "showcasePublishing": "Publikowanie…",
+      "showcaseUnpublish": "Zdejmij z Showcase",
+      "showcaseUnpublishing": "Zdejmowanie…",
+      "showcaseFailed": "Nie udało się zaktualizować Showcase. Spróbuj ponownie."
+    },
+    "submit": {
+      "title": "Zgłoś scenariusz",
+      "titleShowcase": "Zgłoś do Showcase",
+      "titleCoverage": "Zgłoś do Coverage",
+      "showcaseOptionPoint1": "Udostępnij swoją pracę publicznie",
+      "showcaseOptionPoint2": "Zgłoszenia mogą otrzymywać tylko głosy za",
+      "showcaseOptionFormats": "Pełnometrażowy, pilot, krótkometrażowy lub inny",
+      "unlimited": "Bez limitu",
+      "coverageOptionPoint1": "Zgłoś swój scenariusz pełnometrażowy do recenzji",
+      "coverageOptionPoint2": "Otrzymaj szczegółową opinię o tym, co działa, a co nie",
+      "coverageOptionFormats": "Tylko scenariusze pełnometrażowe",
+      "coverageTooRecent": "Twoje konto jest zbyt nowe, by zgłaszać do Coverage. Będzie to możliwe od {date}.",
+      "formatLabel": "Format",
+      "dropTitle": "Importuj swój PDF",
+      "dropHint": "Scenariusz pełnometrażowy, {min}–{max} stron, do {mb} MB",
+      "dropHintPages": "{min}–{max} stron, do {mb} MB",
+      "dropHintAny": "Do {mb} MB",
+      "fileSize": "{mb} MB",
+      "titleLabel": "Tytuł",
+      "loglineLabel": "Logline",
+      "loglinePlaceholder": "Jedno do trzech zdań.",
+      "loglineHint": "{count} znaków ({min}–{max})",
+      "genresLabel": "Gatunki (do {max})",
+      "cancel": "Anuluj",
+      "submit": "Zgłoś",
+      "rendering": "Generowanie PDF…",
+      "uploading": "Przesyłanie…",
+      "errors": {
+        "noFormat": "Wybierz format.",
+        "notPdf": "Wybierz plik PDF.",
+        "tooLarge": "PDF przekracza {mb} MB.",
+        "noFile": "Najpierw wybierz PDF.",
+        "noTitle": "Nadaj scenariuszowi tytuł.",
+        "loglineShort": "Logline musi mieć co najmniej {min} znaków.",
+        "noGenre": "Wybierz co najmniej jeden gatunek.",
+        "tickets": "Zgłoszenie wymaga {cost} biletów; masz {balance}. Zrecenzuj scenariusz, aby zdobyć więcej.",
+        "duplicate": "Dokładnie ten PDF jest już w Coverage.",
+        "failed": "Zgłoszenie nie powiodło się. Spróbuj ponownie."
+      },
+      "showLabel": "Pokaż tylko",
+      "showScript": "Scenariusz",
+      "showLogline": "Logline"
+    },
+    "offers": {
+      "title": "Wybierz scenariusz do recenzji",
+      "subtitle": "Pięć scenariuszy wylosowanych dla Ciebie. Weź jeden — masz trzy tygodnie, by go przeczytać i napisać uwagi; wysłać możesz po jednym.",
+      "pages": "{count, plural, one {# strona} few {# strony} other {# stron}}",
+      "reviewsSoFar": "{count, plural, =0 {brak recenzji} one {# recenzja dotąd} few {# recenzje dotąd} other {# recenzji dotąd}}",
+      "claim": "Zrecenzuj ten",
+      "unavailable": "Już niedostępny",
+      "reshuffle": "Pokaż pięć innych",
+      "reshuffleAt": "Nowy zestaw {time}",
+      "thinPool": "Pula jest teraz mała; kolejne scenariusze pojawiają się, gdy autorzy je zgłaszają.",
+      "emptyTitle": "Nie ma teraz nic do recenzji",
+      "emptyBody": "Każdy scenariusz w puli jest Twój albo już go recenzowałeś. Zajrzyj wkrótce.",
+      "claimFailed": "Nie udało się wziąć tego scenariusza.",
+      "reshuffleFailed": "Nie udało się przelosować."
+    },
+    "claim": {
+      "inProgress": "Recenzujesz „{title}”",
+      "canSubmitNow": "Możesz już wysłać recenzję",
+      "canSubmitFrom": "Recenzję możesz wysłać od {date}",
+      "deadlineIn": "{days, plural, one {został # dzień} other {zostało # dni}}",
+      "deadlineOn": "Termin {date} ({days, plural, one {został # dzień} other {zostało # dni}})",
+      "continue": "Kontynuuj",
+      "autoSubmittedTag": "Wysłana automatycznie",
+      "submittedBanner": "Twoja recenzja została wysłana. Zdobywasz 1 bilet.",
+      "releasedBanner": "Oddano scenariusz. Bez biletu, bez kary.",
+      "goneBanner": "To zgłoszenie się zakończyło: recenzja została już wysłana albo minął termin."
+    },
+    "review": {
+      "worksWellLabel": "Co działa",
+      "worksWellPlaceholder": "Momenty, postaci i decyzje, które trafiają — i dlaczego.",
+      "doesNotWorkLabel": "Co nie działa",
+      "doesNotWorkPlaceholder": "Gdzie scenariusz Cię gubi: struktura, stawka, dialogi, klarowność.",
+      "remarksLabel": "Uwagi dodatkowe",
+      "remarksPlaceholder": "Wszystko, co autor powinien usłyszeć: podobne tytuły, uwagi do formatu, poprawka, którą byś wypróbował.",
+      "wordCount": "{count} / {min} słów",
+      "saving": "Zapisywanie…",
+      "savedAt": "Zapisano {time}",
+      "unsaved": "Niezapisane zmiany",
+      "saveFailed": "Nie udało się zapisać szkicu",
+      "signLabel": "Podpisz tę recenzję",
+      "signHint": "Pokaż autorowi swoją nazwę użytkownika. Domyślnie wyłączone: recenzje są anonimowe.",
+      "floorPassed": "Tygodniowe oczekiwanie minęło. Wyślij recenzję, gdy będzie gotowa.",
+      "autoSendNote": "Recenzje można wysyłać po tygodniu. Jeśli {date} Twój zapisany szkic będzie wystarczająco długi, zostanie wysłany za Ciebie.",
+      "release": "Oddaj ten scenariusz",
+      "releaseConfirm": "Oddać? Ten scenariusz nie zostanie Ci ponownie zaproponowany.",
+      "releaseYes": "Oddaj",
+      "releasing": "Oddawanie…",
+      "releaseFailed": "Nie udało się oddać scenariusza.",
+      "submit": "Wyślij recenzję",
+      "submitting": "Wysyłanie…",
+      "submitFailed": "Nie udało się wysłać recenzji.",
+      "opensOn": "Otwiera się {date}"
+    },
+    "reviews": {
+      "reviewerN": "Recenzent {n}",
+      "words": "{count} słów",
+      "autoSubmitted": "wysłana automatycznie",
+      "worksWellLabel": "Co działa",
+      "doesNotWorkLabel": "Co nie działa",
+      "remarksLabel": "Uwagi dodatkowe",
+      "ratePrompt": "Czy ta recenzja była przydatna?",
+      "rated": "Twoja ocena tej recenzji: {rating}",
+      "rateFailed": "Nie udało się zapisać oceny.",
+      "report": "Zgłoś",
+      "reported": "Zgłoszona",
+      "reportReason": "Dlaczego zgłaszasz tę recenzję?",
+      "reportDetails": "Coś jeszcze, co powinniśmy wiedzieć (opcjonalnie)",
+      "reportSend": "Wyślij zgłoszenie",
+      "reportFailed": "Nie udało się wysłać zgłoszenia."
+    },
+    "viewer": {
+      "failed": "Nie udało się wczytać scenariusza.",
+      "retry": "Spróbuj ponownie",
+      "zoomIn": "Powiększ",
+      "zoomOut": "Pomniejsz",
+      "resetZoom": "Resetuj powiększenie",
+      "fullscreen": "Pełny ekran",
+      "exitFullscreen": "Zamknij pełny ekran"
+    },
+    "enums": {
+      "formats": {
+        "FEATURE": "Pełnometrażowy",
+        "SHORT": "Krótkometrażowy",
+        "PILOT": "Pilot",
+        "OTHER": "Inny"
+      },
+      "genres": {
+        "ACTION": "Akcja",
+        "ADVENTURE": "Przygodowy",
+        "ANIMATION": "Animacja",
+        "COMEDY": "Komedia",
+        "CRIME": "Kryminał",
+        "DRAMA": "Dramat",
+        "FAMILY": "Familijny",
+        "FANTASY": "Fantasy",
+        "HORROR": "Horror",
+        "MYSTERY": "Tajemnica",
+        "ROMANCE": "Romans",
+        "SCIFI": "Science fiction",
+        "THRILLER": "Thriller",
+        "WESTERN": "Western",
+        "OTHER": "Inny"
+      },
+      "ratings": {
+        "USEFUL": "Przydatna",
+        "NOT_USEFUL": "Nieprzydatna"
+      },
+      "claimStatus": {
+        "ACTIVE": "W toku",
+        "SUBMITTED": "Wysłana",
+        "EXPIRED": "Wygasła",
+        "RELEASED": "Oddana"
+      },
+      "ticketReasons": {
+        "STARTER": "Bilety powitalne",
+        "SUBMISSION": "Zgłoszono scenariusz",
+        "REVIEW_COMPLETED": "Ukończono recenzję",
+        "SUBMISSION_REFUND": "Bilety oddane",
+        "ADMIN_ADJUST": "Korekta"
+      },
+      "reportReasons": {
+        "ABUSIVE": "Obraźliwa lub agresywna",
+        "OFF_TOPIC": "Nie dotyczy tego scenariusza",
+        "LOW_EFFORT": "Niedbała",
+        "AI_GENERATED": "Wygląda na wygenerowaną maszynowo",
+        "OTHER": "Inne"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "Pełny scenariusz",
+        "PILOT": "Pilot",
+        "SHORT": "Krótkometrażowy",
+        "LOGLINE": "Logline"
+      }
+    },
+    "showcase": {
+      "title": "Showcase",
+      "subtitle": "Scenariusze, którymi autorzy postanowili się podzielić. Czytaj je tutaj i głosuj na te, które poleciłbyś.",
+      "sortLabel": "Sortuj",
+      "sortTop": "Najlepsze",
+      "sortNew": "Najnowsze",
+      "kindLabel": "Rodzaj",
+      "kindAll": "Wszystkie",
+      "pages": "{count, plural, one {# strona} few {# strony} other {# stron}}",
+      "publishedOn": "Opublikowano {date}",
+      "writtenWith": "Napisano w Scenarly",
+      "upvote": "Zagłosuj",
+      "upvoteSignIn": "Zaloguj się, aby głosować",
+      "upvoteNotEligible": "Głosować mogą zweryfikowane konta",
+      "upvoteFailed": "Nie udało się zapisać głosu",
+      "emptyTitle": "Nic jeszcze nie opublikowano",
+      "emptyBody": "Autorzy udostępniają tu swoje scenariusze, gdy są gotowe. Wolisz najpierw uwagi? Wymieniaj się recenzjami w Coverage.",
+      "emptyCta": "Przejdź do Coverage",
+      "previous": "Poprzednia",
+      "next": "Następna",
+      "pageOf": "Strona {page} z {count}",
+      "backToWall": "Wszystkie scenariusze",
+      "loglineOnly": "Autor udostępnił tylko logline."
+    }
   }
 }

@@ -10,7 +10,10 @@ import { useImportAccept } from "@src/lib/import/use-import-accept";
 import sharedStyles from "./ProjectSettings.module.css";
 import styles from "./ExportProject.module.css";
 import optionCard from "./OptionCard.module.css";
-import { importFilePopup } from "@src/lib/screenplay/popup";
+import { importFilePopup, submitToCoveragePopup } from "@src/lib/screenplay/popup";
+import { isTauri } from "@tauri-apps/api/core";
+import { openExternal } from "@src/lib/utils/open-external";
+import { COMMUNITY_WEB_URL } from "@src/lib/community/constants";
 import { UserContext } from "@src/context/UserContext";
 import { getExportAdapter } from "@src/lib/adapters/registry";
 import { ExportFormat } from "@src/lib/utils/enums";
@@ -219,6 +222,49 @@ const ExportProject = () => {
 
         setExporting(false);
         setProgress(0);
+    };
+
+    /**
+     * Community Coverage takes the same DOM-based PDF export, without the
+     * watermark, password and page selection: the submission is the whole
+     * script as it stands now. Rendered at confirm time inside the popup, so
+     * the editor DOM is read only once the user has filled the form.
+     */
+    const handleSubmitToCoverage = () => {
+        if (isTauri()) return openExternal(`${COMMUNITY_WEB_URL}/coverage`);
+        if (!ydoc) return;
+        const projectTitle = membership?.project.title || localTitle;
+        const buildPdf = async () => {
+            const adapter = getExportAdapter(ExportFormat.PDF);
+            if (!adapter) throw new Error("PDF export unavailable");
+            const pdfOptions: PDFExportOptions = {
+                title: projectTitle,
+                author: user?.email || "Unknown",
+                projectAuthor: membership?.project.author || localAuthor || undefined,
+                includeNotes: false,
+                format: pageFormat === "A4" ? "A4" : "LETTER",
+                displaySceneNumbers,
+                sceneHeadingSpacing,
+                sceneNumberOnRight,
+                contdLabel,
+                moreLabel,
+                showContdDialogue,
+                showContdPageBreak,
+                editorElement: editor?.view?.dom,
+                titlePageElement: includeTitlePage ? titlePageEditor?.view?.dom : undefined,
+                revisionExport: "none",
+            };
+            return adapter.convertTo(ydoc, pdfOptions as BaseExportOptions);
+        };
+        submitToCoveragePopup(
+            {
+                projectId,
+                title: projectTitle,
+                logline: membership?.project.description || "",
+                buildPdf,
+            },
+            userContext,
+        );
     };
 
     const formatOptions: DropdownOption[] = [
@@ -513,6 +559,23 @@ const ExportProject = () => {
                         options={revisionExportOptions}
                         className={`${sharedStyles.input} ${styles.input}`}
                     />
+                </div>
+            )}
+
+            {/* --- Community: submit the script to Coverage for peer reviews. --- */}
+            {!isLocalOnly && (
+                <div className={sharedStyles.formGroup}>
+                    <div className={styles.sectionSeparator}>
+                        <span className={sharedStyles.sectionTitle}>{t("communityLabel")}</span>
+                    </div>
+                    <div className={optionCard.optionCard} onClick={handleSubmitToCoverage}>
+                        <div className={optionCard.optionInfo}>
+                            <span className={optionCard.optionTitle}>{t("submitToCoverage")}</span>
+                            <span className={optionCard.optionDesc}>
+                                {isTauri() ? t("submitToCoverageDescDesktop") : t("submitToCoverageDesc")}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             )}
 

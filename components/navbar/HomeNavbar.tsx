@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext } from "react";
+import { ReactNode, useContext } from "react";
 import { DashboardContext } from "@src/context/DashboardContext";
 import { Menu, Settings } from "lucide-react";
 import { join } from "@src/lib/utils/misc";
@@ -19,9 +19,16 @@ interface HomeNavbarProps {
      * they're open and has to close them again — see [ProjectPageContainer.module.css].
      */
     onToggleSidebar?: () => void;
+    /**
+     * Section navigation for the bar. The projects library has none; Community
+     * puts its two sections here (see [CommunityTabs]). The bar is the
+     * positioning context (.container is relative) and the content places
+     * itself, so it can sit clear of the fixed sidebar that overlaps the bar.
+     */
+    nav?: ReactNode;
 }
 
-const HomeNavbar = ({ onToggleSidebar }: HomeNavbarProps) => {
+const HomeNavbar = ({ onToggleSidebar, nav }: HomeNavbarProps) => {
     const { isOpen, openDashboard, closeDashboard } = useContext(DashboardContext);
     const { user, isLoading } = useCookieUser();
     const isPhone = useIsPhone();
@@ -60,6 +67,8 @@ const HomeNavbar = ({ onToggleSidebar }: HomeNavbarProps) => {
                     <Logo className={navbar.logo} />
                 )}
             </div>
+
+            {nav}
 
             {/* Center - empty on home page */}
             <div></div>

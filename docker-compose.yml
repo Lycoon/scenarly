@@ -48,8 +48,24 @@ services:
             - traefik.http.routers.scenarly-app-contact.tls=true
             - traefik.http.routers.scenarly-app-contact.tls.certresolver=letsencrypt
             - traefik.http.routers.scenarly-app-contact.priority=300
+            # Community reads meant for everyone (Showcase, proof of existence):
+            # crawlers and signed-out readers must reach them, and the Showcase
+            # PDF viewer fetches its presigned URL from here.
+            - traefik.http.routers.scenarly-app-community-public.rule=Host(`scenarly.com`) && PathPrefix(`/api/community/public/`)
+            - traefik.http.routers.scenarly-app-community-public.entrypoints=secure
+            - traefik.http.routers.scenarly-app-community-public.tls=true
+            - traefik.http.routers.scenarly-app-community-public.tls.certresolver=letsencrypt
+            - traefik.http.routers.scenarly-app-community-public.priority=300
+            # The Worker cron's Community tick: it authenticates with its own
+            # Bearer JWT (checked in the route), which basic auth would reject.
+            - traefik.http.routers.scenarly-app-community-tick.rule=Host(`scenarly.com`) && Path(`/api/internal/community-tick`)
+            - traefik.http.routers.scenarly-app-community-tick.entrypoints=secure
+            - traefik.http.routers.scenarly-app-community-tick.tls=true
+            - traefik.http.routers.scenarly-app-community-tick.tls.certresolver=letsencrypt
+            - traefik.http.routers.scenarly-app-community-tick.priority=300
 
-    # Public homepage: standalone static site (/, /privacy, /contact) served by
+    # Public homepage: standalone static site (/, /privacy, /contact, and
+    # /robots.txt, which points crawlers at the app's Community sitemap) served by
     # nginx. No DB, no Node, no migrations. Deployed on its own cadence by the
     # deploy-landing workflow, so app releases and failures never affect it.
     landing-prod:
@@ -62,7 +78,7 @@ services:
         labels:
             - traefik.enable=true
             - traefik.docker.network=webproxy
-            - traefik.http.routers.scenarly-landing.rule=Host(`scenarly.com`) && (Path(`/`) || PathPrefix(`/privacy`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
+            - traefik.http.routers.scenarly-landing.rule=Host(`scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/privacy`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
             - traefik.http.routers.scenarly-landing.entrypoints=secure
             - traefik.http.routers.scenarly-landing.tls=true
             - traefik.http.routers.scenarly-landing.tls.certresolver=letsencrypt
@@ -105,7 +121,7 @@ services:
         labels:
             - traefik.enable=true
             - traefik.docker.network=webproxy
-            - traefik.http.routers.scenarly-landing-staging.rule=Host(`staging.scenarly.com`) && (Path(`/`) || PathPrefix(`/privacy`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
+            - traefik.http.routers.scenarly-landing-staging.rule=Host(`staging.scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/privacy`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
             - traefik.http.routers.scenarly-landing-staging.entrypoints=secure
             - traefik.http.routers.scenarly-landing-staging.tls=true
             - traefik.http.routers.scenarly-landing-staging.tls.certresolver=letsencrypt

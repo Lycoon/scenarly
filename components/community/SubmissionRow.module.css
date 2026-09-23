@@ -1,0 +1,75 @@
+/* My submissions as a table: the projects library's list and rows
+   (ProjectPageContainer, ProjectItem), with columns of its own. */
+
+/* Title | Submitted | Coverage | Showcase. The header and every row read the
+   same var, which the shared layout sets to the projects' columns. */
+.list {
+    composes: list from "../projects/ProjectPageContainer.module.css";
+    --projects-grid: minmax(0, 1fr) 120px 200px 90px;
+}
+
+.container {
+    composes: container from "../projects/ProjectItem.module.css";
+    text-decoration: none;
+    color: inherit;
+}
+
+.title_cell {
+    composes: title_cell from "../projects/ProjectItem.module.css";
+}
+
+.title {
+    composes: title from "../projects/ProjectItem.module.css";
+}
+
+.icon {
+    composes: icon from "../projects/ProjectItem.module.css";
+}
+
+/* Format and length under the title, in the same quiet type as a project's
+   bound file path. */
+.subtitle {
+    composes: file_path from "../projects/ProjectItem.module.css";
+}
+
+.cell {
+    composes: date_cell from "../projects/ProjectItem.module.css";
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.cell_line {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.upvotes {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+.cell_sub {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.meta_inline {
+    composes: meta_inline from "../projects/ProjectItem.module.css";
+}
+
+@media (max-width: 767px) {
+    /* ProjectItem drops to poster + title here; there is no poster, so the
+       title takes the whole row and the other columns go to the inline meta. */
+    .container.container {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cell {
+        display: none;
+    }
+}

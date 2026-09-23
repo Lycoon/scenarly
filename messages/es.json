@@ -422,7 +422,8 @@
       "title": "Título",
       "lastEdited": "Última edición",
       "storage": "Almacenamiento"
-    }
+    },
+    "communityBtn": "Comunidad"
   },
   "editorSidebar": {
     "scenes": "Escenas",
@@ -575,7 +576,11 @@
     "passwordPlaceholder": "Introduce la contraseña",
     "exportBtn": "Exportar",
     "exporting": "Exportando...",
-    "exportingProgress": "Exportando ({progress}%)"
+    "exportingProgress": "Exportando ({progress}%)",
+    "communityLabel": "Comunidad",
+    "submitToCoverage": "Enviar a Coverage",
+    "submitToCoverageDesc": "Exporta este guion en PDF y lo pone a disposición de otros guionistas para su lectura (3 tickets).",
+    "submitToCoverageDescDesktop": "Coverage funciona en la aplicación web. Abre scenarly.com en tu navegador."
   },
   "layout": {
     "pageFormat": "Formato de página",
@@ -765,6 +770,13 @@
       "replaceAnyway": "Reemplazar",
       "cancel": "Cancelar",
       "ok": "Aceptar"
+    },
+    "submitToCoverage": {
+      "title": "Enviar a Coverage",
+      "done": "Tu guion está en la bolsa. Las lecturas aparecerán en su página de Coverage a medida que lleguen.",
+      "open": "Abrir la página de Coverage",
+      "notMember": "Coverage es el intercambio de lecturas de Scenarly, abierto a cuentas verificadas. La tuya aún no lo está: las páginas de Comunidad te explican cómo verificarla.",
+      "openCommunity": "Abrir Comunidad"
     }
   },
   "board": {
@@ -877,5 +889,291 @@
     "daysAgo": "{days, plural, one {hace # día} other {hace # días}}",
     "monthsAgo": "Hace {months, plural, one {# mes} other {# meses}}",
     "moreThanYearAgo": "Hace más de 1 año"
+  },
+  "community": {
+    "nav": {
+      "community": "Comunidad",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# ticket} other {# tickets}}",
+      "ticketsTitle": "Tus tickets de Coverage",
+      "mySubmissions": "Mis envíos",
+      "submit": "Enviar",
+      "review": "Leer",
+      "showcase": "Showcase"
+    },
+    "gate": {
+      "signedOutTitle": "Inicia sesión para entrar en Coverage",
+      "signedOutBody": "Coverage es para cuentas de Scenarly. Inicia sesión, o crea una cuenta, para enviar y leer guiones.",
+      "signIn": "Iniciar sesión",
+      "unverifiedTitle": "Verifica primero tu correo",
+      "unverifiedBody": "Coverage está abierto a cuentas verificadas. Inicia sesión con el enlace que te enviamos por correo y vuelve."
+    },
+    "dashboard": {
+      "balance": "{count, plural, one {# ticket} other {# tickets}}",
+      "submitCard": "Enviar un guion",
+      "submitCardBody": "Sube un PDF o envía un proyecto de Scenarly desde su pestaña Exportar. Permanece en la bolsa hasta tener tres lecturas.",
+      "submitCost": "Usa {cost} tickets",
+      "reviewCard": "Leer un guion",
+      "reviewCardContinue": "Continuar tu lectura",
+      "reviewCardBody": "Elige uno de cinco guiones, léelo y escribe tus notas. Tienes tres semanas y puedes enviarlas después de una.",
+      "reviewReward": "Da 1 ticket",
+      "tabs": {
+        "reviews": "Lecturas que escribí",
+        "tickets": "Tickets"
+      },
+      "noReviewsTitle": "Aún no has escrito ninguna lectura",
+      "noReviewsBody": "Cada lectura que completes da un ticket para tu próximo envío."
+    },
+    "mySubmissions": {
+      "emptyTitle": "Aún no has enviado ningún guion",
+      "emptyBody": "Comparte uno en Showcase, o envíalo a Coverage para recibir lecturas.",
+      "columns": {
+        "title": "Título",
+        "submitted": "Enviado",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
+    },
+    "submissions": {
+      "pages": "{count, plural, one {# página} other {# páginas}}",
+      "reviewsProgress": "{count} / {min} lecturas",
+      "beingRead": "{count, plural, one {# lector leyendo} other {# lectores leyendo}}",
+      "statusPooled": "En la bolsa hasta el {date}",
+      "statusRetired": "Fuera de la bolsa",
+      "statusShowcaseOnly": "Solo Showcase",
+      "statusRemoved": "Retirado",
+      "submittedOn": "Enviado el {date}",
+      "poolStatus": "{count} de {min} lecturas recibidas — en la bolsa al menos hasta el {date}",
+      "retiredStatus": "Salió de la bolsa el {date}. Las lecturas se quedan aquí.",
+      "proof": "Prueba de existencia: SHA-256 {hash}… registrado el {date}",
+      "viewPdf": "Ver PDF",
+      "hidePdf": "Ocultar PDF",
+      "reviewsTitle": "{count, plural, =0 {Lecturas} one {# lectura} other {# lecturas}}",
+      "noReviewsTitle": "Aún sin lecturas",
+      "noReviewsBodyPooled": "Los lectores tienen al menos una semana con un guion antes de poder enviar sus notas. Recibirás un correo cuando llegue una.",
+      "noReviewsBodyRetired": "Este guion salió de la bolsa sin lecturas.",
+      "dangerTitle": "Retirar",
+      "withdrawRefund": "Nadie ha tomado este guion todavía: retirarlo te devuelve tus {cost} tickets.",
+      "withdrawNoRefund": "Este guion ya fue tomado, así que retirarlo no devuelve los tickets. Las lecturas en curso llegarán igualmente.",
+      "withdrawRetired": "Retirarlo elimina el PDF de nuestro almacenamiento. Las lecturas recibidas seguirán siendo legibles.",
+      "withdrawShowcase": "Retirarlo lo quita de Showcase y elimina el PDF de nuestro almacenamiento.",
+      "withdraw": "Retirar este guion",
+      "withdrawYes": "Sí, retirar",
+      "withdrawing": "Retirando…",
+      "withdrawFailed": "No se pudo retirar. Inténtalo de nuevo.",
+      "notFound": "Este envío no existe o no es tuyo.",
+      "onShowcase": "En Showcase",
+      "upvotes": "{count, plural, one {# voto} other {# votos}}",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "En Showcase como {kind}",
+      "showcaseOpen": "Abrir su página",
+      "showcaseOff": "No está en Showcase. Publícalo y cualquiera podrá leerlo y votarlo; tu nombre nunca se muestra.",
+      "showcasePublish": "Publicar en Showcase",
+      "showcasePublishing": "Publicando…",
+      "showcaseUnpublish": "Retirar de Showcase",
+      "showcaseUnpublishing": "Retirando…",
+      "showcaseFailed": "No se pudo actualizar Showcase. Inténtalo de nuevo."
+    },
+    "submit": {
+      "title": "Enviar un guion",
+      "titleShowcase": "Enviar a Showcase",
+      "titleCoverage": "Enviar a Coverage",
+      "showcaseOptionPoint1": "Comparte tu trabajo públicamente",
+      "showcaseOptionPoint2": "Los envíos solo pueden recibir votos positivos",
+      "showcaseOptionFormats": "Largometraje, piloto, cortometraje u otro",
+      "unlimited": "Ilimitado",
+      "coverageOptionPoint1": "Envía tu guion de largometraje para que lo lean",
+      "coverageOptionPoint2": "Recibe comentarios detallados sobre lo que funciona y lo que no",
+      "coverageOptionFormats": "Solo guiones de largometraje",
+      "coverageTooRecent": "Tu cuenta es demasiado nueva para enviar a Coverage. Podrás hacerlo a partir del {date}.",
+      "formatLabel": "Formato",
+      "dropTitle": "Importa tu PDF",
+      "dropHint": "Guion de largometraje, {min}–{max} páginas, hasta {mb} MB",
+      "dropHintPages": "{min}–{max} páginas, hasta {mb} MB",
+      "dropHintAny": "Hasta {mb} MB",
+      "fileSize": "{mb} MB",
+      "titleLabel": "Título",
+      "loglineLabel": "Logline",
+      "loglinePlaceholder": "De una a tres frases.",
+      "loglineHint": "{count} caracteres ({min}–{max})",
+      "genresLabel": "Géneros (hasta {max})",
+      "cancel": "Cancelar",
+      "submit": "Enviar",
+      "rendering": "Generando PDF…",
+      "uploading": "Subiendo…",
+      "errors": {
+        "noFormat": "Elige un formato.",
+        "notPdf": "Elige un archivo PDF.",
+        "tooLarge": "El PDF supera los {mb} MB.",
+        "noFile": "Elige primero un PDF.",
+        "noTitle": "Ponle un título al guion.",
+        "loglineShort": "El logline necesita al menos {min} caracteres.",
+        "noGenre": "Elige al menos un género.",
+        "tickets": "Enviar requiere {cost} tickets; tienes {balance}. Lee un guion para ganar más.",
+        "duplicate": "Este mismo PDF ya está en Coverage.",
+        "failed": "El envío falló. Inténtalo de nuevo."
+      },
+      "showLabel": "Mostrar solo",
+      "showScript": "El guion",
+      "showLogline": "El logline"
+    },
+    "offers": {
+      "title": "Elige un guion para leer",
+      "subtitle": "Cinco guiones, elegidos para ti. Toma uno y tendrás tres semanas para leerlo y escribir tus notas; podrás enviarlas después de una.",
+      "pages": "{count, plural, one {# página} other {# páginas}}",
+      "reviewsSoFar": "{count, plural, =0 {sin lecturas aún} one {# lectura hasta ahora} other {# lecturas hasta ahora}}",
+      "claim": "Leer este",
+      "unavailable": "Ya no disponible",
+      "reshuffle": "Mostrar otros cinco",
+      "reshuffleAt": "Nueva selección {time}",
+      "thinPool": "La bolsa es pequeña ahora mismo; llegan más guiones a medida que los guionistas los envían.",
+      "emptyTitle": "Nada que leer por ahora",
+      "emptyBody": "Cada guion de la bolsa es tuyo o ya lo has leído. Vuelve pronto.",
+      "claimFailed": "No se pudo tomar este guion.",
+      "reshuffleFailed": "No se pudo barajar."
+    },
+    "claim": {
+      "inProgress": "Estás leyendo «{title}»",
+      "canSubmitNow": "Ya puedes enviar tu lectura",
+      "canSubmitFrom": "Podrás enviar tu lectura a partir del {date}",
+      "deadlineIn": "{days, plural, one {queda # día} other {quedan # días}}",
+      "deadlineOn": "Vence el {date} ({days, plural, one {queda # día} other {quedan # días}})",
+      "continue": "Continuar",
+      "autoSubmittedTag": "Enviada automáticamente",
+      "submittedBanner": "Tu lectura se ha enviado. Has ganado 1 ticket.",
+      "releasedBanner": "Has devuelto el guion. Ni ticket ni penalización.",
+      "goneBanner": "Esta lectura ha terminado: ya se envió o pasó el plazo."
+    },
+    "review": {
+      "worksWellLabel": "Lo que funciona",
+      "worksWellPlaceholder": "Los momentos, personajes y decisiones que aciertan, y por qué.",
+      "doesNotWorkLabel": "Lo que no funciona",
+      "doesNotWorkPlaceholder": "Dónde te pierde el guion: estructura, lo que está en juego, diálogos, claridad.",
+      "remarksLabel": "Observaciones adicionales",
+      "remarksPlaceholder": "Cualquier otra cosa que el autor deba oír: referencias, notas de formato, un arreglo que probarías.",
+      "wordCount": "{count} / {min} palabras",
+      "saving": "Guardando…",
+      "savedAt": "Guardado {time}",
+      "unsaved": "Cambios sin guardar",
+      "saveFailed": "No se pudo guardar el borrador",
+      "signLabel": "Firmar esta lectura",
+      "signHint": "Muestra tu nombre de usuario al autor. Desactivado por defecto: las lecturas son anónimas.",
+      "floorPassed": "La semana de espera ha terminado. Envía tu lectura cuando esté lista.",
+      "autoSendNote": "Las lecturas pueden enviarse después de una semana. Si tu borrador guardado es lo bastante largo el {date}, se enviará por ti.",
+      "release": "Devolver este guion",
+      "releaseConfirm": "¿Devolverlo? No se te volverá a ofrecer este guion.",
+      "releaseYes": "Devolver",
+      "releasing": "Devolviendo…",
+      "releaseFailed": "No se pudo devolver el guion.",
+      "submit": "Enviar lectura",
+      "submitting": "Enviando…",
+      "submitFailed": "No se pudo enviar la lectura.",
+      "opensOn": "Se abre el {date}"
+    },
+    "reviews": {
+      "reviewerN": "Lector {n}",
+      "words": "{count} palabras",
+      "autoSubmitted": "enviada automáticamente",
+      "worksWellLabel": "Lo que funciona",
+      "doesNotWorkLabel": "Lo que no funciona",
+      "remarksLabel": "Observaciones adicionales",
+      "ratePrompt": "¿Te ha sido útil esta lectura?",
+      "rated": "Tu valoración de esta lectura: {rating}",
+      "rateFailed": "No se pudo guardar tu valoración.",
+      "report": "Denunciar",
+      "reported": "Denunciada",
+      "reportReason": "¿Por qué denuncias esta lectura?",
+      "reportDetails": "Algo más que debamos saber (opcional)",
+      "reportSend": "Enviar denuncia",
+      "reportFailed": "No se pudo enviar la denuncia."
+    },
+    "viewer": {
+      "failed": "No se pudo cargar el guion.",
+      "retry": "Reintentar",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "resetZoom": "Restablecer zoom",
+      "fullscreen": "Pantalla completa",
+      "exitFullscreen": "Salir de pantalla completa"
+    },
+    "enums": {
+      "formats": {
+        "FEATURE": "Largometraje",
+        "SHORT": "Cortometraje",
+        "PILOT": "Piloto",
+        "OTHER": "Otro"
+      },
+      "genres": {
+        "ACTION": "Acción",
+        "ADVENTURE": "Aventura",
+        "ANIMATION": "Animación",
+        "COMEDY": "Comedia",
+        "CRIME": "Policíaco",
+        "DRAMA": "Drama",
+        "FAMILY": "Familiar",
+        "FANTASY": "Fantasía",
+        "HORROR": "Terror",
+        "MYSTERY": "Misterio",
+        "ROMANCE": "Romance",
+        "SCIFI": "Ciencia ficción",
+        "THRILLER": "Thriller",
+        "WESTERN": "Western",
+        "OTHER": "Otro"
+      },
+      "ratings": {
+        "USEFUL": "Útil",
+        "NOT_USEFUL": "No útil"
+      },
+      "claimStatus": {
+        "ACTIVE": "En curso",
+        "SUBMITTED": "Enviada",
+        "EXPIRED": "Caducada",
+        "RELEASED": "Devuelta"
+      },
+      "ticketReasons": {
+        "STARTER": "Tickets de bienvenida",
+        "SUBMISSION": "Guion enviado",
+        "REVIEW_COMPLETED": "Lectura completada",
+        "SUBMISSION_REFUND": "Tickets devueltos",
+        "ADMIN_ADJUST": "Ajuste"
+      },
+      "reportReasons": {
+        "ABUSIVE": "Ofensiva o insultante",
+        "OFF_TOPIC": "No trata de este guion",
+        "LOW_EFFORT": "Poco esfuerzo",
+        "AI_GENERATED": "Parece generada por máquina",
+        "OTHER": "Otro"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "Guion completo",
+        "PILOT": "Piloto",
+        "SHORT": "Cortometraje",
+        "LOGLINE": "Logline"
+      }
+    },
+    "showcase": {
+      "title": "Showcase",
+      "subtitle": "Guiones que sus autores decidieron compartir. Léelos aquí y vota por los que recomendarías.",
+      "sortLabel": "Ordenar",
+      "sortTop": "Destacados",
+      "sortNew": "Recientes",
+      "kindLabel": "Tipo",
+      "kindAll": "Todos",
+      "pages": "{count, plural, one {# página} other {# páginas}}",
+      "publishedOn": "Publicado el {date}",
+      "writtenWith": "Escrito con Scenarly",
+      "upvote": "Votar",
+      "upvoteSignIn": "Inicia sesión para votar",
+      "upvoteNotEligible": "Pueden votar las cuentas verificadas",
+      "upvoteFailed": "No se pudo guardar tu voto",
+      "emptyTitle": "Aún no hay nada publicado",
+      "emptyBody": "Los guionistas comparten aquí sus guiones cuando están listos. ¿Quieres notas antes? Intercambia lecturas en Coverage.",
+      "emptyCta": "Ir a Coverage",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "pageOf": "Página {page} de {count}",
+      "backToWall": "Todos los guiones",
+      "loglineOnly": "El autor solo compartió el logline."
+    }
   }
 }

@@ -39,6 +39,8 @@ async function buildHeaders(initHeaders?: HeadersInit): Promise<Record<string, s
  */
 export async function apiFetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
     const headers = await buildHeaders(init?.headers);
+    // A multipart body must let the browser write its own boundary header.
+    if (init?.body instanceof FormData) delete headers["Content-Type"];
     return fetch(resolveUrl(input), { ...init, headers });
 }
 

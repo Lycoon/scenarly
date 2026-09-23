@@ -54,6 +54,17 @@ export type PopupAutoSaveData = {
     path: string;
 };
 
+/**
+ * Submit the open project to Community Coverage. `buildPdf` runs the editor's
+ * DOM-based PDF export at confirm time, so the popup never needs the editor.
+ */
+export type PopupSubmitToCoverageData = {
+    projectId: string;
+    title: string;
+    logline: string;
+    buildPdf: () => Promise<Blob>;
+};
+
 // ------------------------------ //
 //         GENERIC POPUP          //
 // ------------------------------ //
@@ -67,7 +78,8 @@ export type PopupUnionData =
     | PopupUnlockDraftData
     | PopupConfirmFileBindData
     | PopupSaveToFileData
-    | PopupAutoSaveData;
+    | PopupAutoSaveData
+    | PopupSubmitToCoverageData;
 
 export enum PopupType {
     NewCharacter,
@@ -81,6 +93,7 @@ export enum PopupType {
     ConfirmFileBind,
     SaveToFile,
     AutoSave,
+    SubmitToCoverage,
 }
 
 export type PopupData<DataType extends PopupUnionData> = {
@@ -174,5 +187,12 @@ export const autoSavePopup = (userCtx: UserContextType, path: string) => {
     userCtx.updatePopup({
         type: PopupType.AutoSave,
         data: { path },
+    });
+};
+
+export const submitToCoveragePopup = (data: PopupSubmitToCoverageData, userCtx: UserContextType) => {
+    userCtx.updatePopup({
+        type: PopupType.SubmitToCoverage,
+        data,
     });
 };

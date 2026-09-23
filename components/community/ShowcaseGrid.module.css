@@ -1,0 +1,33 @@
+/* The wall: the sort toggle beside the kind chips, the cards, the
+   pager. Cards and buttons come from Community.module.css. */
+
+/* The controls row is the Coverage dashboard's tab row (.row .tabRow) with the
+   same full-size buttons, so switching between the two pages never moves the
+   content below. Only the split between sort and kind is added here. */
+.controls {
+    justify-content: space-between;
+}
+
+/* Cards keep their own height: one with a wrapped title must not stretch
+   the others in its row. */
+.wall {
+    align-items: start;
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+}
+
+.pagerLink {
+    text-decoration: none;
+}
+
+/* Keeps the pager centred when one side has no link. */
+.pagerGap {
+    visibility: hidden;
+}

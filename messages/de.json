@@ -423,7 +423,8 @@
       "title": "Titel",
       "lastEdited": "Zuletzt bearbeitet",
       "storage": "Speicher"
-    }
+    },
+    "communityBtn": "Community"
   },
   "editorSidebar": {
     "scenes": "Szenen",
@@ -576,7 +577,11 @@
     "passwordPlaceholder": "Passwort eingeben",
     "exportBtn": "Exportieren",
     "exporting": "Exportieren...",
-    "exportingProgress": "Exportieren ({progress}%)"
+    "exportingProgress": "Exportieren ({progress}%)",
+    "communityLabel": "Community",
+    "submitToCoverage": "Bei Coverage einreichen",
+    "submitToCoverageDesc": "Exportiert dieses Drehbuch als PDF und stellt es anderen Autoren zur Besprechung bereit (3 Tickets).",
+    "submitToCoverageDescDesktop": "Coverage läuft in der Web-App. Öffnet scenarly.com in deinem Browser."
   },
   "layout": {
     "pageFormat": "Seitenformat",
@@ -766,6 +771,13 @@
       "replaceAnyway": "Ersetzen",
       "cancel": "Abbrechen",
       "ok": "OK"
+    },
+    "submitToCoverage": {
+      "title": "Bei Coverage einreichen",
+      "done": "Dein Drehbuch ist im Pool. Besprechungen erscheinen auf seiner Coverage-Seite, sobald sie eintreffen.",
+      "open": "Coverage-Seite öffnen",
+      "notMember": "Coverage ist Scenarlys Besprechungstausch, offen für bestätigte Konten. Deins ist noch nicht bestätigt: Die Community-Seiten zeigen dir, wie das geht.",
+      "openCommunity": "Community öffnen"
     }
   },
   "board": {
@@ -878,5 +890,291 @@
     "daysAgo": "{days, plural, one {vor # Tag} other {vor # Tagen}}",
     "monthsAgo": "Vor {months, plural, one {# Monat} other {# Monaten}}",
     "moreThanYearAgo": "Vor über einem Jahr"
+  },
+  "community": {
+    "nav": {
+      "community": "Community",
+      "coverage": "Coverage",
+      "tickets": "{count, plural, one {# Ticket} other {# Tickets}}",
+      "ticketsTitle": "Deine Coverage-Tickets",
+      "mySubmissions": "Meine Einreichungen",
+      "submit": "Einreichen",
+      "review": "Besprechen",
+      "showcase": "Showcase"
+    },
+    "gate": {
+      "signedOutTitle": "Melde dich an, um Coverage zu nutzen",
+      "signedOutBody": "Coverage ist für Scenarly-Konten. Melde dich an oder erstelle ein Konto, um Drehbücher einzureichen und zu besprechen.",
+      "signIn": "Anmelden",
+      "unverifiedTitle": "Bestätige zuerst deine E-Mail",
+      "unverifiedBody": "Coverage steht bestätigten Konten offen. Melde dich mit dem Link an, den wir dir mailen, und komm zurück."
+    },
+    "dashboard": {
+      "balance": "{count, plural, one {# Ticket} other {# Tickets}}",
+      "submitCard": "Drehbuch einreichen",
+      "submitCardBody": "Lade ein PDF hoch oder reiche ein Scenarly-Projekt über seinen Export-Tab ein. Es bleibt im Pool, bis es drei Besprechungen hat.",
+      "submitCost": "Braucht {cost} Tickets",
+      "reviewCard": "Drehbuch besprechen",
+      "reviewCardContinue": "Besprechung fortsetzen",
+      "reviewCardBody": "Wähle eines von fünf Drehbüchern, lies es, schreib deine Anmerkungen. Du hast drei Wochen und kannst nach einer abschicken.",
+      "reviewReward": "Bringt 1 Ticket",
+      "tabs": {
+        "reviews": "Meine Besprechungen",
+        "tickets": "Tickets"
+      },
+      "noReviewsTitle": "Noch keine Besprechung geschrieben",
+      "noReviewsBody": "Jede abgeschlossene Besprechung bringt ein Ticket für deine nächste Einreichung."
+    },
+    "mySubmissions": {
+      "emptyTitle": "Noch kein Drehbuch eingereicht",
+      "emptyBody": "Teile eines im Showcase oder reiche es bei Coverage ein, um Besprechungen zu bekommen.",
+      "columns": {
+        "title": "Titel",
+        "submitted": "Eingereicht",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
+    },
+    "submissions": {
+      "pages": "{count, plural, one {# Seite} other {# Seiten}}",
+      "reviewsProgress": "{count} / {min} Besprechungen",
+      "beingRead": "{count, plural, one {# Person liest gerade} other {# Personen lesen gerade}}",
+      "statusPooled": "Im Pool bis {date}",
+      "statusRetired": "Nicht mehr im Pool",
+      "statusShowcaseOnly": "Nur Showcase",
+      "statusRemoved": "Zurückgezogen",
+      "submittedOn": "Eingereicht am {date}",
+      "poolStatus": "{count} von {min} Besprechungen da — im Pool mindestens bis {date}",
+      "retiredStatus": "Am {date} aus dem Pool. Die Besprechungen bleiben hier.",
+      "proof": "Existenznachweis: SHA-256 {hash}… registriert am {date}",
+      "viewPdf": "PDF ansehen",
+      "hidePdf": "PDF ausblenden",
+      "reviewsTitle": "{count, plural, =0 {Besprechungen} one {# Besprechung} other {# Besprechungen}}",
+      "noReviewsTitle": "Noch keine Besprechung",
+      "noReviewsBodyPooled": "Besprechende haben ein Drehbuch mindestens eine Woche, bevor sie ihre Anmerkungen schicken können. Du bekommst eine E-Mail, sobald eine eintrifft.",
+      "noReviewsBodyRetired": "Dieses Drehbuch hat den Pool ohne Besprechung verlassen.",
+      "dangerTitle": "Zurückziehen",
+      "withdrawRefund": "Niemand hat dieses Drehbuch bisher übernommen: Zurückziehen gibt dir deine {cost} Tickets zurück.",
+      "withdrawNoRefund": "Dieses Drehbuch wurde übernommen, daher gibt das Zurückziehen die Tickets nicht zurück. Laufende Besprechungen treffen trotzdem ein.",
+      "withdrawRetired": "Zurückziehen entfernt das PDF aus unserem Speicher. Erhaltene Besprechungen bleiben lesbar.",
+      "withdrawShowcase": "Zurückziehen nimmt das Drehbuch aus dem Showcase und entfernt das PDF aus unserem Speicher.",
+      "withdraw": "Dieses Drehbuch zurückziehen",
+      "withdrawYes": "Ja, zurückziehen",
+      "withdrawing": "Wird zurückgezogen…",
+      "withdrawFailed": "Zurückziehen fehlgeschlagen. Bitte erneut versuchen.",
+      "notFound": "Diese Einreichung existiert nicht oder gehört dir nicht.",
+      "onShowcase": "Im Showcase",
+      "upvotes": "{count, plural, one {# positive Bewertung} other {# positive Bewertungen}}",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "Im Showcase als {kind}",
+      "showcaseOpen": "Seite öffnen",
+      "showcaseOff": "Nicht im Showcase. Veröffentliche es, dann kann es jeder lesen und positiv bewerten; dein Name wird nie angezeigt.",
+      "showcasePublish": "Im Showcase veröffentlichen",
+      "showcasePublishing": "Wird veröffentlicht…",
+      "showcaseUnpublish": "Aus dem Showcase nehmen",
+      "showcaseUnpublishing": "Wird entfernt…",
+      "showcaseFailed": "Showcase konnte nicht aktualisiert werden. Bitte versuche es erneut."
+    },
+    "submit": {
+      "title": "Drehbuch einreichen",
+      "titleShowcase": "Im Showcase einreichen",
+      "titleCoverage": "Bei Coverage einreichen",
+      "showcaseOptionPoint1": "Teile deine Arbeit öffentlich",
+      "showcaseOptionPoint2": "Einreichungen können nur positiv bewertet werden",
+      "showcaseOptionFormats": "Spielfilm, Pilot, Kurzfilm oder Sonstiges",
+      "unlimited": "Unbegrenzt",
+      "coverageOptionPoint1": "Reiche dein Spielfilm-Drehbuch zur Besprechung ein",
+      "coverageOptionPoint2": "Erhalte ausführliches Feedback dazu, was funktioniert und was nicht",
+      "coverageOptionFormats": "Nur Spielfilm-Drehbücher",
+      "coverageTooRecent": "Dein Konto ist noch zu neu, um bei Coverage einzureichen. Das geht ab {date}.",
+      "formatLabel": "Format",
+      "dropTitle": "Importiere dein PDF",
+      "dropHint": "Spielfilm-Drehbuch, {min}–{max} Seiten, bis {mb} MB",
+      "dropHintPages": "{min}–{max} Seiten, bis {mb} MB",
+      "dropHintAny": "Bis {mb} MB",
+      "fileSize": "{mb} MB",
+      "titleLabel": "Titel",
+      "loglineLabel": "Logline",
+      "loglinePlaceholder": "Ein bis drei Sätze.",
+      "loglineHint": "{count} Zeichen ({min}–{max})",
+      "genresLabel": "Genres (bis zu {max})",
+      "cancel": "Abbrechen",
+      "submit": "Einreichen",
+      "rendering": "PDF wird erzeugt…",
+      "uploading": "Wird hochgeladen…",
+      "errors": {
+        "noFormat": "Wähle ein Format.",
+        "notPdf": "Wähle eine PDF-Datei.",
+        "tooLarge": "Das PDF ist größer als {mb} MB.",
+        "noFile": "Wähle zuerst ein PDF.",
+        "noTitle": "Gib dem Drehbuch einen Titel.",
+        "loglineShort": "Die Logline braucht mindestens {min} Zeichen.",
+        "noGenre": "Wähle mindestens ein Genre.",
+        "tickets": "Einreichen braucht {cost} Tickets; du hast {balance}. Besprich ein Drehbuch, um mehr zu bekommen.",
+        "duplicate": "Genau dieses PDF ist bereits in Coverage.",
+        "failed": "Einreichen fehlgeschlagen. Bitte erneut versuchen."
+      },
+      "showLabel": "Nur zeigen",
+      "showScript": "Das Drehbuch",
+      "showLogline": "Die Logline"
+    },
+    "offers": {
+      "title": "Wähle ein Drehbuch zum Besprechen",
+      "subtitle": "Fünf Drehbücher, für dich gezogen. Übernimm eines und du hast drei Wochen, um es zu lesen und deine Anmerkungen zu schreiben; abschicken kannst du nach einer.",
+      "pages": "{count, plural, one {# Seite} other {# Seiten}}",
+      "reviewsSoFar": "{count, plural, =0 {noch keine Besprechung} one {# Besprechung bisher} other {# Besprechungen bisher}}",
+      "claim": "Dieses besprechen",
+      "unavailable": "Nicht mehr verfügbar",
+      "reshuffle": "Fünf andere zeigen",
+      "reshuffleAt": "Neue Auswahl ab {time}",
+      "thinPool": "Der Pool ist gerade klein; weitere Drehbücher kommen, sobald Autoren sie einreichen.",
+      "emptyTitle": "Gerade nichts zu besprechen",
+      "emptyBody": "Jedes Drehbuch im Pool ist entweder deins oder eines, das du schon besprochen hast. Schau bald wieder vorbei.",
+      "claimFailed": "Dieses Drehbuch konnte nicht übernommen werden.",
+      "reshuffleFailed": "Neu mischen fehlgeschlagen."
+    },
+    "claim": {
+      "inProgress": "Du besprichst „{title}“",
+      "canSubmitNow": "Du kannst deine Besprechung jetzt abschicken",
+      "canSubmitFrom": "Du kannst deine Besprechung ab dem {date} abschicken",
+      "deadlineIn": "{days, plural, one {noch # Tag} other {noch # Tage}}",
+      "deadlineOn": "Fällig am {date} ({days, plural, one {noch # Tag} other {noch # Tage}})",
+      "continue": "Fortsetzen",
+      "autoSubmittedTag": "Automatisch gesendet",
+      "submittedBanner": "Deine Besprechung wurde gesendet. Du hast 1 Ticket bekommen.",
+      "releasedBanner": "Du hast das Drehbuch zurückgegeben. Kein Ticket, keine Strafe.",
+      "goneBanner": "Diese Übernahme ist beendet: Die Besprechung wurde bereits gesendet oder die Frist ist abgelaufen."
+    },
+    "review": {
+      "worksWellLabel": "Was funktioniert",
+      "worksWellPlaceholder": "Die Momente, Figuren und Entscheidungen, die sitzen — und warum.",
+      "doesNotWorkLabel": "Was nicht funktioniert",
+      "doesNotWorkPlaceholder": "Wo dich das Drehbuch verliert: Struktur, Einsatz, Dialoge, Klarheit.",
+      "remarksLabel": "Weitere Anmerkungen",
+      "remarksPlaceholder": "Alles, was der Autor noch hören sollte: Vergleichstitel, Formathinweise, ein Fix, den du versuchen würdest.",
+      "wordCount": "{count} / {min} Wörter",
+      "saving": "Wird gespeichert…",
+      "savedAt": "Gespeichert {time}",
+      "unsaved": "Ungespeicherte Änderungen",
+      "saveFailed": "Entwurf konnte nicht gespeichert werden",
+      "signLabel": "Diese Besprechung unterschreiben",
+      "signHint": "Zeigt dem Autor deinen Benutzernamen. Standardmäßig aus: Besprechungen sind anonym.",
+      "floorPassed": "Die einwöchige Wartezeit ist vorbei. Schick deine Besprechung ab, wenn sie fertig ist.",
+      "autoSendNote": "Besprechungen können nach einer Woche gesendet werden. Ist dein gespeicherter Entwurf am {date} lang genug, wird er für dich gesendet.",
+      "release": "Dieses Drehbuch zurückgeben",
+      "releaseConfirm": "Zurückgeben? Dieses Drehbuch wird dir nicht wieder angeboten.",
+      "releaseYes": "Zurückgeben",
+      "releasing": "Wird zurückgegeben…",
+      "releaseFailed": "Das Drehbuch konnte nicht zurückgegeben werden.",
+      "submit": "Besprechung senden",
+      "submitting": "Wird gesendet…",
+      "submitFailed": "Die Besprechung konnte nicht gesendet werden.",
+      "opensOn": "Öffnet am {date}"
+    },
+    "reviews": {
+      "reviewerN": "Besprechung {n}",
+      "words": "{count} Wörter",
+      "autoSubmitted": "automatisch gesendet",
+      "worksWellLabel": "Was funktioniert",
+      "doesNotWorkLabel": "Was nicht funktioniert",
+      "remarksLabel": "Weitere Anmerkungen",
+      "ratePrompt": "War diese Besprechung nützlich?",
+      "rated": "Deine Bewertung dieser Besprechung: {rating}",
+      "rateFailed": "Deine Bewertung konnte nicht gespeichert werden.",
+      "report": "Melden",
+      "reported": "Gemeldet",
+      "reportReason": "Warum meldest du diese Besprechung?",
+      "reportDetails": "Sonst noch etwas, das wir wissen sollten (optional)",
+      "reportSend": "Meldung senden",
+      "reportFailed": "Die Meldung konnte nicht gesendet werden."
+    },
+    "viewer": {
+      "failed": "Das Drehbuch konnte nicht geladen werden.",
+      "retry": "Erneut versuchen",
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "resetZoom": "Zoom zurücksetzen",
+      "fullscreen": "Vollbild",
+      "exitFullscreen": "Vollbild beenden"
+    },
+    "enums": {
+      "formats": {
+        "FEATURE": "Spielfilm",
+        "SHORT": "Kurzfilm",
+        "PILOT": "Pilot",
+        "OTHER": "Sonstiges"
+      },
+      "genres": {
+        "ACTION": "Action",
+        "ADVENTURE": "Abenteuer",
+        "ANIMATION": "Animation",
+        "COMEDY": "Komödie",
+        "CRIME": "Krimi",
+        "DRAMA": "Drama",
+        "FAMILY": "Familie",
+        "FANTASY": "Fantasy",
+        "HORROR": "Horror",
+        "MYSTERY": "Mystery",
+        "ROMANCE": "Romanze",
+        "SCIFI": "Science-Fiction",
+        "THRILLER": "Thriller",
+        "WESTERN": "Western",
+        "OTHER": "Sonstiges"
+      },
+      "ratings": {
+        "USEFUL": "Nützlich",
+        "NOT_USEFUL": "Nicht nützlich"
+      },
+      "claimStatus": {
+        "ACTIVE": "In Arbeit",
+        "SUBMITTED": "Gesendet",
+        "EXPIRED": "Abgelaufen",
+        "RELEASED": "Zurückgegeben"
+      },
+      "ticketReasons": {
+        "STARTER": "Willkommens-Tickets",
+        "SUBMISSION": "Drehbuch eingereicht",
+        "REVIEW_COMPLETED": "Besprechung abgeschlossen",
+        "SUBMISSION_REFUND": "Tickets zurückgegeben",
+        "ADMIN_ADJUST": "Anpassung"
+      },
+      "reportReasons": {
+        "ABUSIVE": "Beleidigend oder verletzend",
+        "OFF_TOPIC": "Geht nicht um dieses Drehbuch",
+        "LOW_EFFORT": "Lieblos",
+        "AI_GENERATED": "Wirkt maschinell erzeugt",
+        "OTHER": "Sonstiges"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "Drehbuch",
+        "PILOT": "Pilot",
+        "SHORT": "Kurzfilm",
+        "LOGLINE": "Logline"
+      }
+    },
+    "showcase": {
+      "title": "Showcase",
+      "subtitle": "Drehbücher, die ihre Autorinnen und Autoren teilen wollten. Lies sie hier und bewerte die positiv, die du empfehlen würdest.",
+      "sortLabel": "Sortieren",
+      "sortTop": "Beliebt",
+      "sortNew": "Neueste",
+      "kindLabel": "Art",
+      "kindAll": "Alle",
+      "pages": "{count, plural, one {# Seite} other {# Seiten}}",
+      "publishedOn": "Veröffentlicht am {date}",
+      "writtenWith": "Mit Scenarly geschrieben",
+      "upvote": "Positiv bewerten",
+      "upvoteSignIn": "Melde dich an, um positiv zu bewerten",
+      "upvoteNotEligible": "Positiv bewerten können verifizierte Konten",
+      "upvoteFailed": "Deine positive Bewertung konnte nicht gespeichert werden",
+      "emptyTitle": "Noch nichts veröffentlicht",
+      "emptyBody": "Autorinnen und Autoren teilen hier ihre Drehbücher, wenn sie so weit sind. Lieber zuerst Feedback? Tausche Besprechungen in Coverage.",
+      "emptyCta": "Zu Coverage",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "pageOf": "Seite {page} von {count}",
+      "backToWall": "Alle Drehbücher",
+      "loglineOnly": "Nur die Logline wurde geteilt."
+    }
   }
 }
