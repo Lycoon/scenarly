@@ -775,7 +775,7 @@
       "title": "Coverage에 제출",
       "done": "시나리오가 풀에 들어갔습니다. 리뷰가 도착하는 대로 Coverage 페이지에 표시됩니다.",
       "open": "Coverage 페이지 열기",
-      "notMember": "Coverage는 Scenarly의 리뷰 교환으로, 만든 지 일주일 이상 지난 인증된 계정에 열려 있습니다. 회원님의 계정은 아직 이용할 수 없으며, 언제부터 가능한지는 커뮤니티 페이지에서 확인할 수 있습니다.",
+      "notMember": "Coverage는 Scenarly의 리뷰 교환으로, 인증된 계정에 열려 있습니다. 회원님의 계정은 아직 인증되지 않았으며, 인증 방법은 커뮤니티 페이지에서 확인할 수 있습니다.",
       "openCommunity": "커뮤니티 열기"
     }
   },
@@ -896,7 +896,7 @@
       "coverage": "Coverage",
       "tickets": "티켓 {count}장",
       "ticketsTitle": "내 Coverage 티켓",
-      "backToApp": "내 프로젝트",
+      "mySubmissions": "내 제출작",
       "submit": "제출",
       "review": "리뷰",
       "showcase": "Showcase"
@@ -906,9 +906,7 @@
       "signedOutBody": "Coverage는 Scenarly 계정용입니다. 로그인하거나 계정을 만들어 시나리오를 제출하고 리뷰하세요.",
       "signIn": "로그인",
       "unverifiedTitle": "먼저 이메일을 인증하세요",
-      "unverifiedBody": "Coverage는 인증된 계정에 열려 있습니다. 이메일로 보내 드린 링크로 로그인한 뒤 돌아오세요.",
-      "tooRecentTitle": "거의 다 됐습니다",
-      "tooRecentBody": "Coverage는 만든 지 최소 일주일이 지난 계정에 열립니다. 회원님의 계정은 {date}부터 이용할 수 있습니다."
+      "unverifiedBody": "Coverage는 인증된 계정에 열려 있습니다. 이메일로 보내 드린 링크로 로그인한 뒤 돌아오세요."
     },
     "dashboard": {
       "balance": "티켓 {count}장",
@@ -920,14 +918,21 @@
       "reviewCardBody": "다섯 편 중 하나를 골라 읽고 의견을 쓰세요. 기한은 3주이며, 1주 후부터 보낼 수 있습니다.",
       "reviewReward": "티켓 1장 획득",
       "tabs": {
-        "submissions": "내 시나리오",
         "reviews": "내가 쓴 리뷰",
         "tickets": "티켓"
       },
-      "noSubmissionsTitle": "아직 제출한 시나리오가 없습니다",
-      "noSubmissionsBody": "제출하면 다른 작가들이 고르는 풀에 들어갑니다.",
       "noReviewsTitle": "아직 쓴 리뷰가 없습니다",
       "noReviewsBody": "리뷰를 하나 완료할 때마다 다음 제출에 쓸 티켓 한 장을 얻습니다."
+    },
+    "mySubmissions": {
+      "emptyTitle": "아직 제출한 시나리오가 없습니다",
+      "emptyBody": "Showcase에 공유하거나 Coverage에 제출해 리뷰를 받아 보세요.",
+      "columns": {
+        "title": "제목",
+        "submitted": "제출일",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
     },
     "submissions": {
       "pages": "{count}페이지",
@@ -956,7 +961,18 @@
       "withdrawYes": "예, 철회합니다",
       "withdrawing": "철회 중…",
       "withdrawFailed": "철회할 수 없습니다. 다시 시도해 주세요.",
-      "notFound": "이 제출물은 존재하지 않거나 회원님의 것이 아닙니다."
+      "notFound": "이 제출물은 존재하지 않거나 회원님의 것이 아닙니다.",
+      "onShowcase": "Showcase에 게시됨",
+      "upvotes": "추천 {count}개",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "{kind}(으)로 Showcase에 게시됨",
+      "showcaseOpen": "페이지 열기",
+      "showcaseOff": "Showcase에 게시되지 않았습니다. 게시하면 누구나 읽고 추천할 수 있으며, 이름은 절대 표시되지 않습니다.",
+      "showcasePublish": "Showcase에 게시",
+      "showcasePublishing": "게시 중…",
+      "showcaseUnpublish": "Showcase에서 내리기",
+      "showcaseUnpublishing": "내리는 중…",
+      "showcaseFailed": "Showcase를 업데이트하지 못했습니다. 다시 시도하세요."
     },
     "submit": {
       "title": "시나리오 제출",
@@ -965,11 +981,13 @@
       "showcaseOptionPoint1": "작품을 공개적으로 공유합니다",
       "showcaseOptionPoint2": "제출작에는 추천만 할 수 있습니다",
       "showcaseOptionFormats": "장편, 파일럿, 단편 또는 기타",
+      "unlimited": "무제한",
       "coverageOptionPoint1": "장편 시나리오를 리뷰받도록 제출합니다",
       "coverageOptionPoint2": "잘된 점과 아쉬운 점에 대한 자세한 피드백을 받습니다",
       "coverageOptionFormats": "장편 시나리오만",
+      "coverageTooRecent": "계정이 아직 너무 새로워 Coverage에 제출할 수 없습니다. {date}부터 제출할 수 있습니다.",
       "formatLabel": "형식",
-      "dropTitle": "여기에 PDF를 놓거나 클릭해서 선택하세요",
+      "dropTitle": "PDF 가져오기",
       "dropHint": "장편 시나리오, {min}~{max}페이지, 최대 {mb} MB",
       "dropHintPages": "{min}~{max}페이지, 최대 {mb} MB",
       "dropHintAny": "최대 {mb} MB",
@@ -994,7 +1012,10 @@
         "tickets": "제출에는 티켓 {cost}장이 필요하지만 보유 티켓은 {balance}장입니다. 시나리오를 리뷰해서 티켓을 얻으세요.",
         "duplicate": "이 PDF는 이미 Coverage에 있습니다.",
         "failed": "제출에 실패했습니다. 다시 시도해 주세요."
-      }
+      },
+      "showLabel": "다음만 표시",
+      "showScript": "시나리오",
+      "showLogline": "로그라인"
     },
     "offers": {
       "title": "리뷰할 시나리오 고르기",
@@ -1068,7 +1089,12 @@
     },
     "viewer": {
       "failed": "시나리오를 불러올 수 없습니다.",
-      "retry": "다시 시도"
+      "retry": "다시 시도",
+      "zoomIn": "확대",
+      "zoomOut": "축소",
+      "resetZoom": "확대/축소 초기화",
+      "fullscreen": "전체 화면",
+      "exitFullscreen": "전체 화면 종료"
     },
     "enums": {
       "formats": {
@@ -1117,11 +1143,37 @@
         "LOW_EFFORT": "성의 없음",
         "AI_GENERATED": "기계가 생성한 것처럼 보임",
         "OTHER": "기타"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "전체 시나리오",
+        "PILOT": "파일럿",
+        "SHORT": "단편",
+        "LOGLINE": "로그라인"
       }
     },
     "showcase": {
-      "comingSoonTitle": "Showcase 준비 중",
-      "comingSoonBody": "작가가 공개하기로 한 시나리오의 공개 게시판입니다. 아직 열리지 않았습니다."
+      "title": "Showcase",
+      "subtitle": "작가들이 공유하기로 한 시나리오입니다. 여기서 읽고 추천하고 싶은 작품에 추천을 누르세요.",
+      "sortLabel": "정렬",
+      "sortTop": "인기",
+      "sortNew": "최신",
+      "kindLabel": "종류",
+      "kindAll": "전체",
+      "pages": "{count}페이지",
+      "publishedOn": "{date} 게시",
+      "writtenWith": "Scenarly로 작성",
+      "upvote": "추천",
+      "upvoteSignIn": "로그인하고 추천하기",
+      "upvoteNotEligible": "추천은 인증된 계정에서 할 수 있습니다",
+      "upvoteFailed": "추천을 저장하지 못했습니다",
+      "emptyTitle": "아직 게시된 작품이 없습니다",
+      "emptyBody": "작가들은 준비가 되면 여기에 시나리오를 공유합니다. 먼저 피드백을 받고 싶다면 Coverage에서 리뷰를 주고받으세요.",
+      "emptyCta": "Coverage로 이동",
+      "previous": "이전",
+      "next": "다음",
+      "pageOf": "{page} / {count}페이지",
+      "backToWall": "모든 시나리오",
+      "loglineOnly": "작가가 로그라인만 공유했습니다."
     }
   }
 }

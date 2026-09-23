@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import CommunityShell from "@components/community/CommunityShell";
 
 export const metadata: Metadata = {
-    title: "Scenarly Community",
+    title: "Community | Scenarly®",
     description: "Coverage: exchange script reviews with other writers. Showcase: read scripts writers chose to share.",
 };
 

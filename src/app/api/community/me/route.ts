@@ -8,17 +8,18 @@ import { Success } from "@src/lib/utils/api-utils";
 /**
  * GET `/community/me`
  *
- * What the Coverage pages need to decide what to show: the entry gate verdict
- * for a user who fails it, or the profile, balance and active claim of a
- * member. An eligible user without a profile gets one here, with the starter
- * tickets, so opening Coverage is all it takes to join.
+ * What the Community pages need to decide what to show: the eligibility
+ * verdict, and the profile, balance and active claim of a member. A verified
+ * user without a profile gets one here, with the starter tickets, so opening
+ * Community is all it takes to join; an account too recent is a member too,
+ * only kept from submitting to Coverage until `eligibleAt`.
  */
 async function getMe(req: NextRequest, { user }: AuthApiContext) {
     const now = new Date();
+    const eligibility = await TicketService.getUserEligibility(user.id, now);
     let profile = await TicketService.getProfile(user.id);
     if (!profile) {
-        const eligibility = await TicketService.getUserEligibility(user.id, now);
-        if (!eligibility.ok) return Success({ profile: null, eligibility, balance: 0, activeClaim: null });
+        if (eligibility.reason === "UNVERIFIED") return Success({ profile: null, eligibility, balance: 0, activeClaim: null });
         profile = await TicketService.createProfile(user.id);
     }
 
@@ -33,7 +34,7 @@ async function getMe(req: NextRequest, { user }: AuthApiContext) {
             usefulCount: profile.usefulCount,
             notUsefulCount: profile.notUsefulCount,
         },
-        eligibility: { ok: true },
+        eligibility,
         balance,
         activeClaim,
     });

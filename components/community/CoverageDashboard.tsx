@@ -6,22 +6,20 @@ import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
 
 import Loading from "@components/utils/Loading";
-import { useCommunityMe, useTickets, useEndedClaims, useMySubmissions } from "@src/lib/community/hooks";
+import { useCommunityMe, useTickets, useEndedClaims } from "@src/lib/community/hooks";
 
 import styles from "./Community.module.css";
-import SubmissionCard from "./SubmissionCard";
 import { daysUntil, formatDate } from "./format";
 
-type Tab = "submissions" | "reviews" | "tickets";
+type Tab = "reviews" | "tickets";
 
-/** `/community/coverage`: balance, the claim in progress, and the member's history in three tabs. */
+/** `/community/coverage`: the claim in progress, and the member's reviews and tickets in two tabs. Their scripts are on My submissions. */
 const CoverageDashboard = () => {
     const t = useTranslations("community.dashboard");
     const tClaim = useTranslations("community.claim");
     const tEnum = useTranslations("community.enums");
     const { me } = useCommunityMe();
-    const [tab, setTab] = useState<Tab>("submissions");
-    const { submissions, isLoading: loadingSubmissions } = useMySubmissions(tab === "submissions");
+    const [tab, setTab] = useState<Tab>("reviews");
     const { claims, isLoading: loadingClaims } = useEndedClaims(tab === "reviews");
     const { entries, isLoading: loadingTickets } = useTickets(tab === "tickets");
 
@@ -52,7 +50,7 @@ const CoverageDashboard = () => {
 
                 <div className={styles.section}>
                     <div className={`${styles.row} ${styles.tabRow}`}>
-                        {(["submissions", "reviews", "tickets"] as Tab[]).map((id) => (
+                        {(["reviews", "tickets"] as Tab[]).map((id) => (
                             <button
                                 key={id}
                                 className={`${styles.btn} ${tab === id ? "" : styles.btnOutline}`}
@@ -62,22 +60,6 @@ const CoverageDashboard = () => {
                             </button>
                         ))}
                     </div>
-
-                    {tab === "submissions" &&
-                        (loadingSubmissions ? (
-                            <Loading />
-                        ) : submissions && submissions.length > 0 ? (
-                            <div className={styles.grid}>
-                                {submissions.map((s) => (
-                                    <SubmissionCard key={s.id} submission={s} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className={styles.notice}>
-                                <span className={styles.noticeTitle}>{t("noSubmissionsTitle")}</span>
-                                <p className={styles.muted}>{t("noSubmissionsBody")}</p>
-                            </div>
-                        ))}
 
                     {tab === "reviews" &&
                         (loadingClaims ? (

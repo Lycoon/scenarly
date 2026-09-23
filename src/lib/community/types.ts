@@ -114,12 +114,47 @@ export interface ReceivedReview {
     reported: boolean;
 }
 
-export interface SubmissionDetail extends Omit<MySubmission, "activeClaims" | "showcase"> {
+export interface SubmissionDetail extends Omit<MySubmission, "activeClaims"> {
     sha256: string;
     sizeBytes: number;
     retiredAt: string | null;
     activeClaims: number;
     reviews: ReceivedReview[];
+}
+
+/**
+ * A published Showcase entry as anyone may see it. Never the author: a script
+ * can be in the Coverage pool and on Showcase at once, and naming the author
+ * here would unblind its reviewers.
+ */
+export interface ShowcaseEntryView {
+    submissionId: string;
+    slug: string;
+    kind: CommunityShowcaseKind;
+    title: string;
+    logline: string;
+    genres: CommunityGenre[];
+    format: CommunityFormat;
+    pageCount: number;
+    publishedAt: string;
+    upvoteCount: number;
+    /**
+     * The PDF was exported from a Scenarly project (the server checked the
+     * author belongs to it). False again if that project is later deleted.
+     */
+    fromScenarly: boolean;
+}
+
+export interface ShowcasePageView {
+    entries: ShowcaseEntryView[];
+    page: number;
+    pageCount: number;
+    total: number;
+}
+
+/** The signed-in viewer's side of some entries: fresh counts and their own votes. */
+export interface ShowcaseVotes {
+    votes: Record<string, { upvoted: boolean; upvoteCount: number }>;
 }
 
 export interface TicketEntry {

@@ -5,7 +5,13 @@
  */
 
 import { apiFetch } from "@src/lib/api-client";
-import type { CommunityFormat, CommunityGenre, CommunityRating, CommunityReportReason } from "@src/generated/client/browser";
+import type {
+    CommunityFormat,
+    CommunityGenre,
+    CommunityRating,
+    CommunityReportReason,
+    CommunityShowcaseKind,
+} from "@src/generated/client/browser";
 import type { ClaimView, OfferSetView, PresignedPdf } from "./types";
 
 export interface ApiError {
@@ -47,7 +53,7 @@ export interface SubmissionFields {
     destination?: "COVERAGE" | "SHOWCASE_ONLY";
 }
 
-export const createSubmission = (file: Blob, fields: SubmissionFields) => {
+const submissionForm = (file: Blob, fields: SubmissionFields) => {
     const form = new FormData();
     form.append("file", file, "screenplay.pdf");
     form.append("title", fields.title);
@@ -56,17 +62,41 @@ export const createSubmission = (file: Blob, fields: SubmissionFields) => {
     if (fields.format) form.append("format", fields.format);
     if (fields.sourceProjectId) form.append("sourceProjectId", fields.sourceProjectId);
     if (fields.destination) form.append("destination", fields.destination);
-    return call<{ id: string; status: string; poolExitAt: string | null }>("/api/community/submissions", {
-        method: "POST",
-        body: form,
-    });
+    return form;
 };
+
+export const createSubmission = (file: Blob, fields: SubmissionFields) =>
+    call<{ id: string; status: string; poolExitAt: string | null }>("/api/community/submissions", {
+        method: "POST",
+        body: submissionForm(file, fields),
+    });
 
 export const withdrawSubmission = (submissionId: string) =>
     call<void>(`/api/community/submissions/${submissionId}`, json("DELETE"));
 
 export const getSubmissionPdfUrl = (submissionId: string) =>
     call<PresignedPdf>(`/api/community/submissions/${submissionId}/pdf`);
+
+// ── Showcase ────────────────────────────────────────────────────────────────
+
+/** Upload straight to Showcase: a Showcase-only submission, published at once. */
+export const uploadToShowcase = (file: Blob, fields: SubmissionFields, kind: CommunityShowcaseKind) => {
+    const form = submissionForm(file, fields);
+    form.append("kind", kind);
+    return call<{ id: string; slug: string }>("/api/community/showcase/upload", { method: "POST", body: form });
+};
+
+export const publishToShowcase = (submissionId: string, kind: CommunityShowcaseKind) =>
+    call<{ slug: string }>("/api/community/showcase", json("POST", { submissionId, kind }));
+
+export const unpublishFromShowcase = (submissionId: string) =>
+    call<void>(`/api/community/showcase/${submissionId}`, json("DELETE"));
+
+export const setUpvote = (submissionId: string, on: boolean) =>
+    call<{ upvoteCount: number }>(`/api/community/showcase/${submissionId}/upvote`, json(on ? "PUT" : "DELETE"));
+
+export const getShowcasePdfUrl = (slug: string) =>
+    call<PresignedPdf>(`/api/community/public/showcase/${encodeURIComponent(slug)}/pdf`);
 
 // ── Reviewing ───────────────────────────────────────────────────────────────
 

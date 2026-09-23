@@ -8,13 +8,11 @@ import { DashboardContext } from "@src/context/DashboardContext";
 import { useCommunityMe } from "@src/lib/community/hooks";
 
 import styles from "./Community.module.css";
-import { formatDate } from "./format";
-
 /**
- * Wraps every Coverage page. Resolves, in order: session → entry gate, and
+ * Wraps every member page. Resolves, in order: session → verified email, and
  * renders the matching card instead of the page until both pass (`/community/me`
- * creates the profile of an eligible user). The page itself is rendered dimmed
- * behind a gate card so a visitor sees what they will get.
+ * creates the profile of a verified user, however new). The page itself is
+ * rendered dimmed behind a gate card so a visitor sees what they will get.
  */
 const CoverageGate = ({ children }: { children: ReactNode }) => {
     const t = useTranslations("community.gate");
@@ -45,13 +43,10 @@ const CoverageGate = ({ children }: { children: ReactNode }) => {
 
     if (me.profile) return <>{children}</>;
 
-    const unverified = me.eligibility.reason === "UNVERIFIED";
     return (
         <Gated>
-            <span className={styles.noticeTitle}>{unverified ? t("unverifiedTitle") : t("tooRecentTitle")}</span>
-            <p className={styles.muted}>
-                {unverified ? t("unverifiedBody") : t("tooRecentBody", { date: formatDate(me.eligibility.eligibleAt) })}
-            </p>
+            <span className={styles.noticeTitle}>{t("unverifiedTitle")}</span>
+            <p className={styles.muted}>{t("unverifiedBody")}</p>
         </Gated>
     );
 };

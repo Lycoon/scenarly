@@ -775,7 +775,7 @@
       "title": "Enviar a Coverage",
       "done": "Tu guion está en la bolsa. Las lecturas aparecerán en su página de Coverage a medida que lleguen.",
       "open": "Abrir la página de Coverage",
-      "notMember": "Coverage es el intercambio de lecturas de Scenarly, abierto a cuentas verificadas con al menos una semana de antigüedad. La tuya aún no puede entrar: las páginas de Comunidad te dicen cuándo podrá.",
+      "notMember": "Coverage es el intercambio de lecturas de Scenarly, abierto a cuentas verificadas. La tuya aún no lo está: las páginas de Comunidad te explican cómo verificarla.",
       "openCommunity": "Abrir Comunidad"
     }
   },
@@ -896,7 +896,7 @@
       "coverage": "Coverage",
       "tickets": "{count, plural, one {# ticket} other {# tickets}}",
       "ticketsTitle": "Tus tickets de Coverage",
-      "backToApp": "Mis proyectos",
+      "mySubmissions": "Mis envíos",
       "submit": "Enviar",
       "review": "Leer",
       "showcase": "Showcase"
@@ -906,9 +906,7 @@
       "signedOutBody": "Coverage es para cuentas de Scenarly. Inicia sesión, o crea una cuenta, para enviar y leer guiones.",
       "signIn": "Iniciar sesión",
       "unverifiedTitle": "Verifica primero tu correo",
-      "unverifiedBody": "Coverage está abierto a cuentas verificadas. Inicia sesión con el enlace que te enviamos por correo y vuelve.",
-      "tooRecentTitle": "Ya casi",
-      "tooRecentBody": "Coverage se abre a cuentas con al menos una semana de antigüedad. La tuya podrá entrar el {date}."
+      "unverifiedBody": "Coverage está abierto a cuentas verificadas. Inicia sesión con el enlace que te enviamos por correo y vuelve."
     },
     "dashboard": {
       "balance": "{count, plural, one {# ticket} other {# tickets}}",
@@ -920,14 +918,21 @@
       "reviewCardBody": "Elige uno de cinco guiones, léelo y escribe tus notas. Tienes tres semanas y puedes enviarlas después de una.",
       "reviewReward": "Da 1 ticket",
       "tabs": {
-        "submissions": "Mis guiones",
         "reviews": "Lecturas que escribí",
         "tickets": "Tickets"
       },
-      "noSubmissionsTitle": "Aún no has enviado ningún guion",
-      "noSubmissionsBody": "Envía uno y entrará en la bolsa de la que eligen los demás guionistas.",
       "noReviewsTitle": "Aún no has escrito ninguna lectura",
       "noReviewsBody": "Cada lectura que completes da un ticket para tu próximo envío."
+    },
+    "mySubmissions": {
+      "emptyTitle": "Aún no has enviado ningún guion",
+      "emptyBody": "Comparte uno en Showcase, o envíalo a Coverage para recibir lecturas.",
+      "columns": {
+        "title": "Título",
+        "submitted": "Enviado",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
     },
     "submissions": {
       "pages": "{count, plural, one {# página} other {# páginas}}",
@@ -956,7 +961,18 @@
       "withdrawYes": "Sí, retirar",
       "withdrawing": "Retirando…",
       "withdrawFailed": "No se pudo retirar. Inténtalo de nuevo.",
-      "notFound": "Este envío no existe o no es tuyo."
+      "notFound": "Este envío no existe o no es tuyo.",
+      "onShowcase": "En Showcase",
+      "upvotes": "{count, plural, one {# voto} other {# votos}}",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "En Showcase como {kind}",
+      "showcaseOpen": "Abrir su página",
+      "showcaseOff": "No está en Showcase. Publícalo y cualquiera podrá leerlo y votarlo; tu nombre nunca se muestra.",
+      "showcasePublish": "Publicar en Showcase",
+      "showcasePublishing": "Publicando…",
+      "showcaseUnpublish": "Retirar de Showcase",
+      "showcaseUnpublishing": "Retirando…",
+      "showcaseFailed": "No se pudo actualizar Showcase. Inténtalo de nuevo."
     },
     "submit": {
       "title": "Enviar un guion",
@@ -965,11 +981,13 @@
       "showcaseOptionPoint1": "Comparte tu trabajo públicamente",
       "showcaseOptionPoint2": "Los envíos solo pueden recibir votos positivos",
       "showcaseOptionFormats": "Largometraje, piloto, cortometraje u otro",
+      "unlimited": "Ilimitado",
       "coverageOptionPoint1": "Envía tu guion de largometraje para que lo lean",
       "coverageOptionPoint2": "Recibe comentarios detallados sobre lo que funciona y lo que no",
       "coverageOptionFormats": "Solo guiones de largometraje",
+      "coverageTooRecent": "Tu cuenta es demasiado nueva para enviar a Coverage. Podrás hacerlo a partir del {date}.",
       "formatLabel": "Formato",
-      "dropTitle": "Suelta un PDF aquí o haz clic para elegir uno",
+      "dropTitle": "Importa tu PDF",
       "dropHint": "Guion de largometraje, {min}–{max} páginas, hasta {mb} MB",
       "dropHintPages": "{min}–{max} páginas, hasta {mb} MB",
       "dropHintAny": "Hasta {mb} MB",
@@ -994,7 +1012,10 @@
         "tickets": "Enviar requiere {cost} tickets; tienes {balance}. Lee un guion para ganar más.",
         "duplicate": "Este mismo PDF ya está en Coverage.",
         "failed": "El envío falló. Inténtalo de nuevo."
-      }
+      },
+      "showLabel": "Mostrar solo",
+      "showScript": "El guion",
+      "showLogline": "El logline"
     },
     "offers": {
       "title": "Elige un guion para leer",
@@ -1068,7 +1089,12 @@
     },
     "viewer": {
       "failed": "No se pudo cargar el guion.",
-      "retry": "Reintentar"
+      "retry": "Reintentar",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "resetZoom": "Restablecer zoom",
+      "fullscreen": "Pantalla completa",
+      "exitFullscreen": "Salir de pantalla completa"
     },
     "enums": {
       "formats": {
@@ -1117,11 +1143,37 @@
         "LOW_EFFORT": "Poco esfuerzo",
         "AI_GENERATED": "Parece generada por máquina",
         "OTHER": "Otro"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "Guion completo",
+        "PILOT": "Piloto",
+        "SHORT": "Cortometraje",
+        "LOGLINE": "Logline"
       }
     },
     "showcase": {
-      "comingSoonTitle": "Showcase llegará pronto",
-      "comingSoonBody": "Un muro público de guiones que sus autores decidieron compartir. Aún no está abierto."
+      "title": "Showcase",
+      "subtitle": "Guiones que sus autores decidieron compartir. Léelos aquí y vota por los que recomendarías.",
+      "sortLabel": "Ordenar",
+      "sortTop": "Destacados",
+      "sortNew": "Recientes",
+      "kindLabel": "Tipo",
+      "kindAll": "Todos",
+      "pages": "{count, plural, one {# página} other {# páginas}}",
+      "publishedOn": "Publicado el {date}",
+      "writtenWith": "Escrito con Scenarly",
+      "upvote": "Votar",
+      "upvoteSignIn": "Inicia sesión para votar",
+      "upvoteNotEligible": "Pueden votar las cuentas verificadas",
+      "upvoteFailed": "No se pudo guardar tu voto",
+      "emptyTitle": "Aún no hay nada publicado",
+      "emptyBody": "Los guionistas comparten aquí sus guiones cuando están listos. ¿Quieres notas antes? Intercambia lecturas en Coverage.",
+      "emptyCta": "Ir a Coverage",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "pageOf": "Página {page} de {count}",
+      "backToWall": "Todos los guiones",
+      "loglineOnly": "El autor solo compartió el logline."
     }
   }
 }

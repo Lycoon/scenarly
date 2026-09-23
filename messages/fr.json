@@ -776,7 +776,7 @@
       "title": "Proposer à Coverage",
       "done": "Votre scénario est dans la file. Les retours apparaîtront sur sa page Coverage au fur et à mesure.",
       "open": "Ouvrir la page Coverage",
-      "notMember": "Coverage est l'échange de relectures de Scenarly, ouvert aux comptes vérifiés d'au moins une semaine. Le vôtre n'y a pas encore accès : les pages Communauté indiquent quand ce sera le cas.",
+      "notMember": "Coverage est l'échange de relectures de Scenarly, ouvert aux comptes vérifiés. Le vôtre ne l'est pas encore : les pages Communauté expliquent comment le vérifier.",
       "openCommunity": "Ouvrir la Communauté"
     }
   },
@@ -897,7 +897,7 @@
       "coverage": "Coverage",
       "tickets": "{count, plural, one {# ticket} other {# tickets}}",
       "ticketsTitle": "Vos tickets Coverage",
-      "backToApp": "Mes projets",
+      "mySubmissions": "Mes propositions",
       "submit": "Proposer",
       "review": "Relire",
       "showcase": "Showcase"
@@ -907,9 +907,7 @@
       "signedOutBody": "Coverage est réservé aux comptes Scenarly. Connectez-vous, ou créez un compte, pour proposer et relire des scénarios.",
       "signIn": "Se connecter",
       "unverifiedTitle": "Vérifiez d'abord votre e-mail",
-      "unverifiedBody": "Coverage est ouvert aux comptes vérifiés. Connectez-vous avec le lien que nous vous envoyons par e-mail, puis revenez.",
-      "tooRecentTitle": "Encore un peu de patience",
-      "tooRecentBody": "Coverage s'ouvre aux comptes vieux d'au moins une semaine. Le vôtre y aura droit le {date}."
+      "unverifiedBody": "Coverage est ouvert aux comptes vérifiés. Connectez-vous avec le lien que nous vous envoyons par e-mail, puis revenez."
     },
     "dashboard": {
       "balance": "{count, plural, one {# ticket} other {# tickets}}",
@@ -921,14 +919,21 @@
       "reviewCardBody": "Choisissez l'un des cinq scénarios, lisez-le, écrivez vos notes. Vous avez trois semaines, et pouvez les envoyer après une.",
       "reviewReward": "Rapporte 1 ticket",
       "tabs": {
-        "submissions": "Mes scénarios",
         "reviews": "Mes relectures",
         "tickets": "Tickets"
       },
-      "noSubmissionsTitle": "Aucun scénario proposé",
-      "noSubmissionsBody": "Proposez-en un et il rejoint la file dans laquelle les autres auteurs piochent.",
       "noReviewsTitle": "Aucune relecture écrite",
       "noReviewsBody": "Chaque relecture terminée rapporte un ticket pour votre prochaine proposition."
+    },
+    "mySubmissions": {
+      "emptyTitle": "Aucun scénario proposé",
+      "emptyBody": "Partagez-en un sur Showcase, ou proposez-le à Coverage pour recevoir des relectures.",
+      "columns": {
+        "title": "Titre",
+        "submitted": "Proposé le",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
     },
     "submissions": {
       "pages": "{count, plural, one {# page} other {# pages}}",
@@ -957,7 +962,18 @@
       "withdrawYes": "Oui, retirer",
       "withdrawing": "Retrait…",
       "withdrawFailed": "Impossible de retirer. Réessayez.",
-      "notFound": "Cette proposition n'existe pas ou ne vous appartient pas."
+      "notFound": "Cette proposition n'existe pas ou ne vous appartient pas.",
+      "onShowcase": "Sur Showcase",
+      "upvotes": "{count, plural, one {# vote} other {# votes}}",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "Sur Showcase en tant que {kind}",
+      "showcaseOpen": "Ouvrir sa page",
+      "showcaseOff": "Pas sur Showcase. Publiez-le et tout le monde pourra le lire et voter ; votre nom n'apparaît jamais.",
+      "showcasePublish": "Publier sur Showcase",
+      "showcasePublishing": "Publication…",
+      "showcaseUnpublish": "Retirer de Showcase",
+      "showcaseUnpublishing": "Retrait…",
+      "showcaseFailed": "Impossible de mettre à jour Showcase. Veuillez réessayer."
     },
     "submit": {
       "title": "Proposer un scénario",
@@ -966,11 +982,13 @@
       "showcaseOptionPoint1": "Partagez votre travail publiquement",
       "showcaseOptionPoint2": "Les propositions ne peuvent recevoir que des votes positifs",
       "showcaseOptionFormats": "Long métrage, pilote, court métrage ou autre",
+      "unlimited": "Illimité",
       "coverageOptionPoint1": "Proposez votre long métrage à la relecture",
       "coverageOptionPoint2": "Recevez des retours détaillés sur ce qui fonctionne ou non",
       "coverageOptionFormats": "Longs métrages uniquement",
+      "coverageTooRecent": "Votre compte est trop récent pour soumettre à Coverage. Ce sera possible à partir du {date}.",
       "formatLabel": "Format",
-      "dropTitle": "Déposez un PDF ici, ou cliquez pour en choisir un",
+      "dropTitle": "Importez votre PDF",
       "dropHint": "Long métrage, {min} à {max} pages, {mb} Mo max",
       "dropHintPages": "{min} à {max} pages, {mb} Mo max",
       "dropHintAny": "{mb} Mo max",
@@ -995,7 +1013,10 @@
         "tickets": "Proposer demande {cost} tickets ; vous en avez {balance}. Relisez un scénario pour en gagner.",
         "duplicate": "Ce PDF exact est déjà dans Coverage.",
         "failed": "Échec de la proposition. Réessayez."
-      }
+      },
+      "showLabel": "Afficher uniquement",
+      "showScript": "Le scénario",
+      "showLogline": "Le pitch"
     },
     "offers": {
       "title": "Choisissez un scénario à relire",
@@ -1069,7 +1090,12 @@
     },
     "viewer": {
       "failed": "Le scénario n'a pas pu être chargé.",
-      "retry": "Réessayer"
+      "retry": "Réessayer",
+      "zoomIn": "Zoom avant",
+      "zoomOut": "Zoom arrière",
+      "resetZoom": "Réinitialiser le zoom",
+      "fullscreen": "Plein écran",
+      "exitFullscreen": "Quitter le plein écran"
     },
     "enums": {
       "formats": {
@@ -1118,11 +1144,37 @@
         "LOW_EFFORT": "Bâclée",
         "AI_GENERATED": "Semble générée par une machine",
         "OTHER": "Autre"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "Scénario complet",
+        "PILOT": "Pilote",
+        "SHORT": "Court métrage",
+        "LOGLINE": "Pitch"
       }
     },
     "showcase": {
-      "comingSoonTitle": "Showcase arrive bientôt",
-      "comingSoonBody": "Un mur public de scénarios que leurs auteurs ont choisi de partager. Pas encore ouvert."
+      "title": "Showcase",
+      "subtitle": "Des scénarios que leurs auteurs ont choisi de partager. Lisez-les ici et votez pour ceux que vous recommanderiez.",
+      "sortLabel": "Trier",
+      "sortTop": "Populaires",
+      "sortNew": "Récents",
+      "kindLabel": "Type",
+      "kindAll": "Tous",
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "publishedOn": "Publié le {date}",
+      "writtenWith": "Écrit avec Scenarly",
+      "upvote": "Voter",
+      "upvoteSignIn": "Connectez-vous pour voter",
+      "upvoteNotEligible": "Le vote est ouvert aux comptes vérifiés",
+      "upvoteFailed": "Impossible d'enregistrer votre vote",
+      "emptyTitle": "Rien de publié pour l'instant",
+      "emptyBody": "Les auteurs partagent ici leurs scénarios quand ils sont prêts. Besoin de retours d'abord ? Échangez des relectures dans Coverage.",
+      "emptyCta": "Aller à Coverage",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageOf": "Page {page} sur {count}",
+      "backToWall": "Tous les scénarios",
+      "loglineOnly": "L'auteur n'a partagé que le pitch."
     }
   }
 }

@@ -58,6 +58,12 @@
     height: auto;
 }
 
+/* A linked logo keeps the bare logo's box: no inline gap under the SVG. */
+.logo_link {
+    display: flex;
+    color: inherit;
+}
+
 /* Logo with an optional section name under it (Community). The wrapper takes
    the logo's own box and the caption hangs below it out of flow, so the logo
    sits at exactly the same spot as on the projects page. */
@@ -142,12 +148,23 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    /* Fills the rest of the column so a child with margin-top: auto (the
-       Community ticket line) can sit at the bottom; the pills stay at the top. */
+    /* Fills the rest of the column so .sidebar_footer can sit at the bottom;
+       the pills stay at the top. */
     flex: 1;
     min-height: 0;
     /* Matches the list's top padding so the buttons and the list header line up. */
     padding: 40px 4px 0;
+}
+
+/* Bottom of the sidebar column: the way over to the other place (Community
+   from the projects library, the projects library from Community), and in
+   Community the ticket balance. Shared so both sit at exactly the same spot. */
+.sidebar_footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+    padding-bottom: calc(16px + var(--safe-bottom));
 }
 
 /* Subtle, quiet pills — thin separator-coloured outline, muted text, light

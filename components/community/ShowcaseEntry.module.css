@@ -1,0 +1,14 @@
+/* "Written with Scenarly": a Community .tag that is also a link to the
+   homepage, brightening on hover like the other outlined controls. */
+.madeWith {
+    gap: 4px;
+    text-decoration: none;
+    transition:
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.madeWith:hover {
+    border-color: var(--secondary-text);
+    color: var(--primary-text);
+}

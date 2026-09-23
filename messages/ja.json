@@ -775,7 +775,7 @@
       "title": "Coverage に提出",
       "done": "脚本はプールに入りました。講評は届き次第、Coverage ページに表示されます。",
       "open": "Coverage ページを開く",
-      "notMember": "Coverage は Scenarly の講評交換で、作成から 1 週間以上経った確認済みのアカウントに開かれています。あなたのアカウントはまだ対象外です。いつから利用できるかはコミュニティページで確認できます。",
+      "notMember": "Coverage は Scenarly の講評交換で、確認済みのアカウントに開かれています。あなたのアカウントはまだ確認されていません。確認方法はコミュニティページで案内しています。",
       "openCommunity": "コミュニティを開く"
     }
   },
@@ -896,7 +896,7 @@
       "coverage": "Coverage",
       "tickets": "チケット {count} 枚",
       "ticketsTitle": "あなたの Coverage チケット",
-      "backToApp": "マイプロジェクト",
+      "mySubmissions": "自分の提出作品",
       "submit": "提出",
       "review": "講評",
       "showcase": "Showcase"
@@ -906,9 +906,7 @@
       "signedOutBody": "Coverage は Scenarly アカウント向けです。サインインするかアカウントを作成して、脚本の提出と講評を始めましょう。",
       "signIn": "サインイン",
       "unverifiedTitle": "まずメールアドレスを確認してください",
-      "unverifiedBody": "Coverage は確認済みのアカウントに開かれています。メールで送るリンクからサインインして、戻ってきてください。",
-      "tooRecentTitle": "もう少しです",
-      "tooRecentBody": "Coverage は作成から 1 週間以上経ったアカウントに開かれます。あなたのアカウントは {date} から利用できます。"
+      "unverifiedBody": "Coverage は確認済みのアカウントに開かれています。メールで送るリンクからサインインして、戻ってきてください。"
     },
     "dashboard": {
       "balance": "チケット {count} 枚",
@@ -920,14 +918,21 @@
       "reviewCardBody": "5 本の脚本から 1 本選んで読み、意見を書きます。期限は 3 週間、送信は 1 週間後から可能です。",
       "reviewReward": "チケット 1 枚獲得",
       "tabs": {
-        "submissions": "自分の脚本",
         "reviews": "書いた講評",
         "tickets": "チケット"
       },
-      "noSubmissionsTitle": "まだ脚本を提出していません",
-      "noSubmissionsBody": "提出すると、他の書き手が選ぶプールに入ります。",
       "noReviewsTitle": "まだ講評を書いていません",
       "noReviewsBody": "講評を 1 本仕上げるごとに、次の提出に使えるチケットが 1 枚得られます。"
+    },
+    "mySubmissions": {
+      "emptyTitle": "まだ脚本を提出していません",
+      "emptyBody": "Showcase で共有するか、Coverage に提出して講評を受けましょう。",
+      "columns": {
+        "title": "タイトル",
+        "submitted": "提出日",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
     },
     "submissions": {
       "pages": "{count} ページ",
@@ -956,7 +961,18 @@
       "withdrawYes": "はい、取り下げる",
       "withdrawing": "取り下げ中…",
       "withdrawFailed": "取り下げられませんでした。もう一度お試しください。",
-      "notFound": "この提出は存在しないか、あなたのものではありません。"
+      "notFound": "この提出は存在しないか、あなたのものではありません。",
+      "onShowcase": "Showcase に公開中",
+      "upvotes": "{count} 件の高評価",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "{kind} として Showcase に公開中",
+      "showcaseOpen": "ページを開く",
+      "showcaseOff": "Showcase には公開されていません。公開すると誰でも読んで高評価できます。あなたの名前は表示されません。",
+      "showcasePublish": "Showcase に公開",
+      "showcasePublishing": "公開中…",
+      "showcaseUnpublish": "Showcase から取り下げる",
+      "showcaseUnpublishing": "取り下げ中…",
+      "showcaseFailed": "Showcase を更新できませんでした。もう一度お試しください。"
     },
     "submit": {
       "title": "脚本を提出",
@@ -965,11 +981,13 @@
       "showcaseOptionPoint1": "作品を公開できます",
       "showcaseOptionPoint2": "提出作品には高評価のみ付けられます",
       "showcaseOptionFormats": "長編、パイロット、短編、その他",
+      "unlimited": "無制限",
       "coverageOptionPoint1": "長編脚本を講評に出せます",
       "coverageOptionPoint2": "良い点と改善点について詳しいフィードバックを受け取れます",
       "coverageOptionFormats": "長編脚本のみ",
+      "coverageTooRecent": "アカウントが新しすぎるため、まだ Coverage に投稿できません。{date} から投稿できます。",
       "formatLabel": "形式",
-      "dropTitle": "ここに PDF をドロップするか、クリックして選択",
+      "dropTitle": "PDF をインポート",
       "dropHint": "長編脚本、{min}〜{max} ページ、{mb} MB まで",
       "dropHintPages": "{min}〜{max} ページ、{mb} MB まで",
       "dropHintAny": "{mb} MB まで",
@@ -994,7 +1012,10 @@
         "tickets": "提出にはチケットが {cost} 枚必要ですが、残りは {balance} 枚です。脚本を講評して獲得しましょう。",
         "duplicate": "この PDF はすでに Coverage にあります。",
         "failed": "提出に失敗しました。もう一度お試しください。"
-      }
+      },
+      "showLabel": "次のみ表示",
+      "showScript": "脚本",
+      "showLogline": "ログライン"
     },
     "offers": {
       "title": "講評する脚本を選ぶ",
@@ -1068,7 +1089,12 @@
     },
     "viewer": {
       "failed": "脚本を読み込めませんでした。",
-      "retry": "再試行"
+      "retry": "再試行",
+      "zoomIn": "拡大",
+      "zoomOut": "縮小",
+      "resetZoom": "ズームをリセット",
+      "fullscreen": "全画面表示",
+      "exitFullscreen": "全画面表示を終了"
     },
     "enums": {
       "formats": {
@@ -1117,11 +1143,37 @@
         "LOW_EFFORT": "手抜き",
         "AI_GENERATED": "機械生成のように見える",
         "OTHER": "その他"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "脚本全体",
+        "PILOT": "パイロット",
+        "SHORT": "短編",
+        "LOGLINE": "ログライン"
       }
     },
     "showcase": {
-      "comingSoonTitle": "Showcase は準備中",
-      "comingSoonBody": "作者が公開を選んだ脚本の公開ウォールです。まだ開いていません。"
+      "title": "Showcase",
+      "subtitle": "作者が共有を選んだ脚本です。ここで読んで、おすすめしたい作品に高評価を付けましょう。",
+      "sortLabel": "並べ替え",
+      "sortTop": "人気",
+      "sortNew": "新着",
+      "kindLabel": "種類",
+      "kindAll": "すべて",
+      "pages": "{count} ページ",
+      "publishedOn": "{date} に公開",
+      "writtenWith": "Scenarly で執筆",
+      "upvote": "高評価",
+      "upvoteSignIn": "サインインして高評価",
+      "upvoteNotEligible": "高評価は確認済みのアカウントで利用できます",
+      "upvoteFailed": "高評価を保存できませんでした",
+      "emptyTitle": "まだ公開された作品はありません",
+      "emptyBody": "作者は準備ができたらここで脚本を共有します。先に講評がほしいなら、Coverage で講評を交換しましょう。",
+      "emptyCta": "Coverage へ",
+      "previous": "前へ",
+      "next": "次へ",
+      "pageOf": "{page} / {count} ページ",
+      "backToWall": "すべての脚本",
+      "loglineOnly": "作者はログラインのみを共有しています。"
     }
   }
 }

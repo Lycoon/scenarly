@@ -775,7 +775,7 @@
       "title": "Zgłoś do Coverage",
       "done": "Twój scenariusz jest w puli. Recenzje pojawią się na jego stronie Coverage, gdy tylko nadejdą.",
       "open": "Otwórz stronę Coverage",
-      "notMember": "Coverage to wymiana recenzji Scenarly, otwarta dla zweryfikowanych kont mających co najmniej tydzień. Twoje jeszcze się nie kwalifikuje: strony Społeczności pokażą, od kiedy.",
+      "notMember": "Coverage to wymiana recenzji Scenarly, otwarta dla zweryfikowanych kont. Twoje nie jest jeszcze zweryfikowane: strony Społeczności pokażą, jak to zrobić.",
       "openCommunity": "Otwórz Społeczność"
     }
   },
@@ -896,7 +896,7 @@
       "coverage": "Coverage",
       "tickets": "{count, plural, one {# bilet} few {# bilety} other {# biletów}}",
       "ticketsTitle": "Twoje bilety Coverage",
-      "backToApp": "Moje projekty",
+      "mySubmissions": "Moje zgłoszenia",
       "submit": "Zgłoś",
       "review": "Zrecenzuj",
       "showcase": "Showcase"
@@ -906,9 +906,7 @@
       "signedOutBody": "Coverage jest dla kont Scenarly. Zaloguj się lub załóż konto, aby zgłaszać i recenzować scenariusze.",
       "signIn": "Zaloguj się",
       "unverifiedTitle": "Najpierw potwierdź adres e-mail",
-      "unverifiedBody": "Coverage jest otwarte dla zweryfikowanych kont. Zaloguj się linkiem, który wysyłamy e-mailem, i wróć.",
-      "tooRecentTitle": "Już prawie",
-      "tooRecentBody": "Coverage otwiera się dla kont mających co najmniej tydzień. Twoje będzie się kwalifikować od {date}."
+      "unverifiedBody": "Coverage jest otwarte dla zweryfikowanych kont. Zaloguj się linkiem, który wysyłamy e-mailem, i wróć."
     },
     "dashboard": {
       "balance": "{count, plural, one {# bilet} few {# bilety} other {# biletów}}",
@@ -920,14 +918,21 @@
       "reviewCardBody": "Wybierz jeden z pięciu scenariuszy, przeczytaj go i napisz uwagi. Masz trzy tygodnie, a wysłać możesz po jednym.",
       "reviewReward": "Daje 1 bilet",
       "tabs": {
-        "submissions": "Moje scenariusze",
         "reviews": "Moje recenzje",
         "tickets": "Bilety"
       },
-      "noSubmissionsTitle": "Nie zgłoszono jeszcze scenariusza",
-      "noSubmissionsBody": "Zgłoś jeden, a trafi do puli, z której losują inni autorzy.",
       "noReviewsTitle": "Nie napisano jeszcze recenzji",
       "noReviewsBody": "Każda ukończona recenzja daje bilet na Twoje następne zgłoszenie."
+    },
+    "mySubmissions": {
+      "emptyTitle": "Nie zgłoszono jeszcze scenariusza",
+      "emptyBody": "Udostępnij scenariusz w Showcase albo zgłoś go do Coverage, aby otrzymać recenzje.",
+      "columns": {
+        "title": "Tytuł",
+        "submitted": "Zgłoszono",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
     },
     "submissions": {
       "pages": "{count, plural, one {# strona} few {# strony} other {# stron}}",
@@ -956,7 +961,18 @@
       "withdrawYes": "Tak, wycofaj",
       "withdrawing": "Wycofywanie…",
       "withdrawFailed": "Nie udało się wycofać. Spróbuj ponownie.",
-      "notFound": "To zgłoszenie nie istnieje lub nie jest Twoje."
+      "notFound": "To zgłoszenie nie istnieje lub nie jest Twoje.",
+      "onShowcase": "W Showcase",
+      "upvotes": "{count, plural, one {# głos} few {# głosy} other {# głosów}}",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "W Showcase jako {kind}",
+      "showcaseOpen": "Otwórz jego stronę",
+      "showcaseOff": "Nie ma go w Showcase. Opublikuj go, a każdy będzie mógł go przeczytać i zagłosować; Twoje nazwisko nigdy nie jest pokazywane.",
+      "showcasePublish": "Opublikuj w Showcase",
+      "showcasePublishing": "Publikowanie…",
+      "showcaseUnpublish": "Zdejmij z Showcase",
+      "showcaseUnpublishing": "Zdejmowanie…",
+      "showcaseFailed": "Nie udało się zaktualizować Showcase. Spróbuj ponownie."
     },
     "submit": {
       "title": "Zgłoś scenariusz",
@@ -965,11 +981,13 @@
       "showcaseOptionPoint1": "Udostępnij swoją pracę publicznie",
       "showcaseOptionPoint2": "Zgłoszenia mogą otrzymywać tylko głosy za",
       "showcaseOptionFormats": "Pełnometrażowy, pilot, krótkometrażowy lub inny",
+      "unlimited": "Bez limitu",
       "coverageOptionPoint1": "Zgłoś swój scenariusz pełnometrażowy do recenzji",
       "coverageOptionPoint2": "Otrzymaj szczegółową opinię o tym, co działa, a co nie",
       "coverageOptionFormats": "Tylko scenariusze pełnometrażowe",
+      "coverageTooRecent": "Twoje konto jest zbyt nowe, by zgłaszać do Coverage. Będzie to możliwe od {date}.",
       "formatLabel": "Format",
-      "dropTitle": "Upuść PDF tutaj lub kliknij, aby wybrać",
+      "dropTitle": "Importuj swój PDF",
       "dropHint": "Scenariusz pełnometrażowy, {min}–{max} stron, do {mb} MB",
       "dropHintPages": "{min}–{max} stron, do {mb} MB",
       "dropHintAny": "Do {mb} MB",
@@ -994,7 +1012,10 @@
         "tickets": "Zgłoszenie wymaga {cost} biletów; masz {balance}. Zrecenzuj scenariusz, aby zdobyć więcej.",
         "duplicate": "Dokładnie ten PDF jest już w Coverage.",
         "failed": "Zgłoszenie nie powiodło się. Spróbuj ponownie."
-      }
+      },
+      "showLabel": "Pokaż tylko",
+      "showScript": "Scenariusz",
+      "showLogline": "Logline"
     },
     "offers": {
       "title": "Wybierz scenariusz do recenzji",
@@ -1068,7 +1089,12 @@
     },
     "viewer": {
       "failed": "Nie udało się wczytać scenariusza.",
-      "retry": "Spróbuj ponownie"
+      "retry": "Spróbuj ponownie",
+      "zoomIn": "Powiększ",
+      "zoomOut": "Pomniejsz",
+      "resetZoom": "Resetuj powiększenie",
+      "fullscreen": "Pełny ekran",
+      "exitFullscreen": "Zamknij pełny ekran"
     },
     "enums": {
       "formats": {
@@ -1117,11 +1143,37 @@
         "LOW_EFFORT": "Niedbała",
         "AI_GENERATED": "Wygląda na wygenerowaną maszynowo",
         "OTHER": "Inne"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "Pełny scenariusz",
+        "PILOT": "Pilot",
+        "SHORT": "Krótkometrażowy",
+        "LOGLINE": "Logline"
       }
     },
     "showcase": {
-      "comingSoonTitle": "Showcase wkrótce",
-      "comingSoonBody": "Publiczna ściana scenariuszy, które ich autorzy zdecydowali się udostępnić. Jeszcze nieotwarta."
+      "title": "Showcase",
+      "subtitle": "Scenariusze, którymi autorzy postanowili się podzielić. Czytaj je tutaj i głosuj na te, które poleciłbyś.",
+      "sortLabel": "Sortuj",
+      "sortTop": "Najlepsze",
+      "sortNew": "Najnowsze",
+      "kindLabel": "Rodzaj",
+      "kindAll": "Wszystkie",
+      "pages": "{count, plural, one {# strona} few {# strony} other {# stron}}",
+      "publishedOn": "Opublikowano {date}",
+      "writtenWith": "Napisano w Scenarly",
+      "upvote": "Zagłosuj",
+      "upvoteSignIn": "Zaloguj się, aby głosować",
+      "upvoteNotEligible": "Głosować mogą zweryfikowane konta",
+      "upvoteFailed": "Nie udało się zapisać głosu",
+      "emptyTitle": "Nic jeszcze nie opublikowano",
+      "emptyBody": "Autorzy udostępniają tu swoje scenariusze, gdy są gotowe. Wolisz najpierw uwagi? Wymieniaj się recenzjami w Coverage.",
+      "emptyCta": "Przejdź do Coverage",
+      "previous": "Poprzednia",
+      "next": "Następna",
+      "pageOf": "Strona {page} z {count}",
+      "backToWall": "Wszystkie scenariusze",
+      "loglineOnly": "Autor udostępnił tylko logline."
     }
   }
 }

@@ -1,9 +1,10 @@
-"use client";
-
 import { ReactNode, Suspense } from "react";
+import { Metadata } from "next";
 
 import CoverageGate from "@components/community/CoverageGate";
 import Loading from "@components/utils/Loading";
+
+export const metadata: Metadata = { title: "Submit a script | Scenarly®" };
 
 /**
  * Submitting needs a Community profile whichever the destination, so the page

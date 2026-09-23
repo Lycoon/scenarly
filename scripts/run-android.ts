@@ -2,7 +2,9 @@ import { existsSync } from "fs";
 import { join } from "path";
 import { execSync, spawn, spawnSync } from "child_process";
 
-const APP_ID = "ArkoLogic.ScriptioStaging";
+// The Play package name (see apply-android-channel.ts), which keeps its pre-rename
+// value: Play never lets a published package change it.
+const APP_ID = "app.scriptio.staging";
 const APK_DIR = join("src-tauri", "gen", "android", "app", "build", "outputs", "apk");
 
 // Maps the device's reported ABI to the matching Rust/Tauri target.

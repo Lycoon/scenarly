@@ -42,7 +42,7 @@ export const sendMagicLinkEmail = async (email: string, token: string) => {
 
 /** Coverage: a review landed on the author's submission. Carries no review text. */
 export const sendReviewReceivedEmail = async (email: string, submissionTitle: string, submissionId: string) => {
-    const link = `${BASE_URL}/community/coverage/submissions/${submissionId}`;
+    const link = `${BASE_URL}/community/submissions/${submissionId}`;
     const content = `A new review of '${submissionTitle}' has arrived on Coverage. Read it, then tell the reviewer whether it was useful — that is what keeps the exchange honest.`;
 
     sendFormattedEmail(email, "New review", "You received a review", content, "Read the review", link);

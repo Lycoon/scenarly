@@ -1,0 +1,69 @@
+/* A wall card: the Community .card, made clickable as a whole by stretching
+   the title link over it, with the upvote button raised above that link. */
+
+.card {
+    position: relative;
+    gap: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.2s ease;
+}
+
+.card:hover {
+    border-color: var(--secondary-text);
+}
+
+.head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.heading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.titleLink {
+    color: inherit;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.titleLink::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+/* Kind · genres · pages: one line, cut short rather than wrapped. */
+.meta {
+    font-size: 0.8rem;
+    color: var(--secondary-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.raised {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+/* Two lines at most, the second cut short, and two lines' room even for a
+   one-line logline, so cards stay one size. */
+.logline {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--secondary-text);
+    min-height: calc(2 * 1.45em);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

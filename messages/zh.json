@@ -775,7 +775,7 @@
       "title": "提交到 Coverage",
       "done": "你的剧本已进入剧本池。评阅到达后会显示在它的 Coverage 页面上。",
       "open": "打开 Coverage 页面",
-      "notMember": "Coverage 是 Scenarly 的评阅交换，向注册至少一周的已验证账户开放。你的账户暂不符合条件，可在社区页面查看何时符合。",
+      "notMember": "Coverage 是 Scenarly 的评阅交换，向已验证的账户开放。你的账户尚未验证，可在社区页面查看验证方法。",
       "openCommunity": "打开社区"
     }
   },
@@ -896,7 +896,7 @@
       "coverage": "Coverage",
       "tickets": "{count} 张券",
       "ticketsTitle": "你的 Coverage 换阅券",
-      "backToApp": "我的项目",
+      "mySubmissions": "我的提交",
       "submit": "提交",
       "review": "评阅",
       "showcase": "Showcase"
@@ -906,9 +906,7 @@
       "signedOutBody": "Coverage 面向 Scenarly 账户。登录或创建账户，即可提交和评阅剧本。",
       "signIn": "登录",
       "unverifiedTitle": "请先验证邮箱",
-      "unverifiedBody": "Coverage 向已验证的账户开放。用我们发送到邮箱的链接登录后再回来。",
-      "tooRecentTitle": "就快好了",
-      "tooRecentBody": "Coverage 向注册至少一周的账户开放。你的账户将于 {date} 符合条件。"
+      "unverifiedBody": "Coverage 向已验证的账户开放。用我们发送到邮箱的链接登录后再回来。"
     },
     "dashboard": {
       "balance": "{count} 张券",
@@ -920,14 +918,21 @@
       "reviewCardBody": "从五部剧本中选一部，阅读并写下你的意见。你有三周时间，一周后即可发送。",
       "reviewReward": "获得 1 张券",
       "tabs": {
-        "submissions": "我的剧本",
         "reviews": "我写的评阅",
         "tickets": "换阅券"
       },
-      "noSubmissionsTitle": "尚未提交剧本",
-      "noSubmissionsBody": "提交一部，它就会进入其他编剧抽取的剧本池。",
       "noReviewsTitle": "尚未写过评阅",
       "noReviewsBody": "每完成一篇评阅，就能为下一次提交换得一张券。"
+    },
+    "mySubmissions": {
+      "emptyTitle": "尚未提交剧本",
+      "emptyBody": "在 Showcase 上分享，或提交到 Coverage 获得评阅。",
+      "columns": {
+        "title": "标题",
+        "submitted": "提交日期",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
     },
     "submissions": {
       "pages": "{count} 页",
@@ -956,7 +961,18 @@
       "withdrawYes": "是，撤回",
       "withdrawing": "撤回中…",
       "withdrawFailed": "无法撤回，请重试。",
-      "notFound": "该提交不存在或不属于你。"
+      "notFound": "该提交不存在或不属于你。",
+      "onShowcase": "已在 Showcase",
+      "upvotes": "{count} 个赞",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "以{kind}形式发布在 Showcase",
+      "showcaseOpen": "打开页面",
+      "showcaseOff": "尚未发布到 Showcase。发布后任何人都可以阅读并点赞，你的名字不会显示。",
+      "showcasePublish": "发布到 Showcase",
+      "showcasePublishing": "发布中…",
+      "showcaseUnpublish": "从 Showcase 撤下",
+      "showcaseUnpublishing": "撤下中…",
+      "showcaseFailed": "无法更新 Showcase，请重试。"
     },
     "submit": {
       "title": "提交剧本",
@@ -965,11 +981,13 @@
       "showcaseOptionPoint1": "公开分享你的作品",
       "showcaseOptionPoint2": "提交的剧本只能被点赞",
       "showcaseOptionFormats": "长片、试播集、短片或其他",
+      "unlimited": "不限次数",
       "coverageOptionPoint1": "提交你的长片剧本以获得评阅",
       "coverageOptionPoint2": "获得关于优点与不足的详细反馈",
       "coverageOptionFormats": "仅限长片剧本",
+      "coverageTooRecent": "你的账户太新，暂时无法提交到 Coverage。{date} 起即可提交。",
       "formatLabel": "形式",
-      "dropTitle": "将 PDF 拖到此处，或点击选择",
+      "dropTitle": "导入你的 PDF",
       "dropHint": "长片剧本，{min} 至 {max} 页，最大 {mb} MB",
       "dropHintPages": "{min} 至 {max} 页，最大 {mb} MB",
       "dropHintAny": "最大 {mb} MB",
@@ -994,7 +1012,10 @@
         "tickets": "提交需要 {cost} 张券；你有 {balance} 张。评阅一部剧本即可换得更多。",
         "duplicate": "这份 PDF 已经在 Coverage 中。",
         "failed": "提交失败，请重试。"
-      }
+      },
+      "showLabel": "仅展示",
+      "showScript": "剧本",
+      "showLogline": "故事梗概"
     },
     "offers": {
       "title": "选择一部剧本评阅",
@@ -1068,7 +1089,12 @@
     },
     "viewer": {
       "failed": "无法加载剧本。",
-      "retry": "重试"
+      "retry": "重试",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "resetZoom": "重置缩放",
+      "fullscreen": "全屏",
+      "exitFullscreen": "退出全屏"
     },
     "enums": {
       "formats": {
@@ -1117,11 +1143,37 @@
         "LOW_EFFORT": "敷衍了事",
         "AI_GENERATED": "看起来像机器生成",
         "OTHER": "其他"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "完整剧本",
+        "PILOT": "试播集",
+        "SHORT": "短片",
+        "LOGLINE": "故事梗概"
       }
     },
     "showcase": {
-      "comingSoonTitle": "Showcase 即将上线",
-      "comingSoonBody": "作者选择公开分享的剧本公共墙。尚未开放。"
+      "title": "Showcase",
+      "subtitle": "作者选择公开分享的剧本。在这里阅读，并为你愿意推荐的剧本点赞。",
+      "sortLabel": "排序",
+      "sortTop": "热门",
+      "sortNew": "最新",
+      "kindLabel": "类型",
+      "kindAll": "全部",
+      "pages": "{count} 页",
+      "publishedOn": "发布于 {date}",
+      "writtenWith": "使用 Scenarly 创作",
+      "upvote": "点赞",
+      "upvoteSignIn": "登录后点赞",
+      "upvoteNotEligible": "已验证的账户可以点赞",
+      "upvoteFailed": "无法保存你的点赞",
+      "emptyTitle": "还没有发布的作品",
+      "emptyBody": "作者准备好后会在这里分享剧本。想先听听意见？到 Coverage 交换评阅。",
+      "emptyCta": "前往 Coverage",
+      "previous": "上一页",
+      "next": "下一页",
+      "pageOf": "第 {page} 页，共 {count} 页",
+      "backToWall": "全部剧本",
+      "loglineOnly": "作者只分享了故事梗概。"
     }
   }
 }

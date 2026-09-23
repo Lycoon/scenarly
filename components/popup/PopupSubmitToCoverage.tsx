@@ -12,17 +12,20 @@ import { useDraggable } from "@src/lib/utils/hooks";
 import { PopupData, PopupSubmitToCoverageData, closePopup } from "@src/lib/screenplay/popup";
 import { useCommunityMe } from "@src/lib/community/hooks";
 import SubmitForm from "@components/community/SubmitForm";
+import { formatDate } from "@components/community/format";
 import Loading from "@components/utils/Loading";
 
 /**
  * "Submit this project to Coverage": the shared submission form over the
- * editor's own PDF export. Members see the form; a user who fails the entry
- * gate is pointed to the Community pages, which say when they qualify.
+ * editor's own PDF export. Members see the form, unless their account is
+ * still too recent for Coverage; a user with an unverified email is pointed to
+ * the Community pages, which say what to do.
  */
 const PopupSubmitToCoverage = ({ data }: PopupData<PopupSubmitToCoverageData>) => {
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("popup.submitToCoverage");
+    const tSubmit = useTranslations("community.submit");
     const tNav = useTranslations("navbar");
     const { me, isLoading } = useCommunityMe();
     const [submittedId, setSubmittedId] = useState<string | null>(null);
@@ -49,9 +52,18 @@ const PopupSubmitToCoverage = ({ data }: PopupData<PopupSubmitToCoverageData>) =
                         <div className={popup.info}>
                             <p>{t("done")}</p>
                             <div className={popup.buttons}>
-                                <a className={popup.confirm} href={`/community/coverage/submissions/${submittedId}`} target="_blank" rel="noreferrer">
+                                <a className={popup.confirm} href={`/community/submissions/${submittedId}`} target="_blank" rel="noreferrer">
                                     {t("open")}
                                 </a>
+                                <button className={popup.cancel} onClick={onClose}>
+                                    {tNav("close")}
+                                </button>
+                            </div>
+                        </div>
+                    ) : me?.profile && me.eligibility.reason === "TOO_RECENT" ? (
+                        <div className={popup.info}>
+                            <p>{tSubmit("coverageTooRecent", { date: formatDate(me.eligibility.eligibleAt) })}</p>
+                            <div className={popup.buttons}>
                                 <button className={popup.cancel} onClick={onClose}>
                                     {tNav("close")}
                                 </button>

@@ -13,6 +13,7 @@
  */
 
 import * as S3 from "@src/lib/s3";
+import * as ProjectService from "@src/server/service/project-service";
 import * as TicketService from "@src/server/service/community-ticket-service";
 import prisma from "@src/server/db";
 import { sha256Hex } from "@src/lib/assets/asset-hash";
@@ -35,11 +36,16 @@ import {
     CommunityFormat,
     CommunityGenre,
     CommunityReviewStatus,
+    CommunityShowcaseKind,
     CommunitySubmissionStatus,
 } from "@src/generated/client/client";
+import { showcaseSlug } from "@src/lib/community/showcase";
+import { revalidateShowcase } from "@src/server/service/community-showcase-cache";
+import { CommunityShowcaseRepository } from "../repository/community-showcase-repository";
 import { CommunitySubmissionRepository } from "../repository/community-submission-repository";
 
 const submissions = new CommunitySubmissionRepository();
+const showcase = new CommunityShowcaseRepository();
 
 export type SubmissionDestination = "COVERAGE" | "SHOWCASE_ONLY";
 
@@ -50,6 +56,8 @@ export interface SubmissionInput {
     format: CommunityFormat;
     sourceProjectId?: string | null;
     destination: SubmissionDestination;
+    /** Showcase-only uploads published in the same transaction (see `ShowcaseService.publishUpload`). */
+    showcaseKind?: CommunityShowcaseKind;
 }
 
 export class DuplicatePdfError extends AppError {
@@ -58,10 +66,21 @@ export class DuplicatePdfError extends AppError {
     }
 }
 
+export class AccountTooRecentError extends AppError {
+    constructor() {
+        super(403, "The account is too recent to submit to Coverage", "ACCOUNT_TOO_RECENT");
+    }
+}
+
 /** Filename a PDF is served under, safe for a Content-Disposition header. */
-const downloadName = (title: string) => `${title.replace(/[^\w\- ]+/g, "").trim() || "screenplay"}.pdf`;
+export const downloadName = (title: string) => `${title.replace(/[^\w\- ]+/g, "").trim() || "screenplay"}.pdf`;
 
 export async function createSubmission(authorId: string, bytes: Uint8Array, input: SubmissionInput, now = new Date()) {
+    // Coverage is the one thing a new account waits for: starter tickets are
+    // spent here, so fresh throwaway accounts can't flood the pool.
+    const pooled = input.destination === "COVERAGE";
+    if (pooled && !(await TicketService.getUserEligibility(authorId, now)).ok) throw new AccountTooRecentError();
+
     if (bytes.byteLength === 0) throw new BodyFieldError("Empty file");
     if (bytes.byteLength > MAX_PDF_BYTES) throw new BodyFieldError("PDF exceeds the maximum size");
 
@@ -72,7 +91,6 @@ export async function createSubmission(authorId: string, bytes: Uint8Array, inpu
         throw new BodyFieldError("The file is not a readable, unencrypted PDF");
     }
     // Coverage is feature screenplays only; the format field is ignored for it.
-    const pooled = input.destination === "COVERAGE";
     const format = pooled ? COVERAGE_FORMAT : input.format;
     const bounds = pooled ? COVERAGE_PAGE_BOUNDS : PAGE_BOUNDS[format];
     if (pageCount < bounds.min || pageCount > bounds.max) {
@@ -81,6 +99,13 @@ export async function createSubmission(authorId: string, bytes: Uint8Array, inpu
                 ? `Coverage takes feature screenplays of ${bounds.min} to ${bounds.max} pages`
                 : `A ${format.toLowerCase()} must have ${bounds.min} to ${bounds.max} pages`,
         );
+    }
+
+    // The source project says the PDF came from the editor (Showcase's "Written
+    // with Scenarly") and keeps its members from reviewing it: only a member
+    // may name it.
+    if (input.sourceProjectId && !(await ProjectService.getMembership(input.sourceProjectId, authorId))) {
+        throw new BodyFieldError("Unknown source project");
     }
 
     const sha256 = await sha256Hex(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
@@ -108,6 +133,12 @@ export async function createSubmission(authorId: string, bytes: Uint8Array, inpu
             tx,
         );
         if (pooled) await TicketService.chargeSubmission(authorId, created.id, tx);
+        if (!pooled && input.showcaseKind) {
+            await showcase.create(
+                { submissionId: created.id, kind: input.showcaseKind, slug: showcaseSlug(created.title, created.id), publishedAt: now },
+                tx,
+            );
+        }
 
         // Upload inside the transaction: a failed put rolls the charge back.
         const ok = await S3.putObject(submissionObjectKey(created.id), bytes, "application/pdf");
@@ -151,9 +182,10 @@ export async function getForAuthor(submissionId: string, authorId: string) {
         },
     });
 
-    const activeClaims = await prisma.communityClaim.count({
-        where: { submissionId, status: CommunityClaimStatus.ACTIVE },
-    });
+    const [activeClaims, entry] = await Promise.all([
+        prisma.communityClaim.count({ where: { submissionId, status: CommunityClaimStatus.ACTIVE } }),
+        showcase.findBySubmissionId(submissionId),
+    ]);
 
     const reviews = claims.map((c, i) => ({
         claimId: c.id,
@@ -173,7 +205,8 @@ export async function getForAuthor(submissionId: string, authorId: string) {
     }));
 
     const { sha256, sizeBytes, ...rest } = submission;
-    return { ...rest, sha256, sizeBytes, activeClaims, reviews };
+    const published = entry && !entry.unpublishedAt ? { kind: entry.kind, slug: entry.slug, upvoteCount: entry.upvoteCount } : null;
+    return { ...rest, sha256, sizeBytes, activeClaims, reviews, showcase: published };
 }
 
 /**
@@ -197,11 +230,12 @@ export async function withdraw(submissionId: string, authorId: string, now = new
             await submissions.updateStatus(submissionId, CommunitySubmissionStatus.RETIRED, { retiredAt: now }, tx);
         }
 
-        await tx.communityShowcaseEntry.updateMany({
-            where: { submissionId, unpublishedAt: null },
-            data: { unpublishedAt: now },
-        });
+        await showcase.unpublish(submissionId, now, tx);
     });
+
+    // The entry's page is cached for minutes; drop it now so its slug 404s.
+    const entry = await showcase.findBySubmissionId(submissionId);
+    if (entry) revalidateShowcase(entry.slug);
 }
 
 /** Presigned inline URL of the author's own frozen PDF. */

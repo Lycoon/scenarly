@@ -102,6 +102,14 @@
     border-color: var(--secondary-text);
 }
 
+/* A destination the account can't use yet: the dimmed card, the reason below. */
+.optionDisabled {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: not-allowed;
+}
+
 /* The destinations stacked full width, so each bullet fits on one line. */
 .optionList {
     display: flex;

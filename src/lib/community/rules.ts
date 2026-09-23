@@ -20,7 +20,10 @@ export interface Eligibility {
     eligibleAt?: Date;
 }
 
-/** Entry gate: a verified email, at least `minAgeMs` (default a week) old. */
+/**
+ * A verified email, at least `minAgeMs` (default a week) old. The email alone
+ * opens Community; the age only gates submitting to Coverage.
+ */
 export const getEligibility = (
     emailVerified: Date | null | undefined,
     now: Date,

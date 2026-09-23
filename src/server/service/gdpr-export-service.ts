@@ -9,6 +9,10 @@
  *                        id it is known by there (Stripe subscription id or
  *                        Apple original transaction id)
  *   memberships.json   — every project membership with its role
+ *   community.json     — Community membership, when they joined: ticket
+ *                        ledger, submissions and Showcase entries, reviews
+ *                        written, upvotes and reports (no PDFs, see
+ *                        community-account-service)
  *
  * Billing history itself (invoices, charges) lives in the stores, not here, so
  * the store ids are what lets the user request it from them. Project content
@@ -30,6 +34,7 @@
 import { zip, strToU8, type Zippable } from "fflate";
 
 import * as S3 from "@src/lib/s3";
+import * as CommunityAccountService from "@src/server/service/community-account-service";
 import * as ProjectService from "@src/server/service/project-service";
 import * as SubscriptionService from "@src/server/service/subscription-service";
 import * as UserService from "@src/server/service/user-service";
@@ -152,9 +157,10 @@ export async function runDataExport(exportId: string, userId: string): Promise<v
     try {
         const user = await UserService.getUserForExport(userId);
         if (!user) throw new Error("User no longer exists");
-        const [subscriptions, memberships] = await Promise.all([
+        const [subscriptions, memberships, community] = await Promise.all([
             SubscriptionService.getSubscriptions(userId),
             ProjectService.getMembershipsWithProject(userId),
+            CommunityAccountService.exportForUser(userId),
         ]);
 
         // Reclaim the zips of lapsed exports only. Wiping the whole prefix would
@@ -182,6 +188,7 @@ export async function runDataExport(exportId: string, userId: string): Promise<v
                     2,
                 ),
             ),
+            ...(community && { "community.json": strToU8(JSON.stringify(community, null, 2)) }),
         });
 
         const uploaded = await S3.putObject(key, archive, "application/zip");

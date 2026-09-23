@@ -33,7 +33,7 @@ export const POOL_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** Reviews a submission needs before it may leave the pool. */
 export const MIN_COMPLETED_REVIEWS = 3;
 
-/** Verified email must be at least this old to enter Coverage. */
+/** Verified email must be at least this old to submit to Coverage. */
 export const ENTRY_MIN_ACCOUNT_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Hard cap on an uploaded screenplay PDF. */
@@ -66,6 +66,14 @@ export const GENRES_MAX = 3;
 
 /** Lifetime of a presigned PDF URL. */
 export const PRESIGN_TTL_S = 300;
+
+/** Entries per page of the Showcase wall. */
+export const SHOWCASE_PAGE_SIZE = 24;
+/**
+ * How fast an entry sinks on the Top sort: score = (upvotes + 1) / (hours + 2)^gravity.
+ * Higher sinks faster; 1.4 keeps a well-liked script on the first page for days, not weeks.
+ */
+export const SHOWCASE_GRAVITY = 1.4;
 
 /** R2 key of a submission's frozen PDF. */
 export const submissionObjectKey = (submissionId: string) => `community/${submissionId}/original.pdf`;

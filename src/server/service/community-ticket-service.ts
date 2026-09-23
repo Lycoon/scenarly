@@ -28,7 +28,7 @@ const isUniqueViolation = (e: unknown) =>
     e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
 /**
- * Minimum account age for the entry gate. `COMMUNITY_ENTRY_MIN_AGE_DAYS`
+ * Minimum account age for submitting to Coverage. `COMMUNITY_ENTRY_MIN_AGE_DAYS`
  * overrides the default (7) so staging and local setups can open the gate
  * without touching the rule shipped to production.
  */
@@ -40,7 +40,8 @@ const entryMinAgeMs = (): number => {
 };
 
 /**
- * Entry gate for a user who has no profile yet. Admins skip the account-age
+ * A user's standing: UNVERIFIED keeps them out of Community altogether,
+ * TOO_RECENT only out of submitting to Coverage. Admins skip the account-age
  * rule so the feature can be exercised on a fresh account; the verified-email
  * part still applies to them.
  */
@@ -63,7 +64,7 @@ export async function requireProfile(userId: string) {
 
 /**
  * Create the profile and grant the starter tickets in one transaction, the
- * first time an eligible user opens Coverage. Two concurrent first visits
+ * first time a verified user opens Community. Two concurrent first visits
  * race on the profile's primary key: the loser reads the winner's row. The
  * ledger unique means the grant can never happen twice even if the profile
  * row somehow survived a partial failure.

@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -18,6 +19,8 @@ interface LibrarySidebarProps {
     title: string;
     /** Small caps line under the logo on desktop (e.g. the section name). */
     subtitle?: string;
+    /** Makes the desktop logo a link (Community: back to the projects library). */
+    logoHref?: string;
     /** Right-aligned control on the logo row (phone: next to the close button). */
     topRight?: ReactNode;
     /** The action pills / navigation under the logo band. */
@@ -30,7 +33,7 @@ interface LibrarySidebarProps {
  * fixed column with the logo in a navbar-height band; phone: an overlay drawer
  * with a title and a close button, opened by the navbar burger.
  */
-const LibrarySidebar = ({ sidebarOpen, setSidebarOpen, title, subtitle, topRight, children }: LibrarySidebarProps) => {
+const LibrarySidebar = ({ sidebarOpen, setSidebarOpen, title, subtitle, logoHref, topRight, children }: LibrarySidebarProps) => {
     const isPhone = useIsPhone();
     const tNav = useTranslations("navbar");
 
@@ -48,7 +51,13 @@ const LibrarySidebar = ({ sidebarOpen, setSidebarOpen, title, subtitle, topRight
                         <h2 className={page.sidebar_title}>{title}</h2>
                     ) : (
                         <div className={page.sidebar_brand}>
-                            <Logo className={page.logo} />
+                            {logoHref ? (
+                                <Link href={logoHref} className={page.logo_link} aria-label="Scenarly">
+                                    <Logo className={page.logo} />
+                                </Link>
+                            ) : (
+                                <Logo className={page.logo} />
+                            )}
                             {subtitle && <span className={page.sidebar_subtitle}>{subtitle}</span>}
                         </div>
                     )}

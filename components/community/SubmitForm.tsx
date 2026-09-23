@@ -7,7 +7,8 @@ import { useSWRConfig } from "swr";
 
 import BackButton from "@components/utils/BackButton";
 import { CommunityFormat, CommunityGenre } from "@src/generated/client/browser";
-import { createSubmission, isApiError } from "@src/lib/community/requests";
+import { createSubmission, isApiError, uploadToShowcase } from "@src/lib/community/requests";
+import { FULL_KIND_BY_FORMAT } from "@src/lib/community/showcase";
 import { useCommunityMe } from "@src/lib/community/hooks";
 import {
     COVERAGE_PAGE_BOUNDS,
@@ -22,6 +23,7 @@ import {
 
 import form from "@components/utils/Form.module.css";
 import styles from "./Community.module.css";
+import { formatDate } from "./format";
 
 /** Where the PDF comes from: a file the user picks, or the open project's export. */
 export type SubmitSource =
@@ -47,7 +49,7 @@ interface SubmitFormProps {
  * project path renders the PDF with `buildPdf` at submit time. Coverage takes
  * feature scripts only, so there is no format to pick and the page bounds are
  * fixed; a Showcase-only submission picks its format, which sets the bounds,
- * and costs nothing. Field rules mirror the API's zod schema through the
+ * and whether the wall shows its PDF or only its logline, and costs nothing. Field rules mirror the API's zod schema through the
  * shared constants.
  */
 const SubmitForm = ({
@@ -70,6 +72,8 @@ const SubmitForm = ({
     const [logline, setLogline] = useState(initialLogline);
     const [genres, setGenres] = useState<CommunityGenre[]>([]);
     const [format, setFormat] = useState<CommunityFormat | null>(null);
+    // Showcase only: publish the PDF, or keep it private and show the logline alone.
+    const [loglineOnly, setLoglineOnly] = useState(false);
     const [busy, setBusy] = useState<"idle" | "rendering" | "uploading">("idle");
     const [error, setError] = useState<string | null>(null);
 
@@ -116,19 +120,24 @@ const SubmitForm = ({
                 blob = file!;
             }
             setBusy("uploading");
-            const created = await createSubmission(blob, {
+            const fields = {
                 title: title.trim(),
                 logline: logline.trim(),
                 genres,
                 format: format ?? undefined,
                 sourceProjectId: source.kind === "project" ? source.projectId : undefined,
                 destination,
-            });
+            };
+            const created = coverage
+                ? await createSubmission(blob, fields)
+                : await uploadToShowcase(blob, fields, loglineOnly ? "LOGLINE" : FULL_KIND_BY_FORMAT[format!]);
             await Promise.all([mutateMe(), mutate("/api/community/submissions")]);
             onSubmitted(created.id);
         } catch (e) {
             if (isApiError(e) && e.code === "DUPLICATE_PDF") setError(t("errors.duplicate"));
             else if (isApiError(e) && e.code === "INSUFFICIENT_TICKETS") setError(t("errors.tickets", { cost, balance }));
+            else if (isApiError(e) && e.code === "ACCOUNT_TOO_RECENT")
+                setError(t("coverageTooRecent", { date: formatDate(me?.eligibility.eligibleAt) }));
             else if (isApiError(e)) setError(e.message);
             else setError(t("errors.failed"));
         } finally {
@@ -147,6 +156,20 @@ const SubmitForm = ({
                                 {tEnum(`formats.${f}`)}
                             </Chip>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {!coverage && (
+                <div className={styles.field}>
+                    <label className={form.label}>{t("showLabel")}</label>
+                    <div className={styles.row} style={{ gap: 6 }}>
+                        <Chip on={!loglineOnly} onClick={() => setLoglineOnly(false)}>
+                            {t("showScript")}
+                        </Chip>
+                        <Chip on={loglineOnly} onClick={() => setLoglineOnly(true)}>
+                            {t("showLogline")}
+                        </Chip>
                     </div>
                 </div>
             )}
@@ -241,10 +264,12 @@ const SubmitForm = ({
                         ) : (
                             <>
                                 {t("submit")}
-                                <span className={styles.btnCost}>
-                                    <Ticket size={15} />
-                                    {cost}
-                                </span>
+                                {cost > 0 && (
+                                    <span className={styles.btnCost}>
+                                        <Ticket size={15} />
+                                        {cost}
+                                    </span>
+                                )}
                             </>
                         )}
                     </button>
@@ -255,8 +280,8 @@ const SubmitForm = ({
     );
 };
 
-/** A toggle in the format and genre pickers. */
-const Chip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) => (
+/** A toggle in the format, genre and Showcase pickers. */
+export const Chip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) => (
     <button
         type="button"
         className={`${styles.btn} ${on ? "" : styles.btnOutline}`}

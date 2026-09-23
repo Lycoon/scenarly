@@ -229,20 +229,22 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
                         <span>{tNav("fileOpen")}</span>
                     </button>
                 )}
-                {/* Community lives on the web app only: the Tauri shells open it
-                    in the browser, the web app navigates. */}
-                <button
-                    className={page.action_btn}
-                    onClick={() => (isTauri() ? openExternal(`${COMMUNITY_WEB_URL}/showcase`) : router.push("/community/showcase"))}
-                >
-                    <Users size={16} />
-                    <span>{t("communityBtn")}</span>
-                </button>
                 {importError && (
                     <p className={page.import_error} role="alert">
                         {importError}
                     </p>
                 )}
+                {/* Community lives on the web app only: the Tauri shells open it
+                    in the browser, the web app navigates. */}
+                <div className={page.sidebar_footer}>
+                    <button
+                        className={page.action_btn}
+                        onClick={() => (isTauri() ? openExternal(`${COMMUNITY_WEB_URL}/showcase`) : router.push("/community/showcase"))}
+                    >
+                        <Users size={16} />
+                        <span>{t("communityBtn")}</span>
+                    </button>
+                </div>
             </LibrarySidebar>
 
             <main className={page.main}>

@@ -775,7 +775,7 @@
       "title": "Submit to Coverage",
       "done": "Your script is in the pool. Reviews will appear on its Coverage page as they arrive.",
       "open": "Open Coverage page",
-      "notMember": "Coverage is Scenarly's review exchange, open to verified accounts at least a week old. Yours doesn't qualify yet: the Community pages show when it will.",
+      "notMember": "Coverage is Scenarly's review exchange, open to verified accounts. Yours isn't verified yet: the Community pages show how to verify it.",
       "openCommunity": "Open Community"
     }
   },
@@ -896,7 +896,7 @@
       "coverage": "Coverage",
       "tickets": "{count, plural, one {# ticket} other {# tickets}}",
       "ticketsTitle": "Your Coverage tickets",
-      "backToApp": "My projects",
+      "mySubmissions": "My submissions",
       "submit": "Submit",
       "review": "Review",
       "showcase": "Showcase"
@@ -906,9 +906,7 @@
       "signedOutBody": "Coverage is for Scenarly accounts. Sign in, or create an account, to submit and review scripts.",
       "signIn": "Sign in",
       "unverifiedTitle": "Verify your email first",
-      "unverifiedBody": "Coverage is open to verified accounts. Sign in with the link we email you and come back.",
-      "tooRecentTitle": "Almost there",
-      "tooRecentBody": "Coverage opens to accounts that are at least a week old. Yours qualifies on {date}."
+      "unverifiedBody": "Coverage is open to verified accounts. Sign in with the link we email you and come back."
     },
     "dashboard": {
       "balance": "{count, plural, one {# ticket} other {# tickets}}",
@@ -920,14 +918,21 @@
       "reviewCardBody": "Pick one of five scripts, read it, write your notes. You have three weeks, and can send them after one.",
       "reviewReward": "Earns 1 ticket",
       "tabs": {
-        "submissions": "My scripts",
         "reviews": "Reviews I wrote",
         "tickets": "Tickets"
       },
-      "noSubmissionsTitle": "No script submitted yet",
-      "noSubmissionsBody": "Submit one and it joins the pool other writers draw from.",
       "noReviewsTitle": "No review written yet",
       "noReviewsBody": "Every review you complete earns a ticket toward your next submission."
+    },
+    "mySubmissions": {
+      "emptyTitle": "No script submitted yet",
+      "emptyBody": "Share one on Showcase, or send it to Coverage to get reviews.",
+      "columns": {
+        "title": "Title",
+        "submitted": "Submitted",
+        "coverage": "Coverage",
+        "showcase": "Showcase"
+      }
     },
     "submissions": {
       "pages": "{count, plural, one {# page} other {# pages}}",
@@ -956,7 +961,18 @@
       "withdrawYes": "Yes, withdraw",
       "withdrawing": "Withdrawing…",
       "withdrawFailed": "Could not withdraw. Please try again.",
-      "notFound": "This submission does not exist or is not yours."
+      "notFound": "This submission does not exist or is not yours.",
+      "onShowcase": "On Showcase",
+      "upvotes": "{count, plural, one {# upvote} other {# upvotes}}",
+      "showcaseTitle": "Showcase",
+      "showcaseLive": "On Showcase as {kind}",
+      "showcaseOpen": "Open its page",
+      "showcaseOff": "Not on Showcase. Publish it and anyone can read and upvote it; your name is never shown.",
+      "showcasePublish": "Publish to Showcase",
+      "showcasePublishing": "Publishing…",
+      "showcaseUnpublish": "Take it off Showcase",
+      "showcaseUnpublishing": "Taking it off…",
+      "showcaseFailed": "Could not update Showcase. Please try again."
     },
     "submit": {
       "title": "Submit a script",
@@ -965,11 +981,13 @@
       "showcaseOptionPoint1": "Share your work publicly",
       "showcaseOptionPoint2": "Submissions can only be upvoted",
       "showcaseOptionFormats": "Feature, pilot, short or other",
+      "unlimited": "Unlimited",
       "coverageOptionPoint1": "Share your feature script for review",
       "coverageOptionPoint2": "Get detailed feedback on what's good or not",
       "coverageOptionFormats": "Feature scripts only",
+      "coverageTooRecent": "Your account is too new to submit to Coverage. It can from {date}.",
       "formatLabel": "Format",
-      "dropTitle": "Drop a PDF here, or click to choose one",
+      "dropTitle": "Import your PDF",
       "dropHint": "Feature script, {min}–{max} pages, up to {mb} MB",
       "dropHintPages": "{min}–{max} pages, up to {mb} MB",
       "dropHintAny": "Up to {mb} MB",
@@ -994,7 +1012,10 @@
         "tickets": "Submitting takes {cost} tickets; you have {balance}. Review a script to earn more.",
         "duplicate": "This exact PDF is already in Coverage.",
         "failed": "Submission failed. Please try again."
-      }
+      },
+      "showLabel": "Only show",
+      "showScript": "The script",
+      "showLogline": "The logline"
     },
     "offers": {
       "title": "Pick a script to review",
@@ -1068,7 +1089,12 @@
     },
     "viewer": {
       "failed": "The script could not be loaded.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom",
+      "fullscreen": "Full screen",
+      "exitFullscreen": "Exit full screen"
     },
     "enums": {
       "formats": {
@@ -1117,11 +1143,37 @@
         "LOW_EFFORT": "Low effort",
         "AI_GENERATED": "Looks machine-generated",
         "OTHER": "Other"
+      },
+      "showcaseKinds": {
+        "FULL_SCRIPT": "Full script",
+        "PILOT": "Pilot",
+        "SHORT": "Short",
+        "LOGLINE": "Logline"
       }
     },
     "showcase": {
-      "comingSoonTitle": "Showcase is coming",
-      "comingSoonBody": "A public wall of scripts their authors chose to share. Not open yet."
+      "title": "Showcase",
+      "subtitle": "Scripts their writers chose to share. Read them here, and upvote the ones you'd recommend.",
+      "sortLabel": "Sort",
+      "sortTop": "Top",
+      "sortNew": "Newest",
+      "kindLabel": "Kind",
+      "kindAll": "All",
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "publishedOn": "Published {date}",
+      "writtenWith": "Written with Scenarly",
+      "upvote": "Upvote",
+      "upvoteSignIn": "Sign in to upvote",
+      "upvoteNotEligible": "Upvoting is open to verified accounts",
+      "upvoteFailed": "Could not save your upvote",
+      "emptyTitle": "Nothing published yet",
+      "emptyBody": "Writers share their scripts here when they're ready. Want notes first? Trade reviews in Coverage.",
+      "emptyCta": "Go to Coverage",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {count}",
+      "backToWall": "All scripts",
+      "loglineOnly": "The writer shared the logline only."
     }
   }
 }
