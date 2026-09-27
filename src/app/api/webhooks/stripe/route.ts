@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
             if (!userId || !session.subscription) break;
 
             const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            // The first invoice rides along for the confirmation mail.
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["latest_invoice"] });
             // The price on the subscription says which plan was bought.
             const priceId = subscription.items.data[0]?.price.id;
             const plan = priceId ? SubscriptionService.planForStripePrice(priceId) : null;

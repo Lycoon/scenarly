@@ -64,7 +64,7 @@ services:
             - traefik.http.routers.scenarly-app-community-tick.tls.certresolver=letsencrypt
             - traefik.http.routers.scenarly-app-community-tick.priority=300
 
-    # Public homepage: standalone static site (/, /privacy, /contact, and
+    # Public homepage: standalone static site (/, /manifesto, /privacy, /terms, /contact, and
     # /robots.txt, which points crawlers at the app's Community sitemap) served by
     # nginx. No DB, no Node, no migrations. Deployed on its own cadence by the
     # deploy-landing workflow, so app releases and failures never affect it.
@@ -78,7 +78,7 @@ services:
         labels:
             - traefik.enable=true
             - traefik.docker.network=webproxy
-            - traefik.http.routers.scenarly-landing.rule=Host(`scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/privacy`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
+            - traefik.http.routers.scenarly-landing.rule=Host(`scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/manifesto`) || PathPrefix(`/privacy`) || PathPrefix(`/terms`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
             - traefik.http.routers.scenarly-landing.entrypoints=secure
             - traefik.http.routers.scenarly-landing.tls=true
             - traefik.http.routers.scenarly-landing.tls.certresolver=letsencrypt
@@ -121,7 +121,7 @@ services:
         labels:
             - traefik.enable=true
             - traefik.docker.network=webproxy
-            - traefik.http.routers.scenarly-landing-staging.rule=Host(`staging.scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/privacy`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
+            - traefik.http.routers.scenarly-landing-staging.rule=Host(`staging.scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/manifesto`) || PathPrefix(`/privacy`) || PathPrefix(`/terms`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
             - traefik.http.routers.scenarly-landing-staging.entrypoints=secure
             - traefik.http.routers.scenarly-landing-staging.tls=true
             - traefik.http.routers.scenarly-landing-staging.tls.certresolver=letsencrypt

@@ -39,13 +39,17 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
     const { locale } = useLocale();
     const confirmPhrase = t("deleteConfirmPhrase");
 
-    // A subscription still renewing is money at stake: deleting the account
-    // cancels it on the spot, so the dialog has to say so before they confirm.
+    // A subscription still renewing is money at stake, so the dialog has to
+    // say what deletion does to it before they confirm. A Stripe one is
+    // cancelled on the spot; an App Store one cannot be cancelled from here
+    // and keeps billing until the user stops it in their Apple ID settings.
     // With several plans, the one paid furthest ahead is the date that matters.
-    const liveSubscriptions = ((user?.subscriptions ?? []) as UserSubscription[]).filter(
+    const renewing = ((user?.subscriptions ?? []) as UserSubscription[]).filter(
         (s) => isSubscriptionActive(s) && !s.cancelled,
     );
+    const liveSubscriptions = renewing.filter((s) => s.provider !== "APPLE");
     const hasLiveSubscription = liveSubscriptions.length > 0;
+    const hasLiveAppleSubscription = renewing.some((s) => s.provider === "APPLE");
     const cloudExpiryDate = hasLiveSubscription
         ? new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(
               new Date(Math.max(...liveSubscriptions.map((s) => new Date(s.expiresAt).getTime()))),
@@ -270,6 +274,12 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
                                 <div className={styles.subscriptionWarning}>
                                     <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
                                     <span>{t("deleteSubscriptionWarning", { date: cloudExpiryDate })}</span>
+                                </div>
+                            )}
+                            {hasLiveAppleSubscription && (
+                                <div className={styles.subscriptionWarning}>
+                                    <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
+                                    <span>{t("deleteSubscriptionWarningApple")}</span>
                                 </div>
                             )}
                             <label

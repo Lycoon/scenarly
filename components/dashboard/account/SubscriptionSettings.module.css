@@ -99,6 +99,13 @@
     border-color: color-mix(in srgb, var(--error) 60%, transparent);
 }
 
+/* Cancel and, during the 14-day withdrawal period, Withdraw side by side. */
+.actionRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .confirmBox {
     display: flex;
     flex-direction: column;

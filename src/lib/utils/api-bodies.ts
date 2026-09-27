@@ -1,5 +1,6 @@
 import z from "zod";
 import { PERIODS, PLANS } from "@src/lib/plans";
+import type { UserLanguage } from "@src/lib/utils/types";
 
 export const RequestMagicLinkBodySchema = z.object({
     email: z.email(),
@@ -50,8 +51,18 @@ export const PlanBodySchema = z.object({
 });
 export type PlanBody = z.infer<typeof PlanBodySchema>;
 
+const UI_LANGUAGES = ["en", "es", "fr", "zh", "ko", "ja", "de", "pl"] as const satisfies readonly UserLanguage[];
+
 export const CheckoutBodySchema = PlanBodySchema.extend({
     period: z.enum(PERIODS),
     redirectBase: z.string().optional(),
+    // Language of the consent line shown on the Stripe page.
+    language: z.enum(UI_LANGUAGES).optional(),
 });
 export type CheckoutBody = z.infer<typeof CheckoutBodySchema>;
+
+export const WithdrawBodySchema = PlanBodySchema.extend({
+    // Formats the refunded amount the settings show back.
+    locale: z.string().trim().min(2).max(10).optional(),
+});
+export type WithdrawBody = z.infer<typeof WithdrawBodySchema>;

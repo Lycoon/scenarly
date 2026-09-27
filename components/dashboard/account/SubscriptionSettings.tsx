@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { isTauri } from "@tauri-apps/api/core";
 import { ArrowRight, BadgePercent, Check, ExternalLink, Lock, Sparkles } from "lucide-react";
 import {
     cancelStripeSubscription,
     createStripeCheckout,
     getStripePrices,
+    getStripeWithdrawal,
     linkApplePurchase,
     resumeStripeSubscription,
+    StripeWithdrawal,
+    withdrawStripeSubscription,
 } from "@src/lib/utils/requests";
 import {
     APPLE_SUBSCRIPTIONS_URL,
@@ -19,6 +23,7 @@ import {
 } from "@src/lib/apple-iap";
 import { getSubscription, isSubscriptionActive, Period, PERIODS, Plan, PLANS, PLANS_ON_SALE } from "@src/lib/plans";
 import { useUser } from "@src/lib/utils/hooks";
+import { isAndroid } from "@src/lib/utils/platform";
 import { useLocale } from "@src/context/LocaleContext";
 import { openExternal } from "@src/lib/utils/open-external";
 
@@ -28,21 +33,36 @@ const PLAN_PERKS: Record<Plan, readonly string[]> = {
     CLOUD: ["cloudSync", "collaboration", "sharedStorage"],
 };
 
-// Apple's standard EULA covers App Store purchases until we publish our own
-// terms; both links are required next to an auto-renewable subscription.
-const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+// Both links are required next to an auto-renewable subscription. The Terms
+// carry the terms Apple requires of a custom licence agreement (section 12);
+// App Store Connect must point at the same page.
+const TERMS_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://scenarly.com"}/terms`;
 const PRIVACY_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://scenarly.com"}/privacy`;
 
-type Action = "upgrade" | "cancel" | "resume";
+/**
+ * True inside the Android app, which is distributed through Google Play. Play
+ * only allows its own billing for digital subscriptions, which is not wired
+ * yet, so this build sells nothing: plans are bought on the website and work
+ * here once signed in. Cancelling a Stripe subscription stays possible.
+ */
+const isPlayStoreBuild = (): boolean => isTauri() && isAndroid();
+
+type Action = "upgrade" | "cancel" | "resume" | "withdraw";
 type LinkStatus = "linked" | "owned" | "error";
 
 /**
- * One card per plan. Each is billed by Stripe (web, Windows) or by Apple (App
- * Store builds), and a card only ever offers the store the current build sells
- * through — an App Store build must not point at any other way to pay.
+ * One card per plan. Each is billed by Stripe (web, Windows, Linux) or by Apple
+ * (App Store builds), and a card only ever offers the store the current build
+ * sells through — an App Store build must not point at any other way to pay,
+ * and the Google Play build sells nothing at all.
  * Whichever store bills a plan is where it gets managed: Stripe in place,
  * Apple through the user's App Store settings. Restore Purchases is shared:
  * one call brings back every plan the Apple ID holds.
+ *
+ * During the 14 days after a Stripe purchase, the card also offers the legal
+ * right of withdrawal next to Cancel: withdrawing ends the plan now and
+ * refunds the unused days, cancelling keeps it to the end of the period.
+ * Apple runs withdrawals for App Store purchases itself.
  */
 const SubscriptionSettings = () => {
     const { user, mutate } = useUser();
@@ -52,6 +72,9 @@ const SubscriptionSettings = () => {
     // `${plan}:${action}`, or "restore" — one thing at a time across the cards.
     const [busy, setBusy] = useState<string | null>(null);
     const [cancelConfirm, setCancelConfirm] = useState<Plan | null>(null);
+    const [withdrawConfirm, setWithdrawConfirm] = useState<Plan | null>(null);
+    // Set only for Stripe plans still inside their withdrawal period.
+    const [withdrawals, setWithdrawals] = useState<Partial<Record<Plan, StripeWithdrawal>>>({});
     const [notice, setNotice] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [periods, setPeriods] = useState<Partial<Record<Plan, Period>>>({});
@@ -66,6 +89,7 @@ const SubscriptionSettings = () => {
     // client initially does, avoiding hydration mismatches; done inline with
     // the price fetch below so the right store is asked on the first try.
     const [isAppleBuild, setIsAppleBuild] = useState(false);
+    const [isPlayBuild, setIsPlayBuild] = useState(false);
 
     // A plan shows up once it is on sale, or as long as the user still holds it.
     const visiblePlans = PLANS.filter((plan) => PLANS_ON_SALE.includes(plan) || getSubscription(user, plan));
@@ -76,12 +100,37 @@ const SubscriptionSettings = () => {
     useEffect(() => {
         const appleBuild = isAppleStoreBuild();
         setIsAppleBuild(appleBuild);
+        const playBuild = isPlayStoreBuild();
+        setIsPlayBuild(playBuild);
+        if (playBuild) return;
         for (const plan of PLANS_ON_SALE) {
             const planPrices = appleBuild ? getApplePrices(plan) : getStripePrices(plan, locale);
             planPrices.then((prices) => setPrices((p) => ({ ...p, [plan]: prices }))).catch(() => {});
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps -- platform + prices, fetched once on mount
     }, []);
+
+    // Plans billed by Stripe right now, as a stable key for the effect below.
+    const stripePlansKey = PLANS.filter((plan) => {
+        const subscription = getSubscription(user, plan);
+        return subscription?.provider === "STRIPE" && isSubscriptionActive(subscription);
+    }).join(",");
+
+    useEffect(() => {
+        // An App Store build shows nothing about Stripe billing but where it lives.
+        if (!stripePlansKey || isAppleStoreBuild()) return;
+        let stale = false;
+        for (const plan of stripePlansKey.split(",") as Plan[]) {
+            getStripeWithdrawal(plan, locale)
+                .then((withdrawal) => {
+                    if (!stale) setWithdrawals((w) => ({ ...w, [plan]: withdrawal ?? undefined }));
+                })
+                .catch(() => {});
+        }
+        return () => {
+            stale = true;
+        };
+    }, [stripePlansKey, locale]);
 
     useEffect(() => {
         if (!welcome) return;
@@ -108,7 +157,7 @@ const SubscriptionSettings = () => {
     const periodOf = (plan: Plan): Period => periods[plan] ?? "MONTHLY";
 
     const handleCheckout = (plan: Plan) => run(`${plan}:upgrade`, async () => {
-        const result = await createStripeCheckout(plan, periodOf(plan));
+        const result = await createStripeCheckout(plan, periodOf(plan), locale);
         if (result.url) {
             window.location.href = result.url;
             // Stay busy while the browser navigates away.
@@ -132,6 +181,18 @@ const SubscriptionSettings = () => {
     const handleResume = (plan: Plan) => run(`${plan}:resume`, async () => {
         if (await resumeStripeSubscription(plan)) await mutate();
         else setError(t("purchaseError"));
+    });
+
+    const handleWithdraw = (plan: Plan) => run(`${plan}:withdraw`, async () => {
+        const refund = await withdrawStripeSubscription(plan, locale);
+        setWithdrawConfirm(null);
+        if (refund === null) {
+            setError(t("withdrawError"));
+            return;
+        }
+        setWithdrawals((w) => ({ ...w, [plan]: undefined }));
+        await mutate();
+        setNotice(t("withdrawDone", { refund, email: user?.email ?? "" }));
     });
 
     /* Apple */
@@ -220,6 +281,24 @@ const SubscriptionSettings = () => {
         }
 
         if (active) {
+            const withdrawal = withdrawals[plan];
+            if (withdrawal && withdrawConfirm === plan) {
+                return (
+                    <div className={styles.confirmBox}>
+                        <p className={styles.confirmText}>
+                            {t("withdrawConfirm", { plan: name, refund: withdrawal.refund, email: user?.email ?? "" })}
+                        </p>
+                        <div className={styles.confirmBtns}>
+                            <button className={styles.confirmYes} onClick={() => handleWithdraw(plan)} disabled={busy !== null}>
+                                {isBusy(plan, "withdraw") ? t("withdrawing") : t("withdrawYes")}
+                            </button>
+                            <button className={styles.confirmNo} onClick={() => setWithdrawConfirm(null)} disabled={busy !== null}>
+                                {t("cancelNo", { plan: name })}
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
             if (cancelConfirm === plan) {
                 return (
                     <div className={styles.confirmBox}>
@@ -235,23 +314,58 @@ const SubscriptionSettings = () => {
                     </div>
                 );
             }
+            const withdrawButton = withdrawal && (
+                <button className={styles.cancelBtn} onClick={() => setWithdrawConfirm(plan)} disabled={busy !== null}>
+                    {t("withdraw")}
+                </button>
+            );
+            // The last day of the period, as the server counts it (UTC).
+            const withdrawHint = withdrawal && (
+                <p className={styles.legalText}>
+                    {t("withdrawHint", {
+                        plan: name,
+                        refund: withdrawal.refund,
+                        date: new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(
+                            new Date(Date.parse(withdrawal.until) - 1),
+                        ),
+                    })}
+                </p>
+            );
             if (subscription?.cancelled) {
                 return (
-                    <button className={styles.upgradeBtn} onClick={() => handleResume(plan)} disabled={busy !== null}>
-                        <span className={styles.upgradeBtnLabel}>{t("resubscribe")}</span>
-                        <ArrowRight size={16} />
-                    </button>
+                    <>
+                        {isPlayBuild ? (
+                            // Reactivating bills again, which Play only allows through its own billing.
+                            <p className={styles.infoText}>{t("webBilledInfo")}</p>
+                        ) : (
+                            <button className={styles.upgradeBtn} onClick={() => handleResume(plan)} disabled={busy !== null}>
+                                <span className={styles.upgradeBtnLabel}>{t("resubscribe")}</span>
+                                <ArrowRight size={16} />
+                            </button>
+                        )}
+                        {withdrawButton}
+                        {withdrawHint}
+                    </>
                 );
             }
             return (
-                <button className={styles.cancelBtn} onClick={() => setCancelConfirm(plan)}>
-                    {t("cancel")}
-                </button>
+                <>
+                    <div className={styles.actionRow}>
+                        <button className={styles.cancelBtn} onClick={() => setCancelConfirm(plan)}>
+                            {t("cancel")}
+                        </button>
+                        {withdrawButton}
+                    </div>
+                    {withdrawHint}
+                </>
             );
         }
 
         // A lapsed plan that is no longer sold: nothing to offer.
         if (!PLANS_ON_SALE.includes(plan)) return null;
+
+        // No link to the website either: Play forbids steering to another way to pay.
+        if (isPlayBuild) return <p className={styles.infoText}>{t("playNotSold", { plan: name })}</p>;
 
         const period = periodOf(plan);
         const purchasing = isBusy(plan, "upgrade");

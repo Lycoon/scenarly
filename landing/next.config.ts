@@ -8,7 +8,8 @@ import { fileURLToPath } from "url";
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Standalone static build of the public marketing site (/, /privacy, /contact).
+ * Standalone static build of the public marketing site (/, /manifesto, /privacy,
+ * /terms, /contact).
  * Exported to `out/` and served by nginx behind Traefik, fully decoupled from the
  * app container's deploy lifecycle.
  *

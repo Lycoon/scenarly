@@ -64,6 +64,82 @@ export const sendDraftAutoSubmittedEmail = async (email: string, submissionTitle
     sendFormattedEmail(email, "Review sent", "Your review was sent", content, "Open Coverage", link);
 };
 
+const TERMS_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://scenarly.com"}/terms`;
+
+/** "1 October 2026": dates in these mails are days, counted in UTC like the server does. */
+const formatDay = (date: Date) =>
+    date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
+/**
+ * Confirmation of a Stripe subscription, which the law requires on a durable
+ * medium after the purchase: what was bought, how it renews and ends, and the
+ * right of withdrawal with its deadline. App Store purchases are confirmed by Apple.
+ */
+export const sendSubscriptionConfirmationEmail = async (
+    email: string,
+    details: { planName: string; price: string; period: "month" | "year"; renewsOn: Date; withdrawUntil: Date },
+) => {
+    const { planName, price, period, renewsOn, withdrawUntil } = details;
+    const content = [
+        `Thank you for subscribing to Scenarly ${planName}. Your subscription is active.`,
+        `Price: ${price} per ${period}, paid today. It renews automatically on ${formatDay(renewsOn)} and every ${period} after that, until you cancel it. You can cancel at any time from your account settings in Scenarly; the plan then stays active until the end of the period you paid for.`,
+        `Right of withdrawal: if you are a consumer in the European Union, you can withdraw from this subscription until ${formatDay(withdrawUntil)} included, without giving a reason, with the "Withdraw from contract" button in your account settings or by writing to contact@scenarly.com. As you asked for ${planName} to start immediately, you are then refunded the amount paid minus the days already used.`,
+        `Seller: Hugo Bois EI (Arko Logic), 46 rue de la Saussière, 92100 Boulogne-Billancourt, France. SIREN 994 900 512. Your receipt and invoice come in a separate email. The Terms of Service you accepted are at ${TERMS_URL}.`,
+    ].join("\n\n");
+
+    sendFormattedEmail(email, "Welcome to " + planName, `Your Scenarly ${planName} subscription`, content, "Read the Terms of Service", TERMS_URL);
+};
+
+/**
+ * Confirmation of a cancellation made in the app, which the law requires
+ * (Code de la consommation, L.215-1-1): when the contract ends and what that
+ * changes. `withdrawUntil` is set while the withdrawal period is still open.
+ */
+export const sendCancellationConfirmationEmail = async (
+    email: string,
+    details: { planName: string; at: Date; endsOn: Date; withdrawUntil: Date | null },
+) => {
+    const { planName, at, endsOn, withdrawUntil } = details;
+    const content = [
+        `We received the cancellation of your Scenarly ${planName} subscription on ${at.toUTCString()}. It will not renew, and nothing more will be charged.`,
+        `${planName} stays active until ${formatDay(endsOn)}. After that, the features that need it stop working, such as creating cloud projects, uploading to cloud storage, saving named versions and inviting collaborators. Your cloud projects are not deleted and you can still export them. You can reactivate the subscription from your account settings until then.`,
+        ...(withdrawUntil
+            ? [
+                  `You can also still withdraw until ${formatDay(withdrawUntil)} included: ${planName} would then end right away and the unused days would be refunded.`,
+              ]
+            : []),
+    ].join("\n\n");
+
+    sendFormattedEmail(email, "Subscription cancelled", "Your cancellation is confirmed", content, "Open Scenarly", BASE_URL);
+};
+
+/** A Stripe subscription ended with the account it belonged to. */
+export const sendDeletionCancellationEmail = async (email: string, planName: string, at: Date) => {
+    const content = `Your Scenarly account was deleted on ${at.toUTCString()}, and with it your Scenarly ${planName} subscription ended. It will not renew and nothing more will be charged. As stated when you deleted your account, the rest of the period already paid is not refunded.`;
+
+    sendFormattedEmail(email, "Subscription ended", "Your subscription has ended", content, "Visit Scenarly", BASE_URL);
+};
+
+/**
+ * Acknowledgment of a withdrawal, which the law requires on a durable medium
+ * without delay: it names the contract and the date and time it was received.
+ */
+export const sendWithdrawalConfirmationEmail = async (email: string, planName: string, at: Date, refund: string) => {
+    const content = `We received your withdrawal from your Scenarly ${planName} subscription on ${at.toUTCString()}. Your subscription has ended and will not renew. ${refund} will be refunded to your original payment method within 14 days, usually within 5 to 10 business days. Keep this email as the acknowledgment of your withdrawal.`;
+
+    sendFormattedEmail(email, "Withdrawal confirmed", "Your withdrawal is confirmed", content, "Open Scenarly", BASE_URL);
+};
+
+/** Something support has to finish by hand. */
+export const sendInternalAlertEmail = async (subject: string, text: string) => {
+    transporter.sendMail({
+        from: "Scenarly <no-reply@scenarly.com>",
+        to: "contact@scenarly.com",
+        subject: `[Alert] ${subject}`,
+        text,
+    });
+};
+
 const sendFormattedEmail = async (
     email: string,
     welcomeMessage: string,
