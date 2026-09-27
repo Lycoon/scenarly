@@ -22,9 +22,26 @@
 import Stripe from "stripe";
 import { SubscriptionRepository } from "../repository/subscription-repository";
 import * as UserService from "./user-service";
-import { isSubscriptionActive, Period, PERIODS, Plan, planForAppleProduct, PLANS, PLANS_ON_SALE } from "@src/lib/plans";
+import {
+    isSubscriptionActive,
+    Period,
+    PERIODS,
+    Plan,
+    PLAN_NAMES,
+    planForAppleProduct,
+    PLANS,
+    PLANS_ON_SALE,
+} from "@src/lib/plans";
 import { ConflictError, ForbiddenError } from "@src/lib/utils/api-utils";
 import { logger } from "@src/lib/utils/logger";
+import {
+    sendCancellationConfirmationEmail,
+    sendDeletionCancellationEmail,
+    sendInternalAlertEmail,
+    sendSubscriptionConfirmationEmail,
+    sendWithdrawalConfirmationEmail,
+} from "@src/lib/mail/mail";
+import { withdrawalDeadline, withdrawalRefund } from "@src/lib/withdrawal";
 import type { AppleTransaction } from "@src/lib/apple-jws";
 
 const repository = new SubscriptionRepository();
@@ -76,10 +93,15 @@ export async function stripeDisplayPrices(
             useCurrency === price.currency ? price.unit_amount : price.currency_options?.[useCurrency]?.unit_amount;
         if (unitAmount == null) continue;
 
-        const amount = ZERO_DECIMAL_CURRENCIES.has(useCurrency) ? unitAmount : unitAmount / 100;
-        result[period] = new Intl.NumberFormat(locale, { style: "currency", currency: useCurrency }).format(amount);
+        result[period] = formatStripeAmount(unitAmount, useCurrency, locale);
     }
     return result;
+}
+
+/** A Stripe amount (smallest currency unit) as a localized price. */
+function formatStripeAmount(unitAmount: number, currency: string, locale: string): string {
+    const amount = ZERO_DECIMAL_CURRENCIES.has(currency) ? unitAmount : unitAmount / 100;
+    return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
 }
 
 export function assertOnSale(plan: Plan): void {
@@ -98,6 +120,9 @@ export async function assertNotSubscribed(userId: string, plan: Plan): Promise<v
 
 /** Wind down everything before the account row goes (see account-deletion-service). */
 export async function cancelAllForDeletion(userId: string): Promise<void> {
+    const now = new Date();
+    // Read now: the account, and its address, is gone once this returns.
+    const user = await UserService.getUserFromId(userId);
     for (const row of await repository.fetchByUser(userId)) {
         if (!isSubscriptionActive(row)) continue;
         if (row.provider === "STRIPE") {
@@ -105,6 +130,7 @@ export async function cancelAllForDeletion(userId: string): Promise<void> {
             // nothing left to keep active — and once the row is deleted we can
             // no longer map the subscription back to anyone.
             await getStripe().subscriptions.cancel(row.providerId);
+            if (user) void sendDeletionCancellationEmail(user.email, PLAN_NAMES[row.plan], now);
         } else {
             // Only the user can cancel an App Store subscription, from their
             // Apple ID settings; logged so support can point them there.
@@ -119,9 +145,14 @@ export async function cancelAllForDeletion(userId: string): Promise<void> {
 
 /* Stripe */
 
-/** checkout.session.completed — a plan was just paid for. */
+/**
+ * checkout.session.completed — a plan was just paid for. `subscription` comes
+ * with its latest invoice expanded, for the confirmation mail.
+ */
 export async function activateStripe(userId: string, plan: Plan, subscription: Stripe.Subscription) {
     const current = await getSubscription(userId, plan);
+    // Stripe may deliver the event more than once; only the first confirms.
+    const isNew = current?.providerId !== subscription.id;
     if (current?.provider === "APPLE" && isSubscriptionActive(current)) {
         // Only reachable by racing a checkout against an App Store purchase.
         // Apple's next notification takes the plan back and stops this Stripe
@@ -139,6 +170,25 @@ export async function activateStripe(userId: string, plan: Plan, subscription: S
         providerId: subscription.id,
         expiresAt: periodEnd,
         cancelled: false,
+    });
+
+    if (isNew) await confirmStripeSubscription(userId, plan, subscription, periodEnd);
+}
+
+async function confirmStripeSubscription(userId: string, plan: Plan, subscription: Stripe.Subscription, renewsOn: Date) {
+    const user = await UserService.getUserFromId(userId);
+    const invoice = typeof subscription.latest_invoice === "object" ? subscription.latest_invoice : null;
+    const interval = subscription.items.data[0]?.price.recurring?.interval;
+    if (!user || !invoice || (interval !== "month" && interval !== "year")) {
+        logger.warn("[Subscription] Could not send the subscription confirmation", { userId, subscriptionId: subscription.id });
+        return;
+    }
+    void sendSubscriptionConfirmationEmail(user.email, {
+        planName: PLAN_NAMES[plan],
+        price: formatStripeAmount(invoice.amount_paid, invoice.currency, "en"),
+        period: interval,
+        renewsOn,
+        withdrawUntil: lastWithdrawalDay(subscription),
     });
 }
 
@@ -177,8 +227,125 @@ export async function setStripeAutoRenew(userId: string, plan: Plan, renew: bool
     if (!row || row.provider !== "STRIPE" || !isSubscriptionActive(row)) {
         throw new ConflictError("No Stripe subscription to update");
     }
-    await getStripe().subscriptions.update(row.providerId, { cancel_at_period_end: !renew });
+    const subscription = await getStripe().subscriptions.update(row.providerId, { cancel_at_period_end: !renew });
     await repository.update(userId, plan, { cancelled: !renew });
+
+    // A cancellation is confirmed in writing (Code de la consommation, L.215-1-1).
+    const user = !renew && !row.cancelled ? await UserService.getUserFromId(userId) : null;
+    if (user) {
+        const now = new Date();
+        const withdrawUntil = now < withdrawalDeadline(stripeStart(subscription)) ? lastWithdrawalDay(subscription) : null;
+        void sendCancellationConfirmationEmail(user.email, {
+            planName: PLAN_NAMES[plan],
+            at: now,
+            endsOn: row.expiresAt,
+            withdrawUntil,
+        });
+    }
+}
+
+/* Stripe: right of withdrawal */
+
+type WithdrawalQuote = {
+    subscription: Stripe.Subscription;
+    invoice: Stripe.Invoice | null;
+    until: Date;
+    /** Smallest currency unit, tax included, in the invoice's currency. */
+    refundAmount: number;
+    currency: string;
+};
+
+/**
+ * What withdrawing from the plan's Stripe subscription would refund right
+ * now, or null outside the withdrawal period: the first invoice, pro rata of
+ * the days left in its period (see `withdrawalRefund`).
+ */
+async function quoteStripeWithdrawal(userId: string, plan: Plan, now = new Date()): Promise<WithdrawalQuote | null> {
+    const row = await getSubscription(userId, plan);
+    if (!row || row.provider !== "STRIPE" || !isSubscriptionActive(row)) return null;
+
+    const subscription = await getStripe().subscriptions.retrieve(row.providerId, { expand: ["latest_invoice"] });
+    const until = withdrawalDeadline(stripeStart(subscription));
+    if (now >= until) return null;
+
+    // Within 14 days of the start, the latest invoice is still the first one.
+    const invoice = typeof subscription.latest_invoice === "object" ? subscription.latest_invoice : null;
+    const item = subscription.items.data[0];
+    let refundAmount = 0;
+    if (invoice?.status === "paid" && item) {
+        refundAmount = withdrawalRefund(
+            invoice.amount_paid,
+            new Date(item.current_period_start * 1000),
+            new Date(item.current_period_end * 1000),
+            now,
+        );
+    }
+    return { subscription, invoice, until, refundAmount, currency: invoice?.currency ?? subscription.currency };
+}
+
+const stripeStart = (subscription: Stripe.Subscription) => new Date(subscription.start_date * 1000);
+
+/** The last day a withdrawal is accepted, as the mails and the settings show it. */
+const lastWithdrawalDay = (subscription: Stripe.Subscription) =>
+    new Date(withdrawalDeadline(stripeStart(subscription)).getTime() - 1);
+
+/** What the account settings show during the withdrawal period. */
+export type StripeWithdrawal = { until: string; refund: string };
+
+export async function getStripeWithdrawal(userId: string, plan: Plan, locale: string): Promise<StripeWithdrawal | null> {
+    const quote = await quoteStripeWithdrawal(userId, plan);
+    if (!quote) return null;
+    return {
+        until: quote.until.toISOString(),
+        refund: formatStripeAmount(quote.refundAmount, quote.currency, locale),
+    };
+}
+
+/**
+ * Exercise the right of withdrawal on the plan's Stripe subscription: it ends
+ * now, the unused days of the first invoice are refunded through a credit
+ * note (the invoice's "avoir", which French invoicing requires for a refund
+ * and which reverses the tax with it), and the customer gets the
+ * acknowledgment the law asks for. The subscription is ended first, since
+ * the withdrawal takes effect when it is made; a refund that fails after
+ * that is left to support, which is alerted, and still owed within 14 days.
+ */
+export async function withdrawStripe(userId: string, plan: Plan, locale: string): Promise<{ refund: string }> {
+    const now = new Date();
+    const quote = await quoteStripeWithdrawal(userId, plan, now);
+    if (!quote) throw new ConflictError("No Stripe subscription within its withdrawal period");
+
+    const { subscription, invoice, refundAmount, currency } = quote;
+    const refund = formatStripeAmount(refundAmount, currency, locale);
+
+    await getStripe().subscriptions.cancel(subscription.id);
+    await endStripe(subscription.id);
+
+    if (invoice && refundAmount > 0) {
+        try {
+            await getStripe().creditNotes.create({
+                invoice: invoice.id!,
+                amount: refundAmount,
+                refund_amount: refundAmount,
+                reason: "order_change",
+                memo: `Right of withdrawal exercised on ${now.toISOString()}: refund of the unused days.`,
+            });
+        } catch (e) {
+            logger.error("[Subscription] Withdrawal refund failed", { userId, plan, subscriptionId: subscription.id, error: e });
+            void sendInternalAlertEmail(
+                "Withdrawal refund failed",
+                `The Stripe subscription ${subscription.id} (user ${userId}, plan ${plan}) was withdrawn on ` +
+                    `${now.toISOString()}, but refunding ${refund} on invoice ${invoice.id} failed. ` +
+                    `Refund it by hand from the Stripe Dashboard within 14 days.`,
+            );
+        }
+    }
+
+    const user = await UserService.getUserFromId(userId);
+    if (user) void sendWithdrawalConfirmationEmail(user.email, PLAN_NAMES[plan], now, formatStripeAmount(refundAmount, currency, "en"));
+    logger.info("[Subscription] Withdrawal", { userId, plan, subscriptionId: subscription.id, refundAmount, currency });
+
+    return { refund };
 }
 
 function stripePeriodEnd(subscription: Stripe.Subscription): Date | null {

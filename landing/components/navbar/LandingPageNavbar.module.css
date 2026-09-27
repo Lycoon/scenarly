@@ -47,6 +47,27 @@
     width: 90px;
 }
 
+.centerLogo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, calc(-50% - 6px));
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.centerLogoVisible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+}
+
 .burgerBtn {
     display: none;
     background: transparent;
