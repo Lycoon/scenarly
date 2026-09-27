@@ -16,6 +16,10 @@
     opacity: 0.25;
 }
 
+.marqueeFixed {
+    position: fixed;
+}
+
 .stripe {
     width: 100%;
     display: flex;
@@ -215,10 +219,10 @@
 }
 
 /* Fluid width instead of per-breakpoint sizes, so the logo never snaps: the
-   line runs through 836px at a 1440px viewport (the desktop look) and 293px at
+   line runs through 640px at a 1440px viewport (the desktop look) and 220px at
    390px (phone), capped at the desktop size on wider screens. */
 .heroLogo {
-    width: clamp(220px, 91px + 51.7vw, 836px);
+    width: clamp(170px, 64px + 40vw, 640px);
     height: auto;
     object-fit: contain;
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 28px rgba(0, 0, 0, 0.8));
@@ -486,19 +490,6 @@
         margin-bottom: 2rem;
     }
 
-    .bentoSection {
-        padding: 2rem 0 3rem;
-    }
-    .bentoContent {
-        padding: 1.25rem;
-    }
-    .pillarTitle {
-        font-size: 1.25rem;
-    }
-    .pillarText {
-        font-size: 0.95rem;
-    }
-
     .faqSection {
         padding: 2rem 0 3rem;
     }
@@ -541,12 +532,9 @@
     .sectionTitle {
         font-size: 1.5rem;
     }
-    .pillarTitle {
-        font-size: 1.1rem;
-    }
 }
 
-/* --- BENTO GRID & FEATURES --- */
+/* --- FEATURES --- */
 
 .sectionHeader {
     text-align: center;
@@ -568,100 +556,67 @@
     line-height: 1.6;
 }
 
-.bentoSection {
+/* The navbar is fixed and ~70px tall; the 4rem top padding alone leaves an
+   anchored section's heading under it, so jumps from the navbar stop short. */
+.featuresSection {
     padding: 4rem 0 6rem;
+    scroll-margin-top: 2.5rem;
 }
 
-.glassCard {
-    position: relative;
-    box-shadow: var(--shadow-s);
-    border-radius: 2rem;
-    overflow: hidden;
-    transition: box-shadow 0.3s ease;
-    background-color: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px);
+/* Same column as the FAQ list below it. */
+.featureList {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
 }
 
-.glassCard::before {
-    content: "";
-    position: absolute;
-    z-index: 2;
-    inset: 0;
-    border-radius: inherit;
-    padding: 2px;
-    background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.8) 50%, transparent 60%);
-    background-size: 200% 200%;
-    background-position: 100% 0;
-    -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0;
-    transition:
-        opacity 0.3s ease,
-        background-position 0s ease 0.3s;
-    pointer-events: none;
-}
-
-.glassCard:hover::before {
-    opacity: 1;
-    background-position: 0 0;
-    transition:
-        opacity 0.3s ease,
-        background-position 1s ease;
-}
-
-.bentoContent {
+.featureItem {
     display: flex;
-    flex-direction: column;
-    padding: 2rem;
+    align-items: flex-start;
+    gap: 1.25rem;
+    padding: 1rem 0;
 }
 
-.bentoHeader {
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.bentoImage {
-    display: block; /* Removes default bottom space under images */
-    width: 100%; /* Ensures it fits the wrapper */
+.featureImage {
+    flex-shrink: 0;
+    width: 200px;
     height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    object-position: left top;
+    border-radius: 10px;
+    border: 1px solid var(--separator);
 }
 
-.bentoImageWrapper {
-    position: relative;
-    display: block;
-    overflow: hidden;
+.featureItem + .featureItem {
+    border-top: 1px solid var(--separator);
 }
 
-.bentoImageWrapper::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 25%;
-    background: linear-gradient(to bottom, #646464 0%, transparent 100%);
-    pointer-events: none;
-    z-index: 1;
+/* Josefin sits low in its line box; lift the icon to its visual centre, as the
+   old card headers did. */
+.featureIcon {
+    flex-shrink: 0;
+    margin-bottom: 4px;
+    color: var(--secondary-text);
 }
 
-.bentoHeader svg {
-    margin-bottom: 5px;
+.featureHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.25rem;
 }
 
-.pillarTitle {
+.featureTitle {
     font-family: var(--font-josefin), sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.15rem;
     color: var(--primary-text);
 }
 
-.pillarText {
+.featureText {
     color: var(--secondary-text);
+    font-size: 0.95rem;
     line-height: 1.6;
 }
 
@@ -678,35 +633,25 @@
     text-transform: uppercase;
 }
 
-.bentoGrid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-}
-
-.bentoCell {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-.span2 {
-    grid-column: span 2;
-}
-.rowSpan2 {
-    grid-row: span 2;
-}
-
-/* Media Queries for Grid */
-@media (max-width: 1024px) {
-    .bentoGrid {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: auto;
+/* Kept after the base rules: the shared breakpoints above come earlier in the
+   file and would lose to them. */
+@media (max-width: 768px) {
+    .featuresSection {
+        padding: 2rem 0 3rem;
+        scroll-margin-top: 4.5rem;
     }
-}
-@media (max-width: 640px) {
-    .bentoGrid {
-        grid-template-columns: 1fr;
+    .featureTitle {
+        font-size: 1rem;
+    }
+    .featureText {
+        font-size: 0.9rem;
+    }
+    .featureItem {
+        gap: 1rem;
+    }
+    .featureImage {
+        width: 120px;
+        border-radius: 8px;
     }
 }
 
@@ -714,6 +659,7 @@
 
 .faqSection {
     padding: 4rem 0 6rem;
+    scroll-margin-top: 2.5rem;
 }
 
 .faqList {
@@ -786,20 +732,55 @@
     margin-top: 4rem;
 }
 
+/* Same 800px column as the features and FAQ lists, with the page's 2rem side
+   gutters (border-box, so the padding sits outside the 800px). */
 .footerContent {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    max-width: 1200px;
+    max-width: calc(800px + 4rem);
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0 2rem;
     color: var(--secondary-text);
 }
 
 .footerLinks {
     display: flex;
     flex-direction: row;
-    gap: 12px;
+    align-items: center;
+    gap: 6px;
+}
+
+.footerLegal {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.footerLink {
+    color: var(--secondary-text);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footerLink:hover {
+    color: var(--primary-text);
+}
+
+.footerSocial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    color: var(--secondary-text);
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.footerSocial:hover {
+    color: var(--primary-text);
+    background-color: rgba(255, 255, 255, 0.06);
 }
 
 /* --- PAGE CONTAINER (Privacy, Contact, etc.) --- */
@@ -845,6 +826,26 @@
 .pageText a {
     color: var(--primary-text);
     text-decoration: underline;
+}
+
+/* Dark vertical band behind a text column laid over the marquee: opaque under
+   the text, feathering out to either side so the stripes still show beyond it.
+   The tint and the backdrop blur share one mask, so both fade together (the
+   10rem overhang is the fade; the column itself stays fully covered). It also
+   reaches down over the footer's 4rem top margin, so no strip of bare backdrop
+   shows between the text and the footer. z-index -1 stays inside
+   .pageContainer's stacking context: under the text, above the marquee. */
+.readingColumn::before {
+    content: "";
+    position: absolute;
+    inset: 0 -10rem -4rem;
+    z-index: -1;
+    pointer-events: none;
+    background-color: rgba(15, 15, 15, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    mask-image: linear-gradient(to right, transparent, black 10rem, black calc(100% - 10rem), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10rem, black calc(100% - 10rem), transparent);
 }
 
 .pageContainer ul {

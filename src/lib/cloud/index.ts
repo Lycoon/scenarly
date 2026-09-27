@@ -1,5 +1,5 @@
 /// <reference types="@cloudflare/workers-types" />
-import { jwtVerify, JWTPayload } from "jose";
+import { jwtVerify, JWTPayload, SignJWT } from "jose";
 import { Env } from "./types";
 import { ProjectRoom } from "./room";
 
@@ -115,6 +115,36 @@ const worker = {
         }
 
         return new Response("Not Found", { status: 404 });
+    },
+
+    /**
+     * Cron trigger (see `[triggers]` in wrangler.toml): the Community tick.
+     * The app has no scheduler of its own, so the Worker rings it every 15
+     * minutes with a one-minute JWT, the same gate the asset-GC callback uses.
+     * Failures are logged and retried on the next tick.
+     */
+    async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+        if (!env.API_URL) return;
+        ctx.waitUntil(
+            (async () => {
+                try {
+                    const token = await new SignJWT({ type: "community-tick" })
+                        .setProtectedHeader({ alg: "HS256" })
+                        .setExpirationTime("1m")
+                        .sign(new TextEncoder().encode(env.JWT_SECRET));
+                    const res = await fetch(`${env.API_URL}/api/internal/community-tick`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: "{}",
+                    });
+                    if (!res.ok) {
+                        console.error(JSON.stringify({ event: "community_tick_failed", status: res.status }));
+                    }
+                } catch (e) {
+                    console.error(JSON.stringify({ event: "community_tick_failed", error: String(e) }));
+                }
+            })(),
+        );
     },
 };
 

@@ -13,7 +13,11 @@ const PUBLIC_API_PREFIXES = [
     "/api/contact", // Public contact form
     "/api/metrics", // Prometheus scrape (gated by bearer token in route handler)
     "/api/internal/", // Worker→app callbacks (gated by a Worker-signed JWT in the route)
+    "/api/community/public/", // Community reads meant for everyone (proof of existence, Showcase)
 ];
+
+/** The caller identity the proxy hands to route handlers (read by `apiHandler`). */
+const USER_HEADERS = ["x-user-id", "x-user-email", "x-user-created-at", "x-user-role"];
 
 function isPublicApiRoute(pathname: string): boolean {
     return PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -82,7 +86,11 @@ export async function proxy(request: NextRequest) {
     // API surface
     if (pathname.startsWith("/api/")) {
         if (isPublicApiRoute(pathname)) {
-            return NextResponse.next();
+            // `apiHandler` trusts these headers as the resolved caller; on a
+            // public route nothing resolved one, so never forward a client's.
+            const headers = new Headers(request.headers);
+            for (const name of USER_HEADERS) headers.delete(name);
+            return NextResponse.next({ request: { headers } });
         }
 
         if (!token) {

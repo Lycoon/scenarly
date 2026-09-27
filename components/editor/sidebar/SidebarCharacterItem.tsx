@@ -26,14 +26,15 @@ const SidebarCharacterItem = memo(({ character, isHighlighted }: SidebarCharacte
 
     // Clamp so the menu never opens off the right/bottom edge (matters on touch,
     // where it's triggered from the ⋮ button near the panel edge). Read-only
-    // collapses the menu to the single Highlight item, so it needs far less room.
+    // collapses the menu to the Highlight / Tune dialogue items, so it needs
+    // far less room.
     const openMenu = useCallback(
         (x: number, y: number) => {
             updateContextMenu({
                 type: ContextMenuType.CharacterItem,
                 position: {
                     x: Math.min(x, window.innerWidth - 230),
-                    y: Math.min(y, window.innerHeight - (isReadOnly ? 60 : 180)),
+                    y: Math.min(y, window.innerHeight - (isReadOnly ? 90 : 210)),
                 },
                 typeSpecificProps: {
                     character,

@@ -1,0 +1,28 @@
+/* Nav pills reuse ProjectPageContainer's .action_btn and its .sidebar_footer;
+   this only adds what an anchor needs on top of a button (no underline), the
+   active state, and the balance line in the footer. */
+
+.link {
+    text-decoration: none;
+}
+
+.active {
+    border-color: var(--tertiary);
+    background-color: var(--secondary);
+    color: var(--primary-text);
+}
+
+.tickets {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+}
+
+.ticketsIcon {
+    color: var(--warning);
+}

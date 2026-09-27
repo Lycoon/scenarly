@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Check, ChevronDown, Download, Loader2, Mic, Plus, SpellCheck, X } from "lucide-react";
+import { Check, ChevronDown, Download, Globe, Loader2, Mic, Plus, SpellCheck, X } from "lucide-react";
 import form from "./../../utils/Form.module.css";
 import sharedStyles from "../project/ProjectSettings.module.css";
 import styles from "./SpellcheckSettings.module.css";
@@ -63,6 +63,21 @@ const LanguageSettings = () => {
         setDictationLangState(value);
         setDictationLanguage(value);
     }, []);
+
+    // Same shape as the spell-check options: a globe icon marks the trigger.
+    const displayLanguageOptions: DropdownOption[] = useMemo(
+        () =>
+            LANGUAGE_OPTIONS.map((opt) => ({
+                ...opt,
+                triggerLabel: (
+                    <span className={styles.triggerLabel}>
+                        <Globe size={14} className={styles.triggerIcon} />
+                        {opt.label}
+                    </span>
+                ),
+            })),
+        [],
+    );
 
     // Same shape as the spell-check options: a mic icon marks the trigger.
     const dictationOptions: DropdownOption[] = useMemo(
@@ -184,7 +199,7 @@ const LanguageSettings = () => {
                 <Dropdown
                     value={locale}
                     onChange={(value) => { setLanguage(value as UserLanguage); saveSettings({ language: value as UserLanguage }); }}
-                    options={LANGUAGE_OPTIONS}
+                    options={displayLanguageOptions}
                     className={sharedStyles.input}
                 />
             </div>

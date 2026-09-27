@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Lock } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import { DOMSerializer, Fragment, Node as PMNode } from "@tiptap/pm/model";
 import { ProjectContext } from "@src/context/ProjectContext";
@@ -131,6 +132,7 @@ type PageThumbnailProps = {
     eager: boolean;
     near: NearWatcher;
     openLabel: string;
+    lockedLabel: string;
     onOpen: (page: PageEntry) => void;
 };
 
@@ -145,120 +147,132 @@ type PageThumbnailProps = {
  * blank at the bottom of a short page is exactly the freespace pagination left
  * there, because the same content wraps the same way at the same width.
  */
-const PageThumbnail = memo(({ page, doc, serializer, chrome, eager, near, openLabel, onOpen }: PageThumbnailProps) => {
-    const frameRef = useRef<HTMLDivElement>(null);
-    const bodyRef = useRef<HTMLDivElement>(null);
-    /**
-     * Whether this page is within reach of the viewport, held in a ref rather
-     * than in state on purpose. Scrolling a feature crosses this boundary
-     * constantly in both directions, and routing each crossing through
-     * setState would re-render a component per page per scroll — React work
-     * charged to the one moment that has no budget for it. Nothing about the
-     * markup depends on it, so nothing needs to re-render.
-     */
-    const nearRef = useRef(eager);
-    /** The document this page was last drawn from, and the content drawn. */
-    const drawnDocRef = useRef<PMNode | null>(null);
-    const renderedRef = useRef<Fragment | null>(null);
+const PageThumbnail = memo(
+    ({ page, doc, serializer, chrome, eager, near, openLabel, lockedLabel, onOpen }: PageThumbnailProps) => {
+        const frameRef = useRef<HTMLDivElement>(null);
+        const bodyRef = useRef<HTMLDivElement>(null);
+        /**
+         * Whether this page is within reach of the viewport, held in a ref rather
+         * than in state on purpose. Scrolling a feature crosses this boundary
+         * constantly in both directions, and routing each crossing through
+         * setState would re-render a component per page per scroll — React work
+         * charged to the one moment that has no budget for it. Nothing about the
+         * markup depends on it, so nothing needs to re-render.
+         */
+        const nearRef = useRef(eager);
+        /** The document this page was last drawn from, and the content drawn. */
+        const drawnDocRef = useRef<PMNode | null>(null);
+        const renderedRef = useRef<Fragment | null>(null);
 
-    const fill = useCallback(() => {
-        const host = bodyRef.current;
-        // Off-screen pages are left alone until they are scrolled back to. This
-        // is what stops a collaborator's edit from costing more on a long script
-        // than a short one: a repagination renumbers every page after the edit,
-        // and rebuilding all of them would scale with the document instead of
-        // with the screen. Coming back into view calls this again, and the
-        // guards below then see content that really did change.
-        if (!nearRef.current || !host) return;
+        const fill = useCallback(() => {
+            const host = bodyRef.current;
+            // Off-screen pages are left alone until they are scrolled back to. This
+            // is what stops a collaborator's edit from costing more on a long script
+            // than a short one: a repagination renumbers every page after the edit,
+            // and rebuilding all of them would scale with the document instead of
+            // with the screen. Coming back into view calls this again, and the
+            // guards below then see content that really did change.
+            if (!nearRef.current || !host) return;
 
-        // The common case by far, and the reason scrolling is free once a page
-        // has been drawn: same document, so whatever is on screen is current.
-        // A pointer comparison, before any slicing.
-        if (drawnDocRef.current === doc) return;
-        drawnDocRef.current = doc;
+            // The common case by far, and the reason scrolling is free once a page
+            // has been drawn: same document, so whatever is on screen is current.
+            // A pointer comparison, before any slicing.
+            if (drawnDocRef.current === doc) return;
+            drawnDocRef.current = doc;
 
-        const content = doc.slice(page.from, page.to).content;
-        // Most pages survive an edit untouched, holding the very same nodes at
-        // shifted positions. ProseMirror keeps node identity across a
-        // transaction, so this comparison short-circuits on pointer equality
-        // and skips the serialize and the relayout that would follow it.
-        if (renderedRef.current?.eq(content)) return;
-        renderedRef.current = content;
+            const content = doc.slice(page.from, page.to).content;
+            // Most pages survive an edit untouched, holding the very same nodes at
+            // shifted positions. ProseMirror keeps node identity across a
+            // transaction, so this comparison short-circuits on pointer equality
+            // and skips the serialize and the relayout that would follow it.
+            if (renderedRef.current?.eq(content)) return;
+            renderedRef.current = content;
 
-        const fragment = serializer.serializeFragment(content);
-        // The editor zeroes the top margin of whichever block opens a page (the
-        // pagination-doc-start decoration). Without the same reset here every
-        // thumbnail would start one line lower than the page it stands for.
-        fragment.firstElementChild?.classList.add("pagination-doc-start");
-        host.replaceChildren(fragment);
-        // Deliberately nothing that empties the host again: a page keeps what it
-        // has drawn when it scrolls away, so returning to it is instant and
-        // never flashes an empty sheet.
-    }, [doc, page.from, page.to, serializer]);
+            const fragment = serializer.serializeFragment(content);
+            // The editor zeroes the top margin of whichever block opens a page (the
+            // pagination-doc-start decoration). Without the same reset here every
+            // thumbnail would start one line lower than the page it stands for.
+            fragment.firstElementChild?.classList.add("pagination-doc-start");
+            host.replaceChildren(fragment);
+            // Deliberately nothing that empties the host again: a page keeps what it
+            // has drawn when it scrolls away, so returning to it is instant and
+            // never flashes an empty sheet.
+        }, [doc, page.from, page.to, serializer]);
 
-    // The observer calls straight into the latest fill, without going through a
-    // render to get there.
-    const fillRef = useRef(fill);
-    useEffect(() => {
-        fillRef.current = fill;
-    }, [fill]);
+        // The observer calls straight into the latest fill, without going through a
+        // render to get there.
+        const fillRef = useRef(fill);
+        useEffect(() => {
+            fillRef.current = fill;
+        }, [fill]);
 
-    useEffect(() => {
-        const el = frameRef.current;
-        if (!el) return;
-        return near.observe(el, (isNear) => {
-            nearRef.current = isNear;
-            // Intersection callbacks are delivered after the frame has been
-            // rendered, so a page streaming in never delays a paint.
-            if (isNear) fillRef.current();
-        });
-    }, [near]);
+        useEffect(() => {
+            const el = frameRef.current;
+            if (!el) return;
+            return near.observe(el, (isNear) => {
+                nearRef.current = isNear;
+                // Intersection callbacks are delivered after the frame has been
+                // rendered, so a page streaming in never delays a paint.
+                if (isNear) fillRef.current();
+            });
+        }, [near]);
 
-    // The opening screenful is drawn before the browser paints, so the view
-    // never appears as a grid of blank sheets. Re-runs when the document
-    // changes, which is how an on-screen page picks up a collaborator's edit.
-    useLayoutEffect(() => {
-        if (eager) fill();
-    }, [eager, fill]);
+        // The opening screenful is drawn before the browser paints, so the view
+        // never appears as a grid of blank sheets. Re-runs when the document
+        // changes, which is how an on-screen page picks up a collaborator's edit.
+        useLayoutEffect(() => {
+            if (eager) fill();
+        }, [eager, fill]);
 
-    // Every other page redraws after the frame has been presented.
-    useEffect(() => {
-        if (!eager) fill();
-    }, [eager, fill]);
+        // Every other page redraws after the frame has been presented.
+        useEffect(() => {
+            if (!eager) fill();
+        }, [eager, fill]);
 
-    useLayoutEffect(() => {
-        const host = bodyRef.current;
-        if (host) host.style.cssText = chrome.cssText;
-    }, [chrome.cssText]);
+        useLayoutEffect(() => {
+            const host = bodyRef.current;
+            if (host) host.style.cssText = chrome.cssText;
+        }, [chrome.cssText]);
 
-    return (
-        // A div rather than a button: the sheet is block content, which a button
-        // may not contain. Kept operable by keyboard in its place.
-        <div className={styles.cell}>
-            <div
-                ref={frameRef}
-                role="button"
-                tabIndex={0}
-                className={styles.sheet_frame}
-                title={openLabel}
-                aria-label={openLabel}
-                onClick={() => onOpen(page)}
-                onKeyDown={(e) => {
-                    if (e.key !== "Enter" && e.key !== " ") return;
-                    e.preventDefault();
-                    onOpen(page);
-                }}
-            >
-                <div className={styles.sheet}>
-                    {/* Class list copied from the live editor, so scene numbering,
-                        heading spacing and production locking match the script. */}
-                    <div ref={bodyRef} className={join(styles.page_body, "ProseMirror", chrome.className)} />
+        return (
+            // A div rather than a button: the sheet is block content, which a button
+            // may not contain. Kept operable by keyboard in its place.
+            <div className={styles.cell}>
+                <div
+                    ref={frameRef}
+                    role="button"
+                    tabIndex={0}
+                    className={styles.sheet_frame}
+                    title={openLabel}
+                    aria-label={openLabel}
+                    onClick={() => onOpen(page)}
+                    onKeyDown={(e) => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
+                        e.preventDefault();
+                        onOpen(page);
+                    }}
+                >
+                    <div className={styles.sheet}>
+                        {/* Class list copied from the live editor, so scene numbering,
+                            heading spacing and production locking match the script. */}
+                        <div ref={bodyRef} className={join(styles.page_body, "ProseMirror", chrome.className)} />
+                    </div>
+                    {/* Production page-lock badge, where the editor draws its own —
+                        but inside the sheet rather than in the gutter beside it,
+                        which the frame clips away. It is chrome, not content: laid
+                        over the sheet at screen size, so it reads the same at every
+                        zoom instead of shrinking with the page. */}
+                    {page.locked && (
+                        <span className={styles.lock_badge} role="img" aria-label={lockedLabel} title={lockedLabel}>
+                            <Lock size={12} strokeWidth={2.25} />
+                        </span>
+                    )}
                 </div>
+                <span className={styles.page_label}>{page.label}</span>
             </div>
-            <span className={styles.page_label}>{page.label}</span>
-        </div>
-    );
-});
+        );
+    },
+);
 
 PageThumbnail.displayName = "PageThumbnail";
 
@@ -442,6 +456,7 @@ const PageOverviewPanel = () => {
                         eager={index < eagerCount}
                         near={near}
                         openLabel={t("viewPagesOpen", { page: page.label })}
+                        lockedLabel={t("viewPagesLocked")}
                         onOpen={handleOpen}
                     />
                 ))}

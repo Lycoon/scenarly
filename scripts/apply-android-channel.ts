@@ -12,8 +12,8 @@ import { join } from "path";
 // action and by build:android:release for local store builds.
 
 const CHANNELS = {
-    staging: { applicationId: "app.scriptio.staging", label: "Scriptio (Staging)" },
-    release: { applicationId: "app.scriptio", label: "Scriptio" },
+    staging: { applicationId: "app.scriptio.staging", label: "Scenarly (Staging)" },
+    release: { applicationId: "app.scriptio", label: "Scenarly" },
 };
 
 const channel = process.argv[2];

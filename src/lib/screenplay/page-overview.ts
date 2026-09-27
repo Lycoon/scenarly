@@ -18,8 +18,9 @@ import { paginationKey } from "@src/lib/screenplay/extensions/pagination-extensi
  * which the extension keeps private.
  */
 type PaginationSnapshot = {
-    breaks?: { pos: number; pagenum: number; label?: string; splitNodeType: unknown }[];
+    breaks?: { pos: number; pagenum: number; label?: string; splitNodeType: unknown; locked?: boolean }[];
     firstPageLabel?: string;
+    firstPageLocked?: boolean;
 };
 
 /** One page of the paginated script. */
@@ -32,6 +33,9 @@ export type PageEntry = {
     caret: number;
     /** What the editor prints on the page — "12", or "12A" once pages are locked. */
     label: string;
+    /** Whether the page holds a frozen production page-lock token — the pages
+     *  the editor marks with a lock badge. Always false while locking is off. */
+    locked: boolean;
 };
 
 /**
@@ -58,6 +62,7 @@ export const readScriptPages = (editor: Editor): PageEntry[] => {
     // and scroll nowhere (see focusOnPosition).
     let caret = 1;
     let label = state?.firstPageLabel ?? "1";
+    let locked = state?.firstPageLocked ?? false;
 
     for (const b of breaks) {
         // Clamped to the document. The pagination plugin recomputes its breaks
@@ -69,15 +74,16 @@ export const readScriptPages = (editor: Editor): PageEntry[] => {
         // here would be a slice out of range taking the whole view down with
         // it. A page drawn slightly wrong for one frame is the better failure.
         const pos = Math.min(Math.max(b.pos, from), docSize);
-        pages.push({ from, to: pos, caret, label });
+        pages.push({ from, to: pos, caret, label, locked });
         from = pos;
         // Same rule the timeline's page navigation uses: a whole-node break sits
         // on the boundary before the block that opens the page, while a sentence
         // split already sits inside the straddling text node.
         caret = b.splitNodeType === null ? pos + 1 : pos;
         label = b.label ?? String(b.pagenum);
+        locked = b.locked ?? false;
     }
-    pages.push({ from, to: docSize, caret, label });
+    pages.push({ from, to: docSize, caret, label, locked });
 
     return pages;
 };

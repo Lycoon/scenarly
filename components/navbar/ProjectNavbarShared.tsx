@@ -354,7 +354,7 @@ const SaveTargetsBody = ({
                 <div className={navbar.target_actions}>
                     {canUploadToCloud ? (
                         <TargetAction
-                            label={t("uploadToCloud")}
+                            label={t("syncToCloud")}
                             onClick={run(() => onUploadToCloud?.())}
                         />
                     ) : (
@@ -496,24 +496,16 @@ export const SaveTargets = ({ hasCloud, canUploadToCloud, onUploadToCloud }: Sav
             return <CircleCheckBig style={{ color: "var(--success)" }} className={navbar.status_icon} />;
         }
 
-        // A local-only project that could be promoted keeps its call to action:
-        // it is the only route to the cloud, and losing it to a status glyph
-        // would take a feature away rather than tidy one up.
+        // A local-only project that could be promoted still shows the cloud
+        // glyph, so the invitation stays visible in the bar. The action itself
+        // lives in the panel's "Sync to cloud" button, alongside the rest of the
+        // targets' actions.
         if (canUploadToCloud) {
-            return (
-                <div
-                    className={navbar.tooltip}
-                    data-hint={t("uploadToCloud")}
-                    onClick={onUploadToCloud}
-                    style={{ cursor: "pointer" }}
-                >
-                    <CloudUpload style={{ color: "var(--primary-text)" }} className={navbar.status_icon} />
-                </div>
-            );
+            return <CloudUpload style={{ color: "var(--primary-text)" }} className={navbar.status_icon} />;
         }
 
-        // No tooltip: the hover panel already opens on this glyph and says where
-        // the project lives in full, so a "Local project" hint would only be a
+        // No tooltip on either glyph: the hover panel already opens on it and
+        // says where the project lives in full, so a hint would only be a
         // shorter answer to the same question — drawn at the same 40px offset,
         // on top of the panel giving the longer one.
         return <Save style={{ color: "var(--success)" }} className={navbar.status_icon} />;

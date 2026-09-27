@@ -64,6 +64,10 @@
     opacity: 0;
 }
 
+.infoSection + .infoSection {
+    animation-delay: 0.2s;
+}
+
 .row {
     display: flex;
     flex-direction: row;
@@ -101,6 +105,27 @@
     font-size: 0.95rem;
     color: var(--primary-text);
     font-weight: 600;
+}
+
+.link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    text-underline-offset: 3px;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+
+.linkRow {
+    text-decoration: none;
+    color: inherit;
+}
+
+.linkRow:hover .label {
+    color: var(--primary-text);
 }
 
 @keyframes fade-in-up {

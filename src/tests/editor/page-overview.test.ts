@@ -4,8 +4,14 @@ import { DOMSerializer } from "@tiptap/pm/model";
 
 import { BASE_EXTENSIONS, SCREENPLAY_FORMATS } from "@src/lib/screenplay/editor";
 import { createNodeIdDedupExtension } from "@src/lib/screenplay/extensions/node-id-dedup-extension";
-import { ScenarlyPagination, paginationKey } from "@src/lib/screenplay/extensions/pagination-extension";
+import {
+    ScenarlyPagination,
+    getPageAnchorInfo,
+    paginationKey,
+} from "@src/lib/screenplay/extensions/pagination-extension";
+import type { PersistentPageMap } from "@src/lib/screenplay/page-locking";
 import { readScriptPages } from "@src/lib/screenplay/page-overview";
+import { computeSceneLabels } from "@src/lib/screenplay/scene-locking";
 import { largeDoc } from "../fixtures/screenplay-fixture";
 
 /**
@@ -28,20 +34,36 @@ afterEach(() => {
     while (teardown.length) teardown.pop()!();
 });
 
-/** A real script, paginated at the canonical Letter geometry. */
+type LockState = { locking: boolean; locks: PersistentPageMap };
+
+/** A real script, paginated at the canonical Letter geometry. Page locking is
+ *  wired but off, so a test can lock pages the way the production panel does. */
 const mount = async () => {
     const el = document.createElement("div");
     document.body.appendChild(el);
+    const lockState: LockState = { locking: false, locks: {} };
 
     const editor = new Editor({
         element: el,
         injectCSS: false,
         autofocus: false,
-        content: { type: "doc", content: largeDoc() },
+        // Every top-level node gets its own data-id, as nodes written in the
+        // editor do. The fountain-parsed fixture leaves them all on the schema's
+        // one static default, and page locks are keyed by that id.
+        content: {
+            type: "doc",
+            content: largeDoc().map((node, i) => ({ ...node, attrs: { ...node.attrs, "data-id": `n${i}` } })),
+        },
         extensions: [
             ...BASE_EXTENSIONS,
             createNodeIdDedupExtension({ duplicatePersistentScene: () => {} }),
-            ScenarlyPagination.configure({ ...SCREENPLAY_FORMATS.LETTER, pageGap: 20 }),
+            ScenarlyPagination.configure({
+                ...SCREENPLAY_FORMATS.LETTER,
+                pageGap: 20,
+                getPageLocking: () => lockState.locking,
+                getPageLocks: () => lockState.locks,
+                getSkippedLetters: () => [],
+            }),
         ],
     });
     teardown.push(() => {
@@ -57,7 +79,22 @@ const mount = async () => {
     editor.view.dispatch(editor.state.tr.setMeta("forcePaginationUpdate", true));
     await new Promise((r) => setTimeout(r, 80));
 
-    return editor;
+    return Object.assign(editor, { lockState });
+};
+
+/** Freeze every current page under a production lock, as the panel does. */
+const lockAllPages = async (editor: Editor & { lockState: LockState }) => {
+    const anchorInfos = getPageAnchorInfo(editor);
+    const anchors = anchorInfos.map((a) => a.anchorId);
+    const labels = computeSceneLabels(anchors, {}, "suffix", []);
+    const locks: PersistentPageMap = {};
+    labels.forEach((l, idx) => {
+        locks[anchors[idx]] = { token: l.token, splitOffset: anchorInfos[idx]?.splitOffset };
+    });
+    editor.lockState.locks = locks;
+    editor.lockState.locking = true;
+    editor.view.dispatch(editor.state.tr.setMeta("forcePaginationUpdate", true));
+    await new Promise((r) => setTimeout(r, 80));
 };
 
 const breakCount = (editor: Editor) =>
@@ -147,5 +184,35 @@ describe("page overview", () => {
         expect(pages[0].label).toBe("1");
         // Unlocked, the labels are the plain page numbers.
         expect(pages.map((p) => p.label)).toEqual(pages.map((_, i) => String(i + 1)));
+    });
+
+    it("reports which pages hold a production lock", async () => {
+        const editor = await mount();
+
+        // Nothing is locked until the production panel says so — the overview
+        // must not badge a page on an unlocked script.
+        expect(readScriptPages(editor).some((p) => p.locked)).toBe(false);
+
+        await lockAllPages(editor);
+        const pages = readScriptPages(editor);
+        // Page 1 is flagged through the plugin's separate firstPageLocked, the
+        // rest through their break — both routes have to land in the same field.
+        expect(pages[0].locked).toBe(true);
+        expect(pages.every((p) => p.locked)).toBe(true);
+
+        // A page that grows past its frozen frame spills onto a provisional "A"
+        // page, which carries no lock of its own.
+        const target = pages[Math.floor(pages.length / 2)];
+        const filler = Array.from({ length: 40 }, (_, i) => `Line ${i} of filler.`).join(" ");
+        let after = pages;
+        for (let round = 0; round < 8 && after.length === pages.length; round++) {
+            editor.chain().insertContentAt(target.caret, filler).run();
+            await new Promise((r) => setTimeout(r, 120));
+            after = readScriptPages(editor);
+        }
+        expect(after.length).toBeGreaterThan(pages.length);
+        const provisional = after.filter((p) => !p.locked);
+        expect(provisional.length).toBeGreaterThan(0);
+        for (const p of provisional) expect(p.label).toMatch(/[A-Z]$/);
     });
 });

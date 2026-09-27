@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
     useCookieUser,
     useIsPhone,
@@ -14,7 +14,10 @@ import { createProjectShell, importFileAsProject } from "@src/lib/import/import-
 import { useImportAccept } from "@src/lib/import/use-import-accept";
 import { useAppNavigation } from "@src/lib/utils/navigation";
 import { isFileBindingSupported } from "@src/lib/persistence/file-binding";
-import { FileDown, FolderOpen, Plus, X } from "lucide-react";
+import { FileDown, FolderOpen, Plus, Users } from "lucide-react";
+import { isTauri } from "@tauri-apps/api/core";
+import { openExternal } from "@src/lib/utils/open-external";
+import { COMMUNITY_WEB_URL } from "@src/lib/community/constants";
 import { useTranslations } from "next-intl";
 
 import NewProjectPage from "./CreateProjectPage";
@@ -22,7 +25,7 @@ import ProjectItem from "./ProjectItem";
 import autoAnimate from "@formkit/auto-animate";
 import Loading from "../utils/Loading";
 
-import Logo from "@public/images/scenarly.svg";
+import LibrarySidebar from "./LibrarySidebar";
 
 import page from "./ProjectPageContainer.module.css";
 
@@ -39,6 +42,7 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
     const { hasCloudPlan, isLoading: isPlanLoading } = useHasCloudPlan();
     const { projects, isLoading, mutate } = useProjectMemberships();
     const { goToProject, goToProjects } = useAppNavigation();
+    const router = useRouter();
     const params = useSearchParams();
     const importAccept = useImportAccept();
     const t = useTranslations("projects");
@@ -197,66 +201,51 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
                 style={{ display: "none" }}
             />
 
-            {/* Phone: dim + dismiss layer behind the open drawer. */}
-            {isPhone && sidebarOpen && (
-                <div className={page.backdrop} onClick={() => setSidebarOpen(false)} />
-            )}
-
-            <aside className={join(page.sidebar, !sidebarOpen ? page.sidebar_closed : "")}>
-                {/* Desktop shows the branded logo in a navbar-height band. On phone this
-                    is a drawer matching the dashboard settings drawer, so it wears the
-                    same title + close header instead. */}
-                <div className={page.sidebar_top}>
-                    {isPhone ? (
-                        <h2 className={page.sidebar_title}>{t("pageTitle")}</h2>
-                    ) : (
-                        <Logo className={page.logo} />
-                    )}
-                    {isPhone && (
-                        <button
-                            className={page.sidebar_close}
-                            onClick={() => setSidebarOpen(false)}
-                            aria-label={tNav("close")}
-                        >
-                            <X size={18} />
-                        </button>
-                    )}
-                </div>
-                <div className={page.sidebar_actions}>
-                    <button
-                        className={join(page.action_btn, page.action_primary)}
-                        onClick={startCreating}
-                    >
-                        <Plus size={16} />
-                        <span>{t("createBtn")}</span>
+            <LibrarySidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} title={t("pageTitle")}>
+                <button
+                    className={join(page.action_btn, page.action_primary)}
+                    onClick={startCreating}
+                >
+                    <Plus size={16} />
+                    <span>{t("createBtn")}</span>
+                </button>
+                <button
+                    className={page.action_btn}
+                    onClick={handleImportClick}
+                    disabled={isImporting}
+                >
+                    <FileDown size={16} />
+                    <span>{isImporting ? t("importing") : t("importBtn")}</span>
+                </button>
+                {/* Opening a `.scenarly` belongs on the library, not inside a
+                    project: the file may well be a *different* project, and
+                    the answer can be "update the copy you already have" —
+                    neither of which makes sense as an action taken from the
+                    middle of the script you are writing. Desktop only; it
+                    needs a real path to bind the project to afterwards. */}
+                {isFileBindingSupported() && (
+                    <button className={page.action_btn} onClick={handleOpenFile}>
+                        <FolderOpen size={16} />
+                        <span>{tNav("fileOpen")}</span>
                     </button>
+                )}
+                {importError && (
+                    <p className={page.import_error} role="alert">
+                        {importError}
+                    </p>
+                )}
+                {/* Community lives on the web app only: the Tauri shells open it
+                    in the browser, the web app navigates. */}
+                <div className={page.sidebar_footer}>
                     <button
                         className={page.action_btn}
-                        onClick={handleImportClick}
-                        disabled={isImporting}
+                        onClick={() => (isTauri() ? openExternal(`${COMMUNITY_WEB_URL}/showcase`) : router.push("/community/showcase"))}
                     >
-                        <FileDown size={16} />
-                        <span>{isImporting ? t("importing") : t("importBtn")}</span>
+                        <Users size={16} />
+                        <span>{t("communityBtn")}</span>
                     </button>
-                    {/* Opening a `.scenarly` belongs on the library, not inside a
-                        project: the file may well be a *different* project, and
-                        the answer can be "update the copy you already have" —
-                        neither of which makes sense as an action taken from the
-                        middle of the script you are writing. Desktop only; it
-                        needs a real path to bind the project to afterwards. */}
-                    {isFileBindingSupported() && (
-                        <button className={page.action_btn} onClick={handleOpenFile}>
-                            <FolderOpen size={16} />
-                            <span>{tNav("fileOpen")}</span>
-                        </button>
-                    )}
-                    {importError && (
-                        <p className={page.import_error} role="alert">
-                            {importError}
-                        </p>
-                    )}
                 </div>
-            </aside>
+            </LibrarySidebar>
 
             <main className={page.main}>
                 {renderMain()}

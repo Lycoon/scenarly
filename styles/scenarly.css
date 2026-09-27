@@ -634,6 +634,25 @@
         );
     }
 
+    /* Dialogue tuner: while a speech is selected in the tuner panel, the
+       dialogue-tuner extension toggles .dialogue-tuner-active on the editor DOM
+       and marks that speech's lines .dialogue-tuner-current. Unlike the read-aloud
+       mask above this dims per line, not spatially: the point is to isolate one
+       speech from everything around it, so the whole page fades except those
+       lines. Dual-dialogue lines sit inside a column, hence the second selector. */
+    &.dialogue-tuner-active > p,
+    &.dialogue-tuner-active .dual_dialogue_column > p {
+        /* On every line, not just the dimmed ones: a transition only lives on
+           the state being left, so declared on the faded rule alone the step
+           to the next speech would fade the old one out but snap the new one in. */
+        transition: opacity 0.25s ease;
+    }
+
+    &.dialogue-tuner-active > p:not(.dialogue-tuner-current),
+    &.dialogue-tuner-active .dual_dialogue_column > p:not(.dialogue-tuner-current) {
+        opacity: 0.22;
+    }
+
     /* Spellcheck error highlighting */
     .spellcheck-error {
         position: relative;

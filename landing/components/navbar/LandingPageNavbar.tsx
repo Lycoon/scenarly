@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,9 +8,17 @@ import { Menu, X } from "lucide-react";
 
 import styles from "./LandingPageNavbar.module.css";
 
-// The static landing only has three routes; derive the current one from the
+// The static landing only has four routes; derive the current one from the
 // pathname (mirrors the app's usePage() without pulling in the app's hooks).
-type LandingPage = "index" | "privacy" | "contact";
+type LandingPage = "index" | "manifesto" | "privacy" | "contact";
+
+// /community is served by the app, not this static site: same origin in
+// production, the app's dev URL locally (see HomePageContainer).
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "";
+
+// Set on the hero's logo in HomePageContainer; the centered navbar logo shows
+// once it has scrolled out of sight.
+const HERO_LOGO_ID = "hero-logo";
 
 function usePage(): LandingPage | undefined {
     const pathname = usePathname();
@@ -18,7 +26,7 @@ function usePage(): LandingPage | undefined {
     const segments = pathname.split("/").filter(Boolean);
     if (segments.length === 0) return "index";
     const last = segments[segments.length - 1];
-    return last === "privacy" || last === "contact" ? last : "index";
+    return last === "manifesto" || last === "privacy" || last === "contact" ? last : "index";
 }
 
 export default function LandingPageNavbar() {
@@ -26,6 +34,8 @@ export default function LandingPageNavbar() {
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [heroLogoHidden, setHeroLogoHidden] = useState(false);
+    const navRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         setOpen(false);
@@ -45,6 +55,21 @@ export default function LandingPageNavbar() {
     }, []);
 
     useEffect(() => {
+        if (page !== "index") return;
+        const heroLogo = document.getElementById(HERO_LOGO_ID);
+        if (!heroLogo) return;
+        // Shrink the viewport by the navbar's height so the logo counts as gone
+        // as soon as it slides under the bar, not when it leaves the screen.
+        const navHeight = navRef.current?.offsetHeight ?? 0;
+        const observer = new IntersectionObserver(
+            ([entry]) => setHeroLogoHidden(!entry.isIntersecting),
+            { rootMargin: `-${navHeight}px 0px 0px 0px` }
+        );
+        observer.observe(heroLogo);
+        return () => observer.disconnect();
+    }, [page]);
+
+    useEffect(() => {
         if (!open) return;
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") setOpen(false);
@@ -57,8 +82,17 @@ export default function LandingPageNavbar() {
 
     const close = () => setOpen(false);
 
+    // The page scrolls inside the landing wrapper rather than the window, so
+    // rewind whichever ancestor of the hero is scrolled.
+    const scrollToTop = () => {
+        for (let el = document.getElementById(HERO_LOGO_ID)?.parentElement; el; el = el.parentElement) {
+            if (el.scrollTop > 0) el.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     return (
-        <nav className={`${styles.navbar} ${scrolled ? styles.navbarScrolled : ""}`}>
+        <nav ref={navRef} className={`${styles.navbar} ${scrolled ? styles.navbarScrolled : ""}`}>
             {page !== "index" && (
                 <Link className={styles.logoWrapper} href="/">
                     <Image
@@ -71,19 +105,37 @@ export default function LandingPageNavbar() {
                 </Link>
             )}
 
+            {page === "index" && (
+                <button
+                    className={`${styles.centerLogo} ${heroLogoHidden ? styles.centerLogoVisible : ""}`}
+                    onClick={scrollToTop}
+                    aria-label="Back to top"
+                    aria-hidden={!heroLogoHidden}
+                    tabIndex={heroLogoHidden ? 0 : -1}
+                >
+                    <Image
+                        src="/_site/images/scenarly.png"
+                        alt=""
+                        width={90}
+                        height={27}
+                        className={styles.logo}
+                    />
+                </button>
+            )}
+
             <div className={styles.navLinks}>
                 {page === "index" && (
                     <>
                         <Link className={styles.navLink} href="#features">Features</Link>
                         <Link className={styles.navLink} href="#faq">FAQ</Link>
-                        <Link className={styles.navLink} href="#pricing">Pricing</Link>
                     </>
                 )}
             </div>
 
             <div className={styles.navLinks}>
+                <Link className={styles.navLink} href="/manifesto">Manifesto</Link>
+                <a className={styles.navLink} href={`${APP_ORIGIN}/community`}>Community</a>
                 <Link className={styles.navLink} href="/contact">Contact</Link>
-                <Link className={styles.navLink} href="/privacy">Privacy</Link>
             </div>
 
             <button
@@ -101,11 +153,11 @@ export default function LandingPageNavbar() {
                         <>
                             <Link className={styles.mobileLink} href="#features" onClick={close}>Features</Link>
                             <Link className={styles.mobileLink} href="#faq" onClick={close}>FAQ</Link>
-                            <Link className={styles.mobileLink} href="#pricing" onClick={close}>Pricing</Link>
                         </>
                     )}
+                    <Link className={styles.mobileLink} href="/manifesto" onClick={close}>Manifesto</Link>
+                    <a className={styles.mobileLink} href={`${APP_ORIGIN}/community`} onClick={close}>Community</a>
                     <Link className={styles.mobileLink} href="/contact" onClick={close}>Contact</Link>
-                    <Link className={styles.mobileLink} href="/privacy" onClick={close}>Privacy</Link>
                 </div>
             )}
         </nav>

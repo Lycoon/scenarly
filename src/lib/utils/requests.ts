@@ -1,4 +1,4 @@
-import { UserSettings } from "./types";
+import { UserLanguage, UserSettings } from "./types";
 import { ApiResponse } from "./api-utils";
 import {
     CreateProjectBody,
@@ -11,6 +11,7 @@ import {
 import { apiFetch } from "@src/lib/api-client";
 import type { Period, Plan } from "@src/lib/plans";
 import type { SaveEntry } from "@src/lib/saves/types";
+import { guessUserCurrency } from "@src/lib/utils/currency";
 
 type RESTMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -149,12 +150,44 @@ export const resumeStripeSubscription = async (plan: Plan): Promise<boolean> => 
     return res.ok;
 };
 
+export type StripeWithdrawal = { until: string; refund: string };
+
+/** The refund a withdrawal would bring right now; null outside the 14-day withdrawal period. */
+export const getStripeWithdrawal = async (plan: Plan, locale: string): Promise<StripeWithdrawal | null> => {
+    const res = await request(`/api/stripe/withdraw?${new URLSearchParams({ plan, locale })}`, "GET");
+    if (!res.ok) return null;
+    const { data } = (await res.json()) as ApiResponse<StripeWithdrawal | null>;
+    return data ?? null;
+};
+
+/** The refunded amount once the withdrawal went through, null when it was refused. */
+export const withdrawStripeSubscription = async (plan: Plan, locale: string): Promise<string | null> => {
+    const res = await request("/api/stripe/withdraw", "POST", { plan, locale });
+    if (!res.ok) return null;
+    const { data } = (await res.json()) as ApiResponse<{ refund: string }>;
+    return data?.refund ?? null;
+};
+
 /** No url with a 409 status means the account already holds this plan, from either store. */
-export const createStripeCheckout = async (plan: Plan, period: Period): Promise<{ url: string | null; status: number }> => {
+export const createStripeCheckout = async (
+    plan: Plan,
+    period: Period,
+    language: UserLanguage,
+): Promise<{ url: string | null; status: number }> => {
     const redirectBase = typeof window !== "undefined" ? window.location.origin : undefined;
-    const res = await request("/api/stripe/checkout", "POST", { plan, period, redirectBase });
+    const res = await request("/api/stripe/checkout", "POST", { plan, period, redirectBase, language });
     const { data } = res.ok ? ((await res.json()) as ApiResponse<{ url: string }>) : { data: undefined };
     return { url: data?.url ?? null, status: res.status };
+};
+
+/** Localized prices of a plan per period, in the user's guessed currency ("$4.99"). */
+export const getStripePrices = async (plan: Plan, locale: string): Promise<Partial<Record<Period, string>>> => {
+    const currency = guessUserCurrency();
+    const params = new URLSearchParams({ plan, locale, ...(currency ? { currency } : {}) });
+    const res = await request(`/api/stripe/prices?${params}`, "GET");
+    if (!res.ok) return {};
+    const { data } = (await res.json()) as ApiResponse<Partial<Record<Period, string>>>;
+    return data ?? {};
 };
 
 export type AppleLinkResult =

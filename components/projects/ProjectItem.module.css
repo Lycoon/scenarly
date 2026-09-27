@@ -22,6 +22,11 @@
     text-align: left;
 }
 
+/* A lone row has nothing to be split from. SubmissionRow composes this too. */
+.container:only-child {
+    border-bottom: none;
+}
+
 /* Inset, rounded hover highlight — sits behind the row content so the
  * full-width separator and grid layout are unaffected. */
 .container::before {

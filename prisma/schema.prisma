@@ -63,6 +63,7 @@ model User {
   projects            ProjectMember[]
   subscriptions       Subscription[]
   dataExports         DataExport[]
+  communityProfile    CommunityProfile?
 }
 
 // One row per plan a user has bought, from whichever store billed it. The
@@ -150,6 +151,7 @@ model Project {
   members             ProjectMember[]
   invitations         ProjectInvitation[]
   assets              ProjectAsset[]
+  communitySubmissions CommunitySubmission[]
 }
 
 // Tracking row for a cloud asset (board image / audio recording). The bytes live
@@ -210,4 +212,295 @@ model ProjectInvitation {
   projectId            String
 
   @@unique([email, projectId])
+}
+
+// ─── Community ───────────────────────────────────────────────────────────────
+//
+// Coverage (a ticket-balanced review exchange) and Showcase (a public wall).
+// Tickets live only in the append-only ledger; every counter on a profile or a
+// submission is a cache the community tick can recompute from its source rows.
+
+enum CommunityFormat {
+  FEATURE
+  SHORT
+  PILOT
+  OTHER
+}
+
+enum CommunityGenre {
+  ACTION
+  ADVENTURE
+  ANIMATION
+  COMEDY
+  CRIME
+  DRAMA
+  FAMILY
+  FANTASY
+  HORROR
+  MYSTERY
+  ROMANCE
+  SCIFI
+  THRILLER
+  WESTERN
+  OTHER
+}
+
+// POOLED: offered to reviewers. RETIRED: left the pool but its reviews and
+// Showcase entry stay readable. SHOWCASE_ONLY: uploaded straight to Showcase,
+// never pooled, no tickets involved. REMOVED: withdrawn by the author; the file
+// is reclaimed by the tick, the row is kept for the ledger and the proof hash.
+enum CommunitySubmissionStatus {
+  POOLED
+  RETIRED
+  SHOWCASE_ONLY
+  REMOVED
+}
+
+// STARTER: +3 once, refId = userId. SUBMISSION: -3, refId = submission id.
+// REVIEW_COMPLETED: +1, refId = claim id. SUBMISSION_REFUND: +3 when a
+// submission is withdrawn before any claim (or 3 - reviews at the pool cap),
+// refId = submission id. ADMIN_ADJUST: manual, refId = free text.
+enum CommunityTicketReason {
+  STARTER
+  SUBMISSION
+  REVIEW_COMPLETED
+  SUBMISSION_REFUND
+  ADMIN_ADJUST
+}
+
+enum CommunityClaimStatus {
+  ACTIVE
+  SUBMITTED
+  EXPIRED
+  RELEASED
+}
+
+enum CommunityReviewStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum CommunityRating {
+  USEFUL
+  NOT_USEFUL
+}
+
+enum CommunityShowcaseKind {
+  FULL_SCRIPT
+  PILOT
+  SHORT
+  LOGLINE
+}
+
+enum CommunityReportReason {
+  ABUSIVE
+  OFF_TOPIC
+  LOW_EFFORT
+  AI_GENERATED
+  OTHER
+}
+
+// One row per Community member. Created together with the STARTER ledger row
+// the first time the user opens Coverage once the entry gate (verified email
+// of a minimum age) passes.
+model CommunityProfile {
+  userId              String                @id
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt           DateTime              @default(now())
+  // The one ACTIVE claim. Nullable unique is the "one claim at a time" guard:
+  // claiming is `updateMany where activeClaimId is null`, count 0 = conflict.
+  activeClaimId       String?               @unique
+  // Reputation cache, recomputable from CommunityReview.rating.
+  usefulCount         Int                   @default(0)
+  notUsefulCount      Int                   @default(0)
+  reviewsCompleted    Int                   @default(0)
+  lastReshuffleAt     DateTime?
+
+  tickets             CommunityTicketEntry[]
+  submissions         CommunitySubmission[]
+  claims              CommunityClaim[]
+  offerSets           CommunityOfferSet[]
+  upvotes             CommunityUpvote[]
+  reports             CommunityReviewReport[]
+}
+
+// Append-only. Balance = sum(delta). The unique makes every mint and charge
+// idempotent: a retried request or a re-run tick can never double-post.
+model CommunityTicketEntry {
+  id                  String                @id @default(uuid(7))
+  delta               Int
+  reason              CommunityTicketReason
+  refId               String
+  createdAt           DateTime              @default(now())
+
+  profile             CommunityProfile      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  userId              String
+
+  @@unique([userId, reason, refId])
+  @@index([userId, createdAt])
+}
+
+// A frozen PDF on R2 at `community/{id}/original.pdf` plus its metadata.
+model CommunitySubmission {
+  id                  String                    @id @default(uuid(7))
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  status              CommunitySubmissionStatus
+
+  title               String
+  logline             String                    @db.Text
+  genres              CommunityGenre[]
+  format              CommunityFormat
+  pageCount           Int
+  sizeBytes           Int
+  // Proof of prior existence: (sha256, createdAt) is what the author points to.
+  sha256              String
+  // Set when the PDF came from a Scenarly project. SetNull so deleting the
+  // project never touches the submission.
+  sourceProjectId     String?
+  sourceProject       Project?                  @relation(fields: [sourceProjectId], references: [id], onDelete: SetNull)
+
+  // Pool lifetime. `poolExitAt` = createdAt + 30 days, fixed at creation; the
+  // tick retires the row once that date has passed AND 3 reviews are in.
+  poolExitAt          DateTime?
+  retiredAt           DateTime?
+  // R2 objects reclaimed (REMOVED only). Null while the file still exists.
+  fileDeletedAt       DateTime?
+
+  // Selection caches, maintained in the transactions that change them.
+  completedReviewCount Int                      @default(0)
+  offerCount          Int                       @default(0)
+  claimCount          Int                       @default(0)
+
+  author              CommunityProfile          @relation(fields: [authorId], references: [userId], onDelete: Cascade)
+  authorId            String
+
+  claims              CommunityClaim[]
+  offerItems          CommunityOfferItem[]
+  showcase            CommunityShowcaseEntry?
+
+  @@index([sha256])
+  @@index([status, poolExitAt])
+  @@index([authorId, createdAt])
+}
+
+// The persisted set of 5 a reviewer sees. The newest set per reviewer is the
+// current one; a claim or a reshuffle makes a new set.
+model CommunityOfferSet {
+  id                  String              @id @default(uuid(7))
+  createdAt           DateTime            @default(now())
+  // Consumed by a claim: the next GET makes a fresh set.
+  consumedAt          DateTime?
+
+  reviewer            CommunityProfile    @relation(fields: [reviewerId], references: [userId], onDelete: Cascade)
+  reviewerId          String
+  items               CommunityOfferItem[]
+
+  @@index([reviewerId, createdAt])
+}
+
+model CommunityOfferItem {
+  offerSet            CommunityOfferSet   @relation(fields: [offerSetId], references: [id], onDelete: Cascade)
+  offerSetId          String
+  submission          CommunitySubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId        String
+  position            Int
+
+  @@id([offerSetId, submissionId])
+  @@index([submissionId])
+}
+
+// A reviewer holding a submission. Claims are concurrent: the submission stays
+// in the pool. floorAt = claimedAt + 7 d, deadlineAt = claimedAt + 21 d, both
+// fixed at claim time so the tick never recomputes them. `reviewerId` is
+// nullable so a deleted reviewer's submitted review stays with its author,
+// anonymised.
+model CommunityClaim {
+  id                  String                @id @default(uuid(7))
+  status              CommunityClaimStatus  @default(ACTIVE)
+  claimedAt           DateTime              @default(now())
+  floorAt             DateTime
+  deadlineAt          DateTime
+  endedAt             DateTime?
+  reminderSentAt      DateTime?
+  // Watermarked copy at `community/{submissionId}/claims/{claimId}.pdf`,
+  // stamped on first open; null until then and again once reclaimed.
+  watermarkKey        String?
+
+  submission          CommunitySubmission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId        String
+  reviewer            CommunityProfile?     @relation(fields: [reviewerId], references: [userId], onDelete: SetNull)
+  reviewerId          String?
+  review              CommunityReview?
+
+  // A reviewer never gets the same script twice, even after an expiry.
+  @@unique([submissionId, reviewerId])
+  @@index([reviewerId, status])
+  @@index([status, floorAt])
+  @@index([status, deadlineAt])
+}
+
+// Draft and final review share a row; SUBMITTED is terminal. Private to the
+// author (and to the reviewer as their own history); never joined by Showcase.
+model CommunityReview {
+  claimId             String                @id
+  claim               CommunityClaim        @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  status              CommunityReviewStatus @default(DRAFT)
+  worksWell           String                @default("") @db.Text
+  doesNotWork         String                @default("") @db.Text
+  remarks             String                @default("") @db.Text
+  wordCount           Int                   @default(0)
+  // Reviewer chose to reveal their username to the author.
+  signed              Boolean               @default(false)
+  autoSubmitted       Boolean               @default(false)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  submittedAt         DateTime?
+
+  // Author's verdict, once.
+  rating              CommunityRating?
+  ratedAt             DateTime?
+
+  reports             CommunityReviewReport[]
+}
+
+// Recorded for later; no moderation UI yet.
+model CommunityReviewReport {
+  id                  String                @id @default(uuid(7))
+  reason              CommunityReportReason
+  details             String?               @db.Text
+  createdAt           DateTime              @default(now())
+
+  review              CommunityReview       @relation(fields: [reviewClaimId], references: [claimId], onDelete: Cascade)
+  reviewClaimId       String
+  reporter            CommunityProfile      @relation(fields: [reporterId], references: [userId], onDelete: Cascade)
+  reporterId          String
+
+  @@unique([reviewClaimId, reporterId])
+}
+
+// Public wall entry. `slug` is the SEO URL segment (title slug + 6 id chars).
+model CommunityShowcaseEntry {
+  submissionId        String                @id
+  submission          CommunitySubmission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  kind                CommunityShowcaseKind
+  slug                String                @unique
+  publishedAt         DateTime              @default(now())
+  unpublishedAt       DateTime?
+  upvoteCount         Int                   @default(0)
+
+  upvotes             CommunityUpvote[]
+
+  @@index([kind, publishedAt])
+  @@index([unpublishedAt, upvoteCount])
+}
+
+model CommunityUpvote {
+  entry               CommunityShowcaseEntry @relation(fields: [submissionId], references: [submissionId], onDelete: Cascade)
+  submissionId        String
+  voter               CommunityProfile       @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  userId              String
+  createdAt           DateTime               @default(now())
+
+  @@id([submissionId, userId])
 }

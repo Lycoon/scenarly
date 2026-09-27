@@ -13,6 +13,7 @@ const PopupImportFile = ({ data: { confirmImport } }: PopupData<PopupImportFileD
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("popup.import");
+    const tNav = useTranslations("navbar");
     const [isImporting, setIsImporting] = useState(false);
 
     const onConfirmImport = async () => {
@@ -48,7 +49,9 @@ const PopupImportFile = ({ data: { confirmImport } }: PopupData<PopupImportFileD
                     style={{ cursor: isDragging ? "grabbing" : "grab" }}
                 >
                     <h2 className={popup.title}>{t("title")}</h2>
-                    <X className={popup.close_btn} onClick={dismiss} />
+                    <button className={popup.close_btn} onClick={dismiss} aria-label={tNav("close")}>
+                        <X size={18} />
+                    </button>
                 </div>
                 <div className={popup.info}>
                     <p>

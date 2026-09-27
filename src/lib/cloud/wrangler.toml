@@ -28,6 +28,11 @@ bucket_name = "scenarly-snapshots-local"
 # Base URL of the Next.js app for the asset-GC callback (local dev).
 API_URL = "http://127.0.0.1:3000"
 
+# Community tick (claim expiry, draft auto-send, pool retirement, R2 cleanup).
+# Test locally with `wrangler dev --test-scheduled` and curl /__scheduled.
+[triggers]
+crons = ["*/15 * * * *"]
+
 # --- Production ---
 [env.production]
 name = "scenarly-prod-cloud"
@@ -37,6 +42,9 @@ routes = [
 
 [env.production.vars]
 API_URL = "https://scenarly.com"
+
+[env.production.triggers]
+crons = ["*/15 * * * *"]
 
 [[env.production.durable_objects.bindings]]
 name = "PROJECT_ROOM"
@@ -66,3 +74,6 @@ jurisdiction = "eu"
 [env.staging.vars]
 # Verify this matches the staging app domain.
 API_URL = "https://staging.scenarly.com"
+
+[env.staging.triggers]
+crons = ["*/15 * * * *"]

@@ -23,6 +23,7 @@ const PopupAutoSave = ({ data: { path } }: PopupData<PopupAutoSaveData>) => {
     const userCtx = useContext(UserContext);
     const { position, handleMouseDown, isDragging } = useDraggable();
     const t = useTranslations("popup.autoSave");
+    const tNav = useTranslations("navbar");
 
     return (
         <div className={popup.window}>
@@ -33,7 +34,9 @@ const PopupAutoSave = ({ data: { path } }: PopupData<PopupAutoSaveData>) => {
                     style={{ cursor: isDragging ? "grabbing" : "grab" }}
                 >
                     <h2 className={popup.title}>{t("title")}</h2>
-                    <X className={popup.close_btn} onClick={() => closePopup(userCtx)} />
+                    <button className={popup.close_btn} onClick={() => closePopup(userCtx)} aria-label={tNav("close")}>
+                        <X size={18} />
+                    </button>
                 </div>
                 <div className={popup.info}>
                     <p title={path}>{t("body", { file: fileNameOf(path) })}</p>

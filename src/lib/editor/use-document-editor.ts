@@ -24,6 +24,7 @@ import {
     SearchMatch,
 } from "@src/lib/screenplay/extensions/search-highlight-extension";
 import { createReadAloudHighlightExtension } from "@src/lib/screenplay/extensions/read-aloud-highlight-extension";
+import { createDialogueTunerExtension } from "@src/lib/screenplay/extensions/dialogue-tuner-extension";
 import { createDictationPreviewExtension } from "./dictation-preview-extension";
 import {
     createSceneBookmarkExtension,
@@ -452,6 +453,9 @@ export const useDocumentEditor = (config: DocumentEditorConfig, callbacks: Docum
                 // Read-aloud "now reading" node highlight (screenplay editors only;
                 // controlled externally via transaction metas, so no config needed).
                 ...(config.type === "screenplay" ? [createReadAloudHighlightExtension()] : []),
+                // Dialogue tuner "current speech" highlight — driven by metas
+                // from the navbar panel, like the read-aloud one above.
+                ...(config.type === "screenplay" ? [createDialogueTunerExtension()] : []),
                 // Live preview of in-flight dictation at the caret. Every editor
                 // can be dictated into (the footer mic targets whichever panel is
                 // active), so this one isn't gated on the document type.

@@ -1,12 +1,33 @@
 import { NextRequest } from "next/server";
+import { createTranslator } from "next-intl";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import { Success, validate } from "@src/lib/utils/api-utils";
 import { CheckoutBodySchema } from "@src/lib/utils/api-bodies";
 import * as UserService from "@src/server/service/user-service";
 import * as SubscriptionService from "@src/server/service/subscription-service";
+import { PLAN_NAMES } from "@src/lib/plans";
+import type { UserLanguage } from "@src/lib/utils/types";
+
+import enMessages from "../../../../../messages/en.json";
+import esMessages from "../../../../../messages/es.json";
+import frMessages from "../../../../../messages/fr.json";
+import zhMessages from "../../../../../messages/zh.json";
+import koMessages from "../../../../../messages/ko.json";
+import jaMessages from "../../../../../messages/ja.json";
+import deMessages from "../../../../../messages/de.json";
+import plMessages from "../../../../../messages/pl.json";
+
+const MESSAGES: Record<UserLanguage, typeof enMessages> = {
+    en: enMessages, es: esMessages, fr: frMessages, zh: zhMessages, ko: koMessages, ja: jaMessages, de: deMessages, pl: plMessages,
+};
+
+const TERMS_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://scenarly.com"}/terms`;
 
 async function createCheckoutSession(req: NextRequest, { user }: AuthApiContext) {
-    const { plan, period, redirectBase } = validate(CheckoutBodySchema, await req.json().catch(() => ({})));
+    const { plan, period, redirectBase, language = "en" } = validate(
+        CheckoutBodySchema,
+        await req.json().catch(() => ({})),
+    );
     const baseUrl = redirectBase || (process.env.NEXT_PUBLIC_API_URL ?? "");
 
     SubscriptionService.assertOnSale(plan);
@@ -37,6 +58,20 @@ async function createCheckoutSession(req: NextRequest, { user }: AuthApiContext)
         automatic_tax: { enabled: true },
         tax_id_collection: { enabled: true },
         locale: "auto",
+        // A required checkbox: agreeing to the Terms, and asking for the plan
+        // to start at once, which is what lets a withdrawal within 14 days
+        // keep the days already used (Code de la consommation, L.221-25).
+        // Stripe needs the Terms URL in the Dashboard's public details too.
+        consent_collection: { terms_of_service: "required" },
+        custom_text: {
+            terms_of_service_acceptance: {
+                message: createTranslator({
+                    locale: language,
+                    messages: MESSAGES[language],
+                    namespace: "profile.subscription",
+                })("checkoutConsent", { plan: PLAN_NAMES[plan], termsUrl: TERMS_URL }),
+            },
+        },
         success_url: `${baseUrl}/projects?subscribed=${plan}`,
         cancel_url: `${baseUrl}/projects`,
     });

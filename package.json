@@ -100,6 +100,8 @@
         "next-intl": "^4.8.3",
         "next-themes": "^0.2.0",
         "nodemailer": "^8.0.7",
+        "pdf-lib": "^1.17.1",
+        "pdfjs-dist": "^6.3.289",
         "pdfmake": "^0.2.9",
         "pg": "^8.20.0",
         "prom-client": "^15.1.3",
