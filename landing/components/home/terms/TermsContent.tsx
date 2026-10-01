@@ -185,7 +185,7 @@ export default function TermsContent() {
                     </p>
 
                     <p className={styles.pageText}>
-                        <b>Showcase.</b> A script or logline you publish to Showcase is public: anyone can read it,
+                        <b>Showcase.</b> A script you publish to Showcase is public: anyone can read it,
                         signed in or not, and its page can be indexed by search engines. Verified members can upvote
                         it. We never display your name or username next to it, but the script itself may identify
                         you (for example its title page), so check it before publishing. You allow us to display and

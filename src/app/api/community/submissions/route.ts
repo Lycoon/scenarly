@@ -40,8 +40,7 @@ async function listSubmissions(req: NextRequest, { user }: AuthApiContext) {
 async function createSubmission(req: NextRequest, { user }: AuthApiContext) {
     await TicketService.requireProfile(user.id);
     const { bytes, fields } = await readSubmissionForm(req);
-    // `kind` is the Showcase upload's field; this route never publishes.
-    const submission = await SubmissionService.createSubmission(user.id, bytes, { ...fields, showcaseKind: undefined });
+    const submission = await SubmissionService.createSubmission(user.id, bytes, fields);
     return SuccessCreated({ id: submission.id, status: submission.status, poolExitAt: submission.poolExitAt });
 }
 

@@ -1012,7 +1012,6 @@
       "rendering": "PDF 생성 중…",
       "uploading": "업로드 중…",
       "errors": {
-        "noFormat": "형식을 고르세요.",
         "notPdf": "PDF 파일을 선택하세요.",
         "tooLarge": "PDF가 {mb} MB를 초과합니다.",
         "noFile": "먼저 PDF를 선택하세요.",
@@ -1023,13 +1022,15 @@
         "duplicate": "이 PDF는 이미 Coverage에 있습니다.",
         "failed": "제출에 실패했습니다. 다시 시도해 주세요."
       },
-      "showLabel": "다음만 표시",
-      "showScript": "시나리오",
-      "showLogline": "로그라인"
+      "next": "다음",
+      "steps": {
+        "script": "시나리오",
+        "details": "세부 정보",
+        "genres": "장르"
+      }
     },
     "offers": {
-      "title": "리뷰할 시나리오 고르기",
-      "subtitle": "회원님을 위해 추첨된 다섯 편입니다. 하나를 맡으면 읽고 의견을 쓸 3주가 주어지며, 1주 후부터 보낼 수 있습니다.",
+      "title": "시나리오 리뷰",
       "pages": "{count}페이지",
       "reviewsSoFar": "{count, plural, =0 {아직 리뷰 없음} other {지금까지 리뷰 #개}}",
       "claim": "이 시나리오 리뷰하기",
@@ -1157,8 +1158,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "전체 시나리오",
         "PILOT": "파일럿",
-        "SHORT": "단편",
-        "LOGLINE": "로그라인"
+        "SHORT": "단편"
       }
     },
     "showcase": {
@@ -1182,8 +1182,7 @@
       "previous": "이전",
       "next": "다음",
       "pageOf": "{page} / {count}페이지",
-      "backToWall": "모든 시나리오",
-      "loglineOnly": "작가가 로그라인만 공유했습니다."
+      "backToWall": "모든 시나리오"
     }
   }
 }

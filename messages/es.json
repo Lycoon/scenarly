@@ -1012,7 +1012,6 @@
       "rendering": "Generando PDF…",
       "uploading": "Subiendo…",
       "errors": {
-        "noFormat": "Elige un formato.",
         "notPdf": "Elige un archivo PDF.",
         "tooLarge": "El PDF supera los {mb} MB.",
         "noFile": "Elige primero un PDF.",
@@ -1023,13 +1022,15 @@
         "duplicate": "Este mismo PDF ya está en Coverage.",
         "failed": "El envío falló. Inténtalo de nuevo."
       },
-      "showLabel": "Mostrar solo",
-      "showScript": "El guion",
-      "showLogline": "El logline"
+      "next": "Siguiente",
+      "steps": {
+        "script": "Guion",
+        "details": "Detalles",
+        "genres": "Géneros"
+      }
     },
     "offers": {
-      "title": "Elige un guion para leer",
-      "subtitle": "Cinco guiones, elegidos para ti. Toma uno y tendrás tres semanas para leerlo y escribir tus notas; podrás enviarlas después de una.",
+      "title": "Leer un guion",
       "pages": "{count, plural, one {# página} other {# páginas}}",
       "reviewsSoFar": "{count, plural, =0 {sin lecturas aún} one {# lectura hasta ahora} other {# lecturas hasta ahora}}",
       "claim": "Leer este",
@@ -1157,8 +1158,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "Guion completo",
         "PILOT": "Piloto",
-        "SHORT": "Cortometraje",
-        "LOGLINE": "Logline"
+        "SHORT": "Cortometraje"
       }
     },
     "showcase": {
@@ -1182,8 +1182,7 @@
       "previous": "Anterior",
       "next": "Siguiente",
       "pageOf": "Página {page} de {count}",
-      "backToWall": "Todos los guiones",
-      "loglineOnly": "El autor solo compartió el logline."
+      "backToWall": "Todos los guiones"
     }
   }
 }

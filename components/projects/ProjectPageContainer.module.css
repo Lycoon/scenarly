@@ -156,9 +156,8 @@
     padding: 40px 4px 0;
 }
 
-/* Bottom of the sidebar column: the way over to the other place (Community
-   from the projects library, the projects library from Community), and in
-   Community the ticket balance. Shared so both sit at exactly the same spot. */
+/* Bottom of the sidebar column: the way over to Community from the projects
+   library, and in Community the ticket balance. */
 .sidebar_footer {
     display: flex;
     flex-direction: column;

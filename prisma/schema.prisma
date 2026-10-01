@@ -289,7 +289,6 @@ enum CommunityShowcaseKind {
   FULL_SCRIPT
   PILOT
   SHORT
-  LOGLINE
 }
 
 enum CommunityReportReason {

@@ -1,11 +1,31 @@
-/* The wall: the sort toggle beside the kind chips, the cards, the
+/* The wall: the sort labels beside the kind dropdown, the cards, the
    pager. Cards and buttons come from Community.module.css. */
 
-/* The controls row is the Coverage dashboard's tab row (.row .tabRow) with the
-   same full-size buttons, so switching between the two pages never moves the
-   content below. Only the split between sort and kind is added here. */
+/* The controls row is the shared tab row (.row .tabRow), its sort labels
+   the shared .tabLabel. Only the split between sort and kind is added here. */
 .controls {
     justify-content: space-between;
+}
+
+/* The kind dropdown as plain text with its chevron: the sort labels'
+   capslock treatment, bright since a kind is always picked. Scoped under
+   .kindFilter to win over Dropdown.module.css whatever the load order. */
+.kindFilter .kindTrigger {
+    justify-content: flex-start;
+    gap: 6px;
+    padding-block: 6px;
+    font-size: 0.8rem;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary-text);
+}
+
+/* The filter sits at the row's right edge, so its menu opens leftwards. */
+.kindFilter .kindMenu {
+    left: auto;
+    right: 0;
 }
 
 /* Cards keep their own height: one with a wrapped title must not stretch

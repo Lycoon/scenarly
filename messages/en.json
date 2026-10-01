@@ -1012,7 +1012,6 @@
       "rendering": "Rendering PDF…",
       "uploading": "Uploading…",
       "errors": {
-        "noFormat": "Pick a format.",
         "notPdf": "Choose a PDF file.",
         "tooLarge": "The PDF is over {mb} MB.",
         "noFile": "Choose a PDF first.",
@@ -1023,13 +1022,15 @@
         "duplicate": "This exact PDF is already in Coverage.",
         "failed": "Submission failed. Please try again."
       },
-      "showLabel": "Only show",
-      "showScript": "The script",
-      "showLogline": "The logline"
+      "next": "Next",
+      "steps": {
+        "script": "Script",
+        "details": "Details",
+        "genres": "Genres"
+      }
     },
     "offers": {
-      "title": "Pick a script to review",
-      "subtitle": "Five scripts, drawn for you. Claim one and you have three weeks to read it and write your notes; they can be sent after one.",
+      "title": "Review a script",
       "pages": "{count, plural, one {# page} other {# pages}}",
       "reviewsSoFar": "{count, plural, =0 {no reviews yet} one {# review so far} other {# reviews so far}}",
       "claim": "Review this one",
@@ -1157,8 +1158,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "Full script",
         "PILOT": "Pilot",
-        "SHORT": "Short",
-        "LOGLINE": "Logline"
+        "SHORT": "Short"
       }
     },
     "showcase": {
@@ -1182,8 +1182,7 @@
       "previous": "Previous",
       "next": "Next",
       "pageOf": "Page {page} of {count}",
-      "backToWall": "All scripts",
-      "loglineOnly": "The writer shared the logline only."
+      "backToWall": "All scripts"
     }
   }
 }

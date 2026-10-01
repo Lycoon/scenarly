@@ -9,6 +9,8 @@
 }
 
 .body {
+    /* The stepped form's sticky header covers what scrolls under it in the popup's colour. */
+    --form-surface: var(--primary);
     overflow-y: auto;
     min-height: 0;
     padding-right: 4px;

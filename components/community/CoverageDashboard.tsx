@@ -50,15 +50,18 @@ const CoverageDashboard = () => {
 
                 <div className={styles.section}>
                     <div className={`${styles.row} ${styles.tabRow}`}>
-                        {(["reviews", "tickets"] as Tab[]).map((id) => (
-                            <button
-                                key={id}
-                                className={`${styles.btn} ${tab === id ? "" : styles.btnOutline}`}
-                                onClick={() => setTab(id)}
-                            >
-                                {t(`tabs.${id}`)}
-                            </button>
-                        ))}
+                        <div className={styles.tabLabels}>
+                            {(["reviews", "tickets"] as Tab[]).map((id) => (
+                                <button
+                                    key={id}
+                                    className={`${styles.tabLabel} ${tab === id ? styles.tabLabelActive : ""}`}
+                                    aria-pressed={tab === id}
+                                    onClick={() => setTab(id)}
+                                >
+                                    {t(`tabs.${id}`)}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {tab === "reviews" &&

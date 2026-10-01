@@ -1012,7 +1012,6 @@
       "rendering": "Generowanie PDF…",
       "uploading": "Przesyłanie…",
       "errors": {
-        "noFormat": "Wybierz format.",
         "notPdf": "Wybierz plik PDF.",
         "tooLarge": "PDF przekracza {mb} MB.",
         "noFile": "Najpierw wybierz PDF.",
@@ -1023,13 +1022,15 @@
         "duplicate": "Dokładnie ten PDF jest już w Coverage.",
         "failed": "Zgłoszenie nie powiodło się. Spróbuj ponownie."
       },
-      "showLabel": "Pokaż tylko",
-      "showScript": "Scenariusz",
-      "showLogline": "Logline"
+      "next": "Dalej",
+      "steps": {
+        "script": "Scenariusz",
+        "details": "Szczegóły",
+        "genres": "Gatunki"
+      }
     },
     "offers": {
-      "title": "Wybierz scenariusz do recenzji",
-      "subtitle": "Pięć scenariuszy wylosowanych dla Ciebie. Weź jeden — masz trzy tygodnie, by go przeczytać i napisać uwagi; wysłać możesz po jednym.",
+      "title": "Zrecenzuj scenariusz",
       "pages": "{count, plural, one {# strona} few {# strony} other {# stron}}",
       "reviewsSoFar": "{count, plural, =0 {brak recenzji} one {# recenzja dotąd} few {# recenzje dotąd} other {# recenzji dotąd}}",
       "claim": "Zrecenzuj ten",
@@ -1157,8 +1158,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "Pełny scenariusz",
         "PILOT": "Pilot",
-        "SHORT": "Krótkometrażowy",
-        "LOGLINE": "Logline"
+        "SHORT": "Krótkometrażowy"
       }
     },
     "showcase": {
@@ -1182,8 +1182,7 @@
       "previous": "Poprzednia",
       "next": "Następna",
       "pageOf": "Strona {page} z {count}",
-      "backToWall": "Wszystkie scenariusze",
-      "loglineOnly": "Autor udostępnił tylko logline."
+      "backToWall": "Wszystkie scenariusze"
     }
   }
 }

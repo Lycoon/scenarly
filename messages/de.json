@@ -1013,7 +1013,6 @@
       "rendering": "PDF wird erzeugt…",
       "uploading": "Wird hochgeladen…",
       "errors": {
-        "noFormat": "Wähle ein Format.",
         "notPdf": "Wähle eine PDF-Datei.",
         "tooLarge": "Das PDF ist größer als {mb} MB.",
         "noFile": "Wähle zuerst ein PDF.",
@@ -1024,13 +1023,15 @@
         "duplicate": "Genau dieses PDF ist bereits in Coverage.",
         "failed": "Einreichen fehlgeschlagen. Bitte erneut versuchen."
       },
-      "showLabel": "Nur zeigen",
-      "showScript": "Das Drehbuch",
-      "showLogline": "Die Logline"
+      "next": "Weiter",
+      "steps": {
+        "script": "Drehbuch",
+        "details": "Details",
+        "genres": "Genres"
+      }
     },
     "offers": {
-      "title": "Wähle ein Drehbuch zum Besprechen",
-      "subtitle": "Fünf Drehbücher, für dich gezogen. Übernimm eines und du hast drei Wochen, um es zu lesen und deine Anmerkungen zu schreiben; abschicken kannst du nach einer.",
+      "title": "Drehbuch besprechen",
       "pages": "{count, plural, one {# Seite} other {# Seiten}}",
       "reviewsSoFar": "{count, plural, =0 {noch keine Besprechung} one {# Besprechung bisher} other {# Besprechungen bisher}}",
       "claim": "Dieses besprechen",
@@ -1158,8 +1159,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "Drehbuch",
         "PILOT": "Pilot",
-        "SHORT": "Kurzfilm",
-        "LOGLINE": "Logline"
+        "SHORT": "Kurzfilm"
       }
     },
     "showcase": {
@@ -1183,8 +1183,7 @@
       "previous": "Zurück",
       "next": "Weiter",
       "pageOf": "Seite {page} von {count}",
-      "backToWall": "Alle Drehbücher",
-      "loglineOnly": "Nur die Logline wurde geteilt."
+      "backToWall": "Alle Drehbücher"
     }
   }
 }

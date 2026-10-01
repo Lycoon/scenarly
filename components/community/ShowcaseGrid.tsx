@@ -20,7 +20,7 @@ interface ShowcaseGridProps {
 }
 
 /**
- * `/community/showcase`: Top / Newest, the kind chips, 24 cards a page. The
+ * `/community/showcase`: Top / Newest, the kind dropdown, 24 cards a page. The
  * page is rendered on the server; each viewer's own votes, and counts fresher
  * than the cached page, arrive through `useShowcaseVotes`.
  */
@@ -33,7 +33,7 @@ const ShowcaseGrid = ({ query, wall }: ShowcaseGridProps) => {
         return (
             <Link
                 href={showcaseHref({ sort, kind: query.kind })}
-                className={join(community.btn, on ? "" : community.btnOutline)}
+                className={join(community.tabLabel, on ? community.tabLabelActive : "")}
                 aria-current={on ? "page" : undefined}
             >
                 {label}
@@ -46,7 +46,7 @@ const ShowcaseGrid = ({ query, wall }: ShowcaseGridProps) => {
             <div className={community.pageInner}>
                 <div className={community.section}>
                     <div className={join(community.row, community.tabRow, styles.controls)}>
-                        <nav className={community.row} aria-label={t("sortLabel")}>
+                        <nav className={community.tabLabels} aria-label={t("sortLabel")}>
                             {sortLink("top", t("sortTop"))}
                             {sortLink("new", t("sortNew"))}
                         </nav>

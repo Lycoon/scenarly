@@ -8,6 +8,33 @@
     --projects-grid: minmax(0, 1fr) 120px 200px 90px;
 }
 
+/* The projects library's column header (grid, hidden on phone) in the type
+   of the Showcase and Coverage header rows (Community.module.css .tabRow,
+   .tabLabel): the same height, line, colour and capslock labels, so switching
+   between the three tabs moves nothing. Doubled to win over the composed
+   class whatever the load order. */
+.list_header {
+    composes: list_header from "../projects/ProjectPageContainer.module.css";
+}
+
+.list_header.list_header {
+    /* .tabLabel's 6px padding and 16px line above the row's 16px gap. */
+    padding: 6px 20px 22px;
+    border-bottom: 1px solid var(--separator);
+    font-size: 0.8rem;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+}
+
+/* .tabLabel's resting tint. Set on the labels themselves: globals.css gives
+   every span --primary-text, so they would not inherit it from the row. */
+.list_header > span {
+    color: var(--secondary-text);
+    opacity: 0.6;
+}
+
 .container {
     composes: container from "../projects/ProjectItem.module.css";
     text-decoration: none;
