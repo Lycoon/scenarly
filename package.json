@@ -156,7 +156,16 @@
     },
     "overrides": {
         "@hono/node-server": ">=1.19.13",
+        "@prisma/config": {
+            "deepmerge-ts": "^8.0.2"
+        },
+        "hunspell-asm": {
+            "nanoid": "^3.3.18"
+        },
         "nodemailer": "$nodemailer",
+        "prisma": {
+            "mysql2": "^3.24.5"
+        },
         "sharp": "$sharp",
         "wrangler": {
             "@cloudflare/workers-types": "$@cloudflare/workers-types"

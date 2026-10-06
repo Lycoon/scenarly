@@ -1,0 +1,24 @@
+diff --git a/node_modules/hunspell-asm/dist/cjs/hunspellLoader.js b/node_modules/hunspell-asm/dist/cjs/hunspellLoader.js
+index a76850c..ce1d8a3 100644
+--- a/node_modules/hunspell-asm/dist/cjs/hunspellLoader.js
++++ b/node_modules/hunspell-asm/dist/cjs/hunspellLoader.js
+@@ -1,7 +1,7 @@
+ "use strict";
+ Object.defineProperty(exports, "__esModule", { value: true });
+ const emscripten_wasm_loader_1 = require("emscripten-wasm-loader");
+-const nanoid = require("nanoid");
++const { nanoid } = require("nanoid");
+ const logger_1 = require("./util/logger");
+ const wrapHunspellInterface_1 = require("./wrapHunspellInterface");
+ /**
+diff --git a/node_modules/hunspell-asm/dist/esm/hunspellLoader.js b/node_modules/hunspell-asm/dist/esm/hunspellLoader.js
+index a95a3d3..8df4977 100644
+--- a/node_modules/hunspell-asm/dist/esm/hunspellLoader.js
++++ b/node_modules/hunspell-asm/dist/esm/hunspellLoader.js
+@@ -1,5 +1,5 @@
+ import { mountBuffer, unmount } from 'emscripten-wasm-loader';
+-import * as nanoid from 'nanoid';
++import { nanoid } from 'nanoid';
+ import { log } from './util/logger';
+ import { wrapHunspellInterface } from './wrapHunspellInterface';
+ /**
