@@ -1,10 +1,11 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { join } from "@src/lib/utils/misc";
+import { useIsClient } from "@src/lib/utils/hooks";
 
 import menu from "./ProjectNavbarMobileMenu.module.css";
 
@@ -31,8 +32,7 @@ const ProjectNavbarMobileMenu = ({ isOpen, onClose, children }: ProjectNavbarMob
 
     // Portals need `document`, which doesn't exist during SSR — render nothing
     // until mounted so the server and first client render agree.
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
+    const mounted = useIsClient();
 
     if (!mounted) return null;
 

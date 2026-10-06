@@ -1,0 +1,26 @@
+{
+    "$comment": "High/critical advisories accepted by scripts/audit-gate.ts. Each entry covers only the listed install paths and lapses on `expires`, after which the release is blocked until it is fixed or re-reviewed.",
+    "entries": [
+        {
+            "advisories": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8", "GHSA-xwg4-73v4-xw9w"],
+            "paths": [
+                "node_modules/hunspell-asm/node_modules/nanoid",
+                "node_modules/emscripten-wasm-loader/node_modules/nanoid"
+            ],
+            "reason": "nanoid 2 inside the client-side spellchecker, called with its default size only. Every advisory needs a zero, negative or oversized size. Forcing nanoid 3 changes its API under hunspell-asm.",
+            "expires": "2027-01-01"
+        },
+        {
+            "advisories": ["GHSA-3f6p-5ww8-9rcr"],
+            "paths": ["node_modules/mysql2"],
+            "reason": "Pulled in by the prisma CLI for MySQL datasources. Scenarly runs on PostgreSQL, so it never opens a MySQL connection.",
+            "expires": "2027-01-01"
+        },
+        {
+            "advisories": ["GHSA-ggr8-5vv4-36mx"],
+            "paths": ["node_modules/deepmerge-ts"],
+            "reason": "Used by @prisma/config to merge prisma.config.ts, which is ours and not recursive. Never sees user input.",
+            "expires": "2027-01-01"
+        }
+    ]
+}

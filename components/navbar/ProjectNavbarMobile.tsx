@@ -154,11 +154,9 @@ const ProjectNavbarMobile = () => {
     // Opening a board while one of the text-only sheets is up would leave it
     // stranded — its trigger has just left the bar, so re-tapping to dismiss is no
     // longer possible. Close it with the buttons.
-    useEffect(() => {
-        if (!isEditorView && activePanel === "production") {
-            setActivePanel(null);
-        }
-    }, [isEditorView, activePanel]);
+    if (!isEditorView && activePanel === "production") {
+        setActivePanel(null);
+    }
 
     // Voice dictation into the editor being written in. On phone the mic lives
     // HERE rather than in the editor footer, which sits behind the on-screen

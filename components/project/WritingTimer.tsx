@@ -107,22 +107,22 @@ const WritingTimer = ({ triggerClassName, triggerActiveClassName }: WritingTimer
     const displayMs = mode === "countdown" ? Math.max(0, targetMs - elapsedMs) : elapsedMs;
     const clock = formatClock(displayMs, mode === "countdown");
 
-    // Tick while running.
+    // Tick while running; a countdown completes on the tick that reaches zero.
     useEffect(() => {
         if (!running) return;
-        const id = setInterval(() => setElapsedMs(Date.now() - startTsRef.current), 250);
+        const id = setInterval(() => {
+            const elapsed = Date.now() - startTsRef.current;
+            if (mode === "countdown" && elapsed >= targetMs) {
+                setRunning(false);
+                setElapsedMs(targetMs);
+                setCompleted(true);
+                playChime();
+            } else {
+                setElapsedMs(elapsed);
+            }
+        }, 250);
         return () => clearInterval(id);
-    }, [running]);
-
-    // Countdown completion.
-    useEffect(() => {
-        if (mode === "countdown" && running && elapsedMs >= targetMs) {
-            setRunning(false);
-            setElapsedMs(targetMs);
-            setCompleted(true);
-            playChime();
-        }
-    }, [mode, running, elapsedMs, targetMs]);
+    }, [running, mode, targetMs]);
 
     // Close the popover on outside click.
     useEffect(() => {

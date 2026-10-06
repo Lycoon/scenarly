@@ -5,7 +5,44 @@ on:
         branches: [dev]
 
 jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "25.2.1"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Get Playwright version
+              id: pw-version
+              run: echo "version=$(node -e "console.log(require('./node_modules/playwright-core/package.json').version)")" >> $GITHUB_OUTPUT
+
+            - name: Cache Playwright browsers
+              uses: actions/cache@v4
+              id: pw-cache
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: playwright-chromium-webkit-${{ steps.pw-version.outputs.version }}
+
+            - name: Install Playwright browsers and system deps
+              if: steps.pw-cache.outputs.cache-hit != 'true'
+              run: npx playwright install --with-deps chromium webkit
+
+            - name: Install Playwright system deps only
+              if: steps.pw-cache.outputs.cache-hit == 'true'
+              run: npx playwright install-deps chromium webkit
+
+            - name: Run tests
+              run: npx prisma generate && npx vitest run
+
     lint:
+        needs: test
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v6
@@ -27,6 +64,7 @@ jobs:
               run: npx prisma generate && npx tsc --noEmit
 
     build-macos:
+        needs: test
         runs-on: macos-latest
         steps:
             - uses: actions/checkout@v6
@@ -40,6 +78,7 @@ jobs:
               run: npm run build:macos
 
     build-windows:
+        needs: test
         runs-on: windows-latest
         steps:
             - uses: actions/checkout@v6
@@ -53,6 +92,7 @@ jobs:
               run: npm run build:windows
 
     build-docker:
+        needs: test
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v6
@@ -61,6 +101,7 @@ jobs:
               run: docker compose build app-prod
 
     benchmark:
+        needs: test
         runs-on: ubuntu-latest
         strategy:
             matrix:
