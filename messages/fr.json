@@ -1013,7 +1013,6 @@
       "rendering": "Génération du PDF…",
       "uploading": "Envoi…",
       "errors": {
-        "noFormat": "Choisissez un format.",
         "notPdf": "Choisissez un fichier PDF.",
         "tooLarge": "Le PDF dépasse {mb} Mo.",
         "noFile": "Choisissez d'abord un PDF.",
@@ -1024,13 +1023,15 @@
         "duplicate": "Ce PDF exact est déjà dans Coverage.",
         "failed": "Échec de la proposition. Réessayez."
       },
-      "showLabel": "Afficher uniquement",
-      "showScript": "Le scénario",
-      "showLogline": "Le pitch"
+      "next": "Suivant",
+      "steps": {
+        "script": "Scénario",
+        "details": "Détails",
+        "genres": "Genres"
+      }
     },
     "offers": {
-      "title": "Choisissez un scénario à relire",
-      "subtitle": "Cinq scénarios, tirés pour vous. Prenez-en un : vous avez trois semaines pour le lire et écrire vos notes, envoyables après une.",
+      "title": "Relire un scénario",
       "pages": "{count, plural, one {# page} other {# pages}}",
       "reviewsSoFar": "{count, plural, =0 {aucune relecture} one {# relecture} other {# relectures}}",
       "claim": "Relire celui-ci",
@@ -1158,8 +1159,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "Scénario complet",
         "PILOT": "Pilote",
-        "SHORT": "Court métrage",
-        "LOGLINE": "Pitch"
+        "SHORT": "Court métrage"
       }
     },
     "showcase": {
@@ -1183,8 +1183,7 @@
       "previous": "Précédent",
       "next": "Suivant",
       "pageOf": "Page {page} sur {count}",
-      "backToWall": "Tous les scénarios",
-      "loglineOnly": "L'auteur n'a partagé que le pitch."
+      "backToWall": "Tous les scénarios"
     }
   }
 }

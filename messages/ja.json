@@ -1012,7 +1012,6 @@
       "rendering": "PDF を生成中…",
       "uploading": "アップロード中…",
       "errors": {
-        "noFormat": "形式を選んでください。",
         "notPdf": "PDF ファイルを選択してください。",
         "tooLarge": "PDF が {mb} MB を超えています。",
         "noFile": "まず PDF を選択してください。",
@@ -1023,13 +1022,15 @@
         "duplicate": "この PDF はすでに Coverage にあります。",
         "failed": "提出に失敗しました。もう一度お試しください。"
       },
-      "showLabel": "次のみ表示",
-      "showScript": "脚本",
-      "showLogline": "ログライン"
+      "next": "次へ",
+      "steps": {
+        "script": "脚本",
+        "details": "詳細",
+        "genres": "ジャンル"
+      }
     },
     "offers": {
-      "title": "講評する脚本を選ぶ",
-      "subtitle": "あなた向けに抽選された 5 本です。1 本引き受けると、読んで意見を書くのに 3 週間あります。送信は 1 週間後から可能です。",
+      "title": "脚本を講評",
       "pages": "{count} ページ",
       "reviewsSoFar": "{count, plural, =0 {まだ講評なし} other {これまでの講評 # 本}}",
       "claim": "これを講評する",
@@ -1157,8 +1158,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "脚本全体",
         "PILOT": "パイロット",
-        "SHORT": "短編",
-        "LOGLINE": "ログライン"
+        "SHORT": "短編"
       }
     },
     "showcase": {
@@ -1182,8 +1182,7 @@
       "previous": "前へ",
       "next": "次へ",
       "pageOf": "{page} / {count} ページ",
-      "backToWall": "すべての脚本",
-      "loglineOnly": "作者はログラインのみを共有しています。"
+      "backToWall": "すべての脚本"
     }
   }
 }

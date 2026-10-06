@@ -14,7 +14,7 @@ import {
     MAX_PDF_BYTES,
     TITLE_MAX_LENGTH,
 } from "@src/lib/community/constants";
-import { CommunityFormat, CommunityGenre, CommunityShowcaseKind } from "@src/generated/client/client";
+import { CommunityFormat, CommunityGenre } from "@src/generated/client/client";
 
 import z from "zod";
 
@@ -26,7 +26,6 @@ const FieldsSchema = z.object({
     format: z.nativeEnum(CommunityFormat).default(CommunityFormat.FEATURE),
     sourceProjectId: z.string().optional(),
     destination: z.enum(["COVERAGE", "SHOWCASE_ONLY"]).default("COVERAGE"),
-    kind: z.nativeEnum(CommunityShowcaseKind).optional(),
 });
 
 export async function readSubmissionForm(req: NextRequest) {
@@ -45,7 +44,6 @@ export async function readSubmissionForm(req: NextRequest) {
         format: form.get("format") ?? undefined,
         sourceProjectId: form.get("sourceProjectId") ?? undefined,
         destination: form.get("destination") ?? undefined,
-        kind: form.get("kind") ?? undefined,
     });
 
     return { bytes: new Uint8Array(await file.arrayBuffer()), fields };

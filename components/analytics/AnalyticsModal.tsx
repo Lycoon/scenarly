@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, ComponentType, ReactNode } from "react";
+import { useEffect, ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { BarChart2, Clapperboard, Users, MapPin, FileBarChart, X } from "lucide-react";
 
-import { useIsPhone } from "@src/lib/utils/hooks";
+import { useIsClient, useIsPhone } from "@src/lib/utils/hooks";
 
 import ScenesStats from "./stats/ScenesStats";
 import CharactersStats from "./stats/CharactersStats";
@@ -51,10 +51,8 @@ interface AnalyticsModalProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
-    const [mounted, setMounted] = useState(false);
+    const mounted = useIsClient();
     const isPhone = useIsPhone();
-
-    useEffect(() => setMounted(true), []);
 
     // ESC key closes the modal
     useEffect(() => {

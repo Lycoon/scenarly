@@ -13,7 +13,24 @@ permissions:
     packages: write
 
 jobs:
+    # Every release job waits on `prepare`, which waits on this: nothing is
+    # built or published while a production dependency has an unaccepted high
+    # or critical advisory (see scripts/audit-allowlist.json).
+    audit:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "25.2.1"
+
+            - name: Block on high/critical advisories
+              run: node scripts/audit-gate.ts
+
     prepare:
+        needs: audit
         runs-on: ubuntu-latest
         outputs:
             version: ${{ steps.version.outputs.version }}

@@ -2,13 +2,12 @@
 
 import { ReactNode, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FileText, Ticket, Upload } from "lucide-react";
+import { Check, FileText, Ticket, Upload } from "lucide-react";
 import { useSWRConfig } from "swr";
 
 import BackButton from "@components/utils/BackButton";
 import { CommunityFormat, CommunityGenre } from "@src/generated/client/browser";
 import { createSubmission, isApiError, uploadToShowcase } from "@src/lib/community/requests";
-import { FULL_KIND_BY_FORMAT } from "@src/lib/community/showcase";
 import { useCommunityMe } from "@src/lib/community/hooks";
 import {
     COVERAGE_PAGE_BOUNDS,
@@ -33,8 +32,13 @@ export type SubmitSource =
 /** Coverage: feature only, costs tickets, gets reviewed. Showcase only: any format, free. */
 export type SubmitDestination = "COVERAGE" | "SHOWCASE_ONLY";
 
+/** The form's steps, in order: the file and its format, then what it is about, then its genres. */
+type SubmitStep = "script" | "details" | "genres";
+
 interface SubmitFormProps {
     source: SubmitSource;
+    /** The page's heading, held above the separator and the steps. A popup leaves it to its own header. */
+    title?: ReactNode;
     destination?: SubmitDestination;
     initialTitle?: string;
     initialLogline?: string;
@@ -48,12 +52,19 @@ interface SubmitFormProps {
  * The submission form both paths share. The upload path adds a file field; the
  * project path renders the PDF with `buildPdf` at submit time. Coverage takes
  * feature scripts only, so there is no format to pick and the page bounds are
- * fixed; a Showcase-only submission picks its format, which sets the bounds,
- * and whether the wall shows its PDF or only its logline, and costs nothing. Field rules mirror the API's zod schema through the
- * shared constants.
+ * fixed; a Showcase-only submission picks its format, which sets the bounds
+ * and the kind it is shown as, and costs nothing. Field rules mirror the API's
+ * zod schema through the shared constants.
+ *
+ * The fields come one step at a time under a sticky header — the title, a
+ * separator, the steps — so the form never shows everything at once. The
+ * script step only exists when there is something to pick: the project path
+ * to Coverage starts at the details. Next checks the step it leaves; Submit
+ * checks them all and returns to the first one that is wrong.
  */
 const SubmitForm = ({
     source,
+    title: heading,
     destination = "COVERAGE",
     initialTitle = "",
     initialLogline = "",
@@ -71,17 +82,18 @@ const SubmitForm = ({
     const [title, setTitle] = useState(initialTitle);
     const [logline, setLogline] = useState(initialLogline);
     const [genres, setGenres] = useState<CommunityGenre[]>([]);
-    const [format, setFormat] = useState<CommunityFormat | null>(null);
-    // Showcase only: publish the PDF, or keep it private and show the logline alone.
-    const [loglineOnly, setLoglineOnly] = useState(false);
+    const [format, setFormat] = useState<CommunityFormat>(CommunityFormat.FEATURE);
     const [busy, setBusy] = useState<"idle" | "rendering" | "uploading">("idle");
     const [error, setError] = useState<string | null>(null);
+    const [step, setStep] = useState(0);
+    // The furthest step reached, so the step bar can jump back to it.
+    const [reached, setReached] = useState(0);
 
     const coverage = destination === "COVERAGE";
     const cost = coverage ? SUBMISSION_COST : 0;
     const balance = me?.balance ?? 0;
     const canAfford = balance >= cost;
-    const bounds = coverage ? COVERAGE_PAGE_BOUNDS : format ? PAGE_BOUNDS[format] : null;
+    const bounds = coverage ? COVERAGE_PAGE_BOUNDS : PAGE_BOUNDS[format];
     const maxMb = Math.round(MAX_PDF_BYTES / 1024 ** 2);
 
     const toggleGenre = (g: CommunityGenre) =>
@@ -97,19 +109,48 @@ const SubmitForm = ({
         setFile(picked);
     };
 
-    const validate = (): string | null => {
-        if (!coverage && !format) return t("errors.noFormat");
-        if (source.kind === "upload" && !file) return t("errors.noFile");
-        if (!title.trim()) return t("errors.noTitle");
-        if (logline.trim().length < LOGLINE_MIN_LENGTH) return t("errors.loglineShort", { min: LOGLINE_MIN_LENGTH });
-        if (genres.length === 0) return t("errors.noGenre");
-        if (!canAfford) return t("errors.tickets", { cost, balance });
-        return null;
+    const steps: SubmitStep[] = [...(source.kind === "upload" || !coverage ? (["script"] as const) : []), "details", "genres"];
+    const current = steps[step];
+    const last = step === steps.length - 1;
+
+    const validateStep = (s: SubmitStep): string | null => {
+        switch (s) {
+            case "script":
+                if (source.kind === "upload" && !file) return t("errors.noFile");
+                return null;
+            case "details":
+                if (!title.trim()) return t("errors.noTitle");
+                if (logline.trim().length < LOGLINE_MIN_LENGTH) return t("errors.loglineShort", { min: LOGLINE_MIN_LENGTH });
+                return null;
+            case "genres":
+                return genres.length === 0 ? t("errors.noGenre") : null;
+        }
     };
 
-    const onSubmit = async () => {
-        const problem = validate();
+    const goTo = (index: number) => {
+        setError(null);
+        setStep(index);
+        setReached((r) => Math.max(r, index));
+    };
+
+    // Tickets are checked on every step so a short balance shows up front, not after the whole form.
+    const onNext = () => {
+        const problem = canAfford ? validateStep(current) : t("errors.tickets", { cost, balance });
         if (problem) return setError(problem);
+        goTo(step + 1);
+    };
+
+    const onStepBack = () => (step > 0 ? goTo(step - 1) : onBack?.());
+
+    const onSubmit = async () => {
+        for (let i = 0; i < steps.length; i++) {
+            const problem = validateStep(steps[i]);
+            if (problem) {
+                setStep(i);
+                return setError(problem);
+            }
+        }
+        if (!canAfford) return setError(t("errors.tickets", { cost, balance }));
         setError(null);
         try {
             let blob: Blob;
@@ -124,13 +165,13 @@ const SubmitForm = ({
                 title: title.trim(),
                 logline: logline.trim(),
                 genres,
-                format: format ?? undefined,
+                format,
                 sourceProjectId: source.kind === "project" ? source.projectId : undefined,
                 destination,
             };
             const created = coverage
                 ? await createSubmission(blob, fields)
-                : await uploadToShowcase(blob, fields, loglineOnly ? "LOGLINE" : FULL_KIND_BY_FORMAT[format!]);
+                : await uploadToShowcase(blob, fields);
             await Promise.all([mutateMe(), mutate("/api/community/submissions")]);
             onSubmitted(created.id);
         } catch (e) {
@@ -147,7 +188,28 @@ const SubmitForm = ({
 
     return (
         <div className={styles.section} style={{ gap: 18 }}>
-            {!coverage && (
+            <div className={styles.formHeader}>
+                {heading}
+                <ol className={styles.steps}>
+                    {steps.map((s, i) => (
+                        <li key={s} className={styles.stepItem}>
+                            {i > 0 && <span className={styles.stepLine} aria-hidden />}
+                            <button
+                                type="button"
+                                className={`${styles.step} ${i === step ? styles.stepActive : ""}`}
+                                onClick={() => goTo(i)}
+                                disabled={i === step || i > reached || busy !== "idle"}
+                                aria-current={i === step ? "step" : undefined}
+                            >
+                                <span className={styles.stepNumber}>{i < step ? <Check size={12} strokeWidth={3} /> : i + 1}</span>
+                                <span className={styles.stepLabel}>{t(`steps.${s}`)}</span>
+                            </button>
+                        </li>
+                    ))}
+                </ol>
+            </div>
+
+            {current === "script" && !coverage && (
                 <div className={styles.field}>
                     <label className={form.label}>{t("formatLabel")}</label>
                     <div className={styles.row} style={{ gap: 6 }}>
@@ -160,21 +222,7 @@ const SubmitForm = ({
                 </div>
             )}
 
-            {!coverage && (
-                <div className={styles.field}>
-                    <label className={form.label}>{t("showLabel")}</label>
-                    <div className={styles.row} style={{ gap: 6 }}>
-                        <Chip on={!loglineOnly} onClick={() => setLoglineOnly(false)}>
-                            {t("showScript")}
-                        </Chip>
-                        <Chip on={loglineOnly} onClick={() => setLoglineOnly(true)}>
-                            {t("showLogline")}
-                        </Chip>
-                    </div>
-                </div>
-            )}
-
-            {source.kind === "upload" && (
+            {current === "script" && source.kind === "upload" && (
                 <div
                     className={styles.notice}
                     style={{ cursor: "pointer", alignItems: "center", textAlign: "center" }}
@@ -206,49 +254,55 @@ const SubmitForm = ({
                 </div>
             )}
 
-            <div className={styles.field}>
-                <label className={form.label}>{t("titleLabel")}</label>
-                <input
-                    className={styles.input}
-                    value={title}
-                    maxLength={TITLE_MAX_LENGTH}
-                    onChange={(e) => setTitle(e.target.value)}
-                />
-            </div>
+            {current === "details" && (
+                <>
+                    <div className={styles.field}>
+                        <label className={form.label}>{t("titleLabel")}</label>
+                        <input
+                            className={styles.input}
+                            value={title}
+                            maxLength={TITLE_MAX_LENGTH}
+                            onChange={(e) => setTitle(e.target.value)}
+                        />
+                    </div>
 
-            <div className={styles.field}>
-                <div className={styles.labelRow}>
-                    <label className={form.label}>{t("loglineLabel")}</label>
-                    <span className={styles.hint}>
-                        {t("loglineHint", { count: logline.trim().length, min: LOGLINE_MIN_LENGTH, max: LOGLINE_MAX_LENGTH })}
-                    </span>
-                </div>
-                <textarea
-                    className={styles.textarea}
-                    style={{ minHeight: 100 }}
-                    value={logline}
-                    maxLength={LOGLINE_MAX_LENGTH}
-                    onChange={(e) => setLogline(e.target.value)}
-                    placeholder={t("loglinePlaceholder")}
-                />
-            </div>
+                    <div className={styles.field}>
+                        <div className={styles.labelRow}>
+                            <label className={form.label}>{t("loglineLabel")}</label>
+                            <span className={styles.hint}>
+                                {t("loglineHint", { count: logline.trim().length, min: LOGLINE_MIN_LENGTH, max: LOGLINE_MAX_LENGTH })}
+                            </span>
+                        </div>
+                        <textarea
+                            className={styles.textarea}
+                            style={{ minHeight: 100 }}
+                            value={logline}
+                            maxLength={LOGLINE_MAX_LENGTH}
+                            onChange={(e) => setLogline(e.target.value)}
+                            placeholder={t("loglinePlaceholder")}
+                        />
+                    </div>
+                </>
+            )}
 
-            <div className={styles.field}>
-                <label className={form.label}>{t("genresLabel", { max: GENRES_MAX })}</label>
-                <div className={styles.row} style={{ gap: 6 }}>
-                    {Object.values(CommunityGenre).map((g) => (
-                        <Chip key={g} on={genres.includes(g)} onClick={() => toggleGenre(g)}>
-                            {tEnum(`genres.${g}`)}
-                        </Chip>
-                    ))}
+            {current === "genres" && (
+                <div className={styles.field}>
+                    <label className={form.label}>{t("genresLabel", { max: GENRES_MAX })}</label>
+                    <div className={styles.row} style={{ gap: 6 }}>
+                        {Object.values(CommunityGenre).map((g) => (
+                            <Chip key={g} on={genres.includes(g)} onClick={() => toggleGenre(g)}>
+                                {tEnum(`genres.${g}`)}
+                            </Chip>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className={styles.actions}>
                 <div className={`${styles.row} ${styles.rowEnd} ${styles.actionRow}`}>
-                    {onBack && (
+                    {(step > 0 || onBack) && (
                         <div className={styles.actionBack}>
-                            <BackButton onClick={onBack} />
+                            <BackButton onClick={onStepBack} />
                         </div>
                     )}
                     {onCancel && (
@@ -256,23 +310,34 @@ const SubmitForm = ({
                             {t("cancel")}
                         </button>
                     )}
-                    <button type="button" className={`${styles.btn} ${styles.btnWide}`} onClick={onSubmit} disabled={busy !== "idle" || !canAfford}>
-                        {busy === "rendering" ? (
-                            t("rendering")
-                        ) : busy === "uploading" ? (
-                            t("uploading")
-                        ) : (
-                            <>
-                                {t("submit")}
-                                {cost > 0 && (
-                                    <span className={styles.btnCost}>
-                                        <Ticket size={15} />
-                                        {cost}
-                                    </span>
-                                )}
-                            </>
-                        )}
-                    </button>
+                    {!last ? (
+                        <button type="button" className={`${styles.btn} ${styles.btnWide}`} onClick={onNext}>
+                            {t("next")}
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            className={`${styles.btn} ${styles.btnWide}`}
+                            onClick={onSubmit}
+                            disabled={busy !== "idle" || !canAfford}
+                        >
+                            {busy === "rendering" ? (
+                                t("rendering")
+                            ) : busy === "uploading" ? (
+                                t("uploading")
+                            ) : (
+                                <>
+                                    {t("submit")}
+                                    {cost > 0 && (
+                                        <span className={styles.btnCost}>
+                                            <Ticket size={15} />
+                                            {cost}
+                                        </span>
+                                    )}
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
                 {error && <span className={`${styles.error} ${styles.actionError}`}>{error}</span>}
             </div>
@@ -280,7 +345,7 @@ const SubmitForm = ({
     );
 };
 
-/** A toggle in the format, genre and Showcase pickers. */
+/** A toggle in the format and genre pickers. */
 export const Chip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) => (
     <button
         type="button"

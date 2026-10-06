@@ -11,8 +11,8 @@ const ParamsSchema = z.object({ slug: z.string().max(200) });
 /**
  * GET `/community/public/showcase/[slug]/pdf`
  *
- * Short-lived inline URL of a published entry's PDF, unwatermarked. 404 for a
- * LOGLINE entry or one that is no longer published. Public.
+ * Short-lived inline URL of a published entry's PDF, unwatermarked. 404 for an
+ * entry that is no longer published. Public.
  */
 async function getEntryPdf(req: NextRequest, { routeParams }: ApiContext) {
     const { slug } = validate(ParamsSchema, routeParams);

@@ -118,6 +118,20 @@ const useMediaQuery = (query: string): boolean => {
     return useSyncExternalStore(subscribe, getSnapshot, () => false);
 };
 
+const subscribeNever = () => () => {};
+
+/**
+ * False during SSR and the hydration render, true on the client after. For
+ * portals, which need `document`: same timing as a mount effect that sets a
+ * flag, without the extra effect-driven render.
+ */
+export const useIsClient = (): boolean =>
+    useSyncExternalStore(
+        subscribeNever,
+        () => true,
+        () => false,
+    );
+
 // Phone breakpoint: below this the editor switches to the single-panel drawer
 // layout. At or above it (iPad, resized desktop windows) the desktop layout is
 // kept. Keep in sync with the @media (max-width: 767px) blocks in the CSS.

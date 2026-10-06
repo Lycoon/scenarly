@@ -139,10 +139,7 @@ const ReviewPage = () => {
                     </div>
                 )}
                 <div className={styles.pageHeader}>
-                    <div className={styles.section} style={{ gap: 6 }}>
-                        <h1 className={styles.pageTitle}>{t("title")}</h1>
-                        <p className={styles.pageSubtitle}>{t("subtitle")}</p>
-                    </div>
+                    <h1 className={styles.pageTitle}>{t("title")}</h1>
                     {!thinPool && (
                         <button
                             className={`${styles.btn} ${styles.btnOutline}`}

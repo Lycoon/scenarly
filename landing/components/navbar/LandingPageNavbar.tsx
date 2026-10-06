@@ -8,9 +8,9 @@ import { Menu, X } from "lucide-react";
 
 import styles from "./LandingPageNavbar.module.css";
 
-// The static landing only has four routes; derive the current one from the
+// The static landing only has a handful of routes; derive the current one from the
 // pathname (mirrors the app's usePage() without pulling in the app's hooks).
-type LandingPage = "index" | "manifesto" | "privacy" | "contact";
+type LandingPage = "index" | "manifesto" | "privacy" | "terms" | "contact";
 
 // /community is served by the app, not this static site: same origin in
 // production, the app's dev URL locally (see HomePageContainer).
@@ -26,7 +26,7 @@ function usePage(): LandingPage | undefined {
     const segments = pathname.split("/").filter(Boolean);
     if (segments.length === 0) return "index";
     const last = segments[segments.length - 1];
-    return last === "manifesto" || last === "privacy" || last === "contact" ? last : "index";
+    return last === "manifesto" || last === "privacy" || last === "terms" || last === "contact" ? last : "index";
 }
 
 export default function LandingPageNavbar() {
