@@ -37,13 +37,18 @@ export async function POST(req: NextRequest) {
 
     switch (type) {
         // A paid period started or was extended: (re)subscribe, renew, an
-        // offer or a goodwill extension. Autorenew status rides along when
-        // Apple included the renewal info.
+        // offer, a goodwill extension, or a refund Apple took back. A switch
+        // between monthly and yearly lands here too: an upgrade starts a new
+        // period at once with its own expiry, while a downgrade or crossgrade
+        // waits for the renewal and leaves the current transaction as it is.
+        // Autorenew status rides along when Apple included the renewal info.
         case "SUBSCRIBED":
         case "DID_RENEW":
         case "OFFER_REDEEMED":
         case "RENEWAL_EXTENDED":
         case "RENEWAL_EXTENSION":
+        case "REFUND_REVERSED":
+        case "DID_CHANGE_RENEWAL_PREF":
             await SubscriptionService.grantApple(subscriber, tx, renewal?.autoRenewStatus === 0);
             break;
 

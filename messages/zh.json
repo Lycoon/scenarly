@@ -356,6 +356,7 @@
       "appleBilledInfo": "您的订阅通过 App Store 计费。请在 Apple ID 的订阅设置中取消或续订。",
       "webBilledInfo": "您的订阅通过 Scenarly 网站计费。",
       "playNotSold": "暂时无法在 Android 应用中购买 Scenarly {plan}。在 Scenarly 网站上购买的方案，登录后即可在此使用。",
+      "grantedInfo": "此方案已免费赠予您的账户。不会产生任何费用，也不会自动续订。",
       "checkoutConsent": "我同意[服务条款]({termsUrl})，并要求 Scenarly {plan} 立即开始。如果我在 14 天内撤回，将退还未使用天数的费用。",
       "withdraw": "撤回合同",
       "withdrawHint": "在 {date} 之前，您可以撤回：{plan} 将立即结束，并退还 {refund}。如果改为取消订阅，{plan} 将保留到本期结束，不予退款。",
@@ -872,15 +873,24 @@
     "signInAndUpgrade": "登录并升级"
   },
   "auth": {
-    "intro": "输入您的邮箱，我们将向您发送一次性登录链接。无需密码。",
+    "intro": "输入您的邮箱，我们将向您发送 6 位数登录验证码。无需密码。",
     "emailLabel": "电子邮箱",
-    "sendLink": "发送登录链接",
+    "sendCode": "发送登录验证码",
     "sending": "正在发送...",
-    "checkInbox": "如果有账号关联到 {email}，登录链接已发送。该链接将在接下来的 10 分钟内有效。",
+    "codeSent": "我们已向 {email} 发送了 6 位数验证码，有效期为 10 分钟。",
+    "codeLabel": "登录验证码",
+    "verify": "登录",
+    "verifying": "正在登录...",
+    "resendCode": "重新发送验证码",
+    "newCodeSent": "新验证码已发送。仅最新的验证码有效。",
     "useDifferentEmail": "使用其他邮箱",
-    "waitingForClick": "正在等待您点击收件箱中的链接...",
-    "requestFailed": "无法发送登录链接，请稍后重试。",
-    "desktopTimeout": "登录已超时，请重新申请新链接。"
+    "requestFailed": "无法发送登录验证码，请稍后重试。",
+    "verifyFailed": "无法登录，请稍后重试。",
+    "throttled": "此地址请求的验证码过多，请等待几分钟。",
+    "invalidCode": "验证码不正确，请检查后重试。",
+    "expiredCode": "此验证码已过期或已被使用，请重新获取。",
+    "locked": "此地址输入错误验证码的次数过多。请明天再试，或使用 Google 或 Apple 继续。",
+    "notAllowed": "此地址无权访问此环境。"
   },
   "oauth": {
     "orContinueWith": "或继续使用",

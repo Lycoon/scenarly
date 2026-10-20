@@ -356,6 +356,7 @@
       "appleBilledInfo": "Tu suscripción se factura a través de App Store. Cancélala o renuévala desde las suscripciones de tu ID de Apple.",
       "webBilledInfo": "Tu suscripción se factura a través del sitio web de Scenarly.",
       "playNotSold": "Scenarly {plan} todavía no se puede comprar en la app de Android. Una suscripción contratada en el sitio web de Scenarly funciona aquí una vez que inicies sesión.",
+      "grantedInfo": "Este plan se ha otorgado a tu cuenta de forma gratuita. No se factura nada y no se renovará.",
       "checkoutConsent": "Acepto los [Términos del servicio]({termsUrl}) y solicito que Scenarly {plan} empiece de inmediato. Si desisto en un plazo de 14 días, se me reembolsan los días no utilizados.",
       "withdraw": "Desistir del contrato",
       "withdrawHint": "Hasta el {date}, puedes desistir: {plan} termina de inmediato y se te reembolsan {refund}. Si cancelas, conservas {plan} hasta el final del periodo, sin reembolso.",
@@ -872,15 +873,24 @@
     "signInAndUpgrade": "Iniciar sesión y actualizar"
   },
   "auth": {
-    "intro": "Introduce tu correo y te enviaremos un enlace de inicio de sesión de un solo uso. No necesitas contraseña.",
+    "intro": "Introduce tu correo y te enviaremos un código de inicio de sesión de 6 dígitos. No necesitas contraseña.",
     "emailLabel": "Correo electrónico",
-    "sendLink": "Enviar enlace de inicio de sesión",
+    "sendCode": "Enviar código de inicio de sesión",
     "sending": "Enviando...",
-    "checkInbox": "Si existe una cuenta asociada a {email}, se ha enviado un enlace de inicio de sesión. El enlace es válido durante los próximos 10 minutos.",
+    "codeSent": "Hemos enviado un código de 6 dígitos a {email}. Es válido durante 10 minutos.",
+    "codeLabel": "Código de inicio de sesión",
+    "verify": "Iniciar sesión",
+    "verifying": "Iniciando sesión...",
+    "resendCode": "Enviar un nuevo código",
+    "newCodeSent": "Un nuevo código está en camino. Solo funciona el código más reciente.",
     "useDifferentEmail": "Usar otro correo electrónico",
-    "waitingForClick": "Esperando a que hagas clic en el enlace de tu bandeja de entrada...",
-    "requestFailed": "No se pudo enviar el enlace de inicio de sesión. Por favor, vuelve a intentarlo en un momento.",
-    "desktopTimeout": "El tiempo de inicio de sesión expiró. Por favor, solicita un nuevo enlace."
+    "requestFailed": "No se pudo enviar el código de inicio de sesión. Por favor, vuelve a intentarlo en un momento.",
+    "verifyFailed": "No se pudo iniciar sesión. Por favor, vuelve a intentarlo en un momento.",
+    "throttled": "Se han solicitado demasiados códigos para esta dirección. Espera unos minutos.",
+    "invalidCode": "Este código no es correcto. Compruébalo e inténtalo de nuevo.",
+    "expiredCode": "Este código ha caducado o ya se ha usado. Solicita uno nuevo.",
+    "locked": "Demasiados códigos incorrectos para esta dirección. Inténtalo de nuevo mañana o continúa con Google o Apple.",
+    "notAllowed": "Esta dirección no tiene acceso a este entorno."
   },
   "oauth": {
     "orContinueWith": "o continuar con",

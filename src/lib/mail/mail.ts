@@ -33,11 +33,14 @@ export const sendDataExportEmail = async (email: string) => {
     sendFormattedEmail(email, "Your data export", "Your data export is ready", content, "Open Scenarly", BASE_URL);
 };
 
-export const sendMagicLinkEmail = async (email: string, token: string) => {
-    const link = `${BASE_URL}/auth/magic-link?token=${token}`;
-    const content = `Click the button below to sign in to your Scenarly account. This link will expire in 10 minutes and can only be used once. If you didn't request this, you can safely ignore this email.`;
+/**
+ * The code leads the subject so it shows in the notification, where mail
+ * apps also offer to fill it in. No link: the code is typed where it was asked for.
+ */
+export const sendSignInCodeEmail = async (email: string, code: string) => {
+    const content = `Enter this code in Scenarly to sign in. It expires in 10 minutes and works once. Never share it: Scenarly will never ask you for it.`;
 
-    sendFormattedEmail(email, "Sign in to Scenarly", "Your sign-in link", content, "Sign in", link);
+    sendFormattedEmail(email, "Your sign-in code", `${code} is your Scenarly sign-in code`, content, null, null, code);
 };
 
 /** Coverage: a review landed on the author's submission. Carries no review text. */
@@ -145,8 +148,9 @@ const sendFormattedEmail = async (
     welcomeMessage: string,
     subject: string,
     bodyText: string,
-    buttonText: string,
-    link: string,
+    buttonText: string | null,
+    link: string | null,
+    code: string | null = null,
 ) => {
     const template = fs.readFileSync("./src/lib/mail/template.html").toString();
     const signature = fs.readFileSync("./src/lib/mail/signature.html").toString();
@@ -156,10 +160,15 @@ const sendFormattedEmail = async (
         buttonText,
         welcomeMessage,
         link,
+        code,
+        // Shown as two groups of three, which are easier to hold in mind; the
+        // gap is a small space, so a copied code still pastes (the form drops it).
+        codeHead: code?.slice(0, 3),
+        codeTail: code?.slice(3),
         signature,
     });
 
-    sendEmail(email, subject, rendered, bodyText);
+    sendEmail(email, subject, rendered, code ? `${code.slice(0, 3)} ${code.slice(3)}\n\n${bodyText}` : bodyText);
 };
 
 export const sendContactEmail = async (email: string, reason: string, message: string) => {

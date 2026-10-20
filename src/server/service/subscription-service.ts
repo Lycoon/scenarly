@@ -131,7 +131,7 @@ export async function cancelAllForDeletion(userId: string): Promise<void> {
             // no longer map the subscription back to anyone.
             await getStripe().subscriptions.cancel(row.providerId);
             if (user) void sendDeletionCancellationEmail(user.email, PLAN_NAMES[row.plan], now);
-        } else {
+        } else if (row.provider === "APPLE") {
             // Only the user can cancel an App Store subscription, from their
             // Apple ID settings; logged so support can point them there.
             logger.info("[Subscription] Deleted account still had an App Store subscription", {
@@ -141,6 +141,39 @@ export async function cancelAllForDeletion(userId: string): Promise<void> {
             });
         }
     }
+}
+
+/* Grants */
+
+/**
+ * Give a plan away until `expiresAt`: the account the app stores' reviewers
+ * sign in with must hold every plan, and the Google Play build cannot sell
+ * one. Who holds a grant is data, set from the admin panel, so nothing about
+ * it lives in the source. Nothing is billed and nothing renews, hence
+ * `cancelled`. A plan a store is billing is never replaced — its events
+ * would no longer find their row while the user went on paying.
+ */
+export async function grantPlan(userId: string, plan: Plan, expiresAt: Date) {
+    const current = await getSubscription(userId, plan);
+    if (current && current.provider !== "GRANT" && isSubscriptionActive(current)) {
+        throw new ConflictError(`${plan} is already billed through ${current.provider}`);
+    }
+    await repository.upsert(userId, plan, {
+        provider: "GRANT",
+        // Unique per provider, and a user can hold a grant of each plan.
+        providerId: `${userId}:${plan}`,
+        expiresAt,
+        cancelled: true,
+    });
+    logger.info("[Subscription] Plan granted", { userId, plan, expiresAt });
+}
+
+/** Take a granted plan back now. No store is involved, so the row just goes. */
+export async function revokeGrant(userId: string, plan: Plan) {
+    const current = await getSubscription(userId, plan);
+    if (current?.provider !== "GRANT") throw new ConflictError(`${plan} is not a granted plan`);
+    await repository.delete(userId, plan);
+    logger.info("[Subscription] Grant revoked", { userId, plan });
 }
 
 /* Stripe */
@@ -192,11 +225,19 @@ async function confirmStripeSubscription(userId: string, plan: Plan, subscriptio
     });
 }
 
-/** customer.subscription.updated — renewal, cancellation toggle, or payment trouble. */
-export async function syncStripe(subscription: Stripe.Subscription) {
+/**
+ * Bring the plan in line with the Stripe subscription as it stands now — on a
+ * renewal paid or failed, a cancellation toggled, or the subscription ending.
+ * Every such event lands here with only the subscription id: Stripe does not
+ * deliver events in order, so the subscription is read fresh rather than
+ * taken from the event, and a late "active" cannot reopen an ended plan.
+ */
+export async function syncStripe(subscriptionId: string) {
     // No row means it is not ours, or the plan has since moved to Apple.
-    const row = await repository.fetchByProviderId("STRIPE", subscription.id);
+    const row = await repository.fetchByProviderId("STRIPE", subscriptionId);
     if (!row) return;
+
+    const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
 
     // Stripe advances the period on a renewal attempt before the charge
     // succeeds, so the period end alone would extend the plan through a
@@ -211,8 +252,17 @@ export async function syncStripe(subscription: Stripe.Subscription) {
     if (!periodEnd) return;
     await repository.update(row.userId, row.plan, {
         expiresAt: periodEnd,
-        cancelled: subscription.cancel_at_period_end,
+        // A cancellation set from the Dashboard may name a date instead of the period end.
+        cancelled: subscription.cancel_at_period_end || subscription.cancel_at !== null,
     });
+}
+
+/** The subscription an invoice bills, if any — read fresh, whatever API version the webhook payload uses. */
+export async function stripeInvoiceSubscription(invoiceId: string): Promise<string | null> {
+    const invoice = await getStripe().invoices.retrieve(invoiceId);
+    const subscription = invoice.parent?.subscription_details?.subscription;
+    if (!subscription) return null;
+    return typeof subscription === "string" ? subscription : subscription.id;
 }
 
 /** customer.subscription.deleted — the subscription is gone for good. */

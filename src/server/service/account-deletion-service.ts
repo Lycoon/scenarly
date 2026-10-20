@@ -8,7 +8,7 @@
  *  2. projects they merely collaborate on — a room blacklist so a live socket
  *     is dropped instead of editing on with credentials that outlive the
  *     account (the membership row itself cascades in step 4).
- *  3. rows keyed by email rather than by a FK to User (magic-link tokens,
+ *  3. rows keyed by email rather than by a FK to User (sign-in codes,
  *     Auth.js verification tokens, pending invitations addressed to them).
  *     None of these can be a foreign key: all three are written for addresses
  *     that have no account yet — sign-up links and invitations to strangers.
@@ -26,7 +26,7 @@
 import * as CollabUtils from "@src/lib/cloud/utils";
 import * as CommunityAccountService from "@src/server/service/community-account-service";
 import * as S3 from "@src/lib/s3";
-import * as MagicLinkService from "@src/server/service/magic-link-service";
+import * as SignInCodeService from "@src/server/service/sign-in-code-service";
 import * as ProjectService from "@src/server/service/project-service";
 import * as UserService from "@src/server/service/user-service";
 import * as SubscriptionService from "@src/server/service/subscription-service";
@@ -59,7 +59,7 @@ export async function deleteAccount(userId: string): Promise<boolean> {
     }
 
     await Promise.all([
-        MagicLinkService.deleteForEmail(user.email),
+        SignInCodeService.deleteForEmail(user.email),
         UserService.deleteVerificationTokens(user.email),
         ProjectService.deleteInvitesByEmail(user.email),
         // Any GDPR export zip still sitting in R2 (best-effort, logged inside).

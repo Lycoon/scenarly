@@ -262,6 +262,11 @@ const SubscriptionSettings = () => {
         const name = planName(plan);
         const expiry = subscription ? formatDate(subscription.expiresAt) : "";
 
+        if (active && subscription?.provider === "GRANT") {
+            // Given by us: nothing to cancel, resume or withdraw from.
+            return <p className={styles.infoText}>{t("grantedInfo")}</p>;
+        }
+
         if (active && subscription?.provider === "APPLE") {
             // Cancelling or resuming an App Store subscription is Apple's UI.
             return (

@@ -4,7 +4,8 @@ import {
     CreateProjectBody,
     UpdateProjectBody,
     UpdateRoleBody,
-    RequestMagicLinkBody,
+    RequestSignInCodeBody,
+    VerifySignInCodeBody,
     TransferOwnershipBody,
     UpdateUserBody,
 } from "./api-bodies";
@@ -130,8 +131,12 @@ export const downloadDataExport = (id: string) => {
 
 /* Auth */
 
-export const requestMagicLink = (body: RequestMagicLinkBody) => {
-    return request(`/api/auth/magic-link`, "POST", body);
+export const requestSignInCode = (body: RequestSignInCodeBody) => {
+    return request(`/api/auth/sign-in-code`, "POST", body);
+};
+
+export const verifySignInCode = (body: VerifySignInCodeBody) => {
+    return request(`/api/auth/sign-in-code/verify`, "POST", body);
 };
 
 export const submitDesktopToken = (nonce: string) => {
@@ -159,6 +164,14 @@ export const getStripeWithdrawal = async (plan: Plan, locale: string): Promise<S
     const { data } = (await res.json()) as ApiResponse<StripeWithdrawal | null>;
     return data ?? null;
 };
+
+/* Admin */
+
+export const grantPlan = (userId: string, plan: Plan, expiresAt: Date) =>
+    request(`/api/admin/users/${userId}/grant`, "POST", { plan, expiresAt });
+
+export const revokeGrant = (userId: string, plan: Plan) =>
+    request(`/api/admin/users/${userId}/grant`, "DELETE", { plan });
 
 /** The refunded amount once the withdrawal went through, null when it was refused. */
 export const withdrawStripeSubscription = async (plan: Plan, locale: string): Promise<string | null> => {

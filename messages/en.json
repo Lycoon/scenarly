@@ -356,6 +356,7 @@
       "appleBilledInfo": "Your subscription is billed through the App Store. Cancel or renew it from your Apple ID subscriptions.",
       "webBilledInfo": "Your subscription is billed through the Scenarly website.",
       "playNotSold": "Scenarly {plan} can't be purchased in the Android app yet. A plan bought on the Scenarly website works here once you're signed in.",
+      "grantedInfo": "This plan was given to your account free of charge. Nothing is billed, and it will not renew.",
       "checkoutConsent": "I agree to the [Terms of Service]({termsUrl}) and ask for Scenarly {plan} to start immediately. If I withdraw within 14 days, I am refunded for the days I have not used.",
       "withdraw": "Withdraw from contract",
       "withdrawHint": "Until {date}, you can withdraw: {plan} ends right away and {refund} is refunded. Cancelling instead keeps {plan} until the end of the period, without a refund.",
@@ -872,15 +873,24 @@
     "signInAndUpgrade": "Sign in and Upgrade"
   },
   "auth": {
-    "intro": "Enter your email and we'll send you a single-use sign-in link. No password needed.",
+    "intro": "Enter your email and we'll send you a 6-digit sign-in code. No password needed.",
     "emailLabel": "Email",
-    "sendLink": "Send sign-in link",
+    "sendCode": "Send sign-in code",
     "sending": "Sending...",
-    "checkInbox": "If an account is associated with {email}, a sign-in link has been sent. The link is valid for the next 10 minutes.",
+    "codeSent": "We sent a 6-digit code to {email}. It is valid for 10 minutes.",
+    "codeLabel": "Sign-in code",
+    "verify": "Sign in",
+    "verifying": "Signing in...",
+    "resendCode": "Send a new code",
+    "newCodeSent": "A new code is on its way. Only the latest code works.",
     "useDifferentEmail": "Use a different email",
-    "waitingForClick": "Waiting for you to click the link in your inbox...",
-    "requestFailed": "Could not send the sign-in link. Please try again in a moment.",
-    "desktopTimeout": "Sign-in timed out. Please request a new link."
+    "requestFailed": "Could not send the sign-in code. Please try again in a moment.",
+    "verifyFailed": "Could not sign you in. Please try again in a moment.",
+    "throttled": "Too many codes requested for this address. Please wait a few minutes.",
+    "invalidCode": "This code is not right. Check it and try again.",
+    "expiredCode": "This code has expired or was already used. Please request a new one.",
+    "locked": "Too many wrong codes for this address. Please try again tomorrow, or continue with Google or Apple.",
+    "notAllowed": "This address does not have access to this environment."
   },
   "oauth": {
     "orContinueWith": "or continue with",

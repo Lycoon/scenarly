@@ -327,7 +327,7 @@ export default function HomePageContainer() {
                             <p className={styles.faqAnswer}>
                                 Your data is hosted entirely on European servers, and all communications are encrypted
                                 with TLS. We don't store any passwords: signing in is handled through OAuth with Apple
-                                and Google, or an email magic link. We never sell or share your data. Read more in our{" "}
+                                and Google, or a one-time code sent by email. We never sell or share your data. Read more in our{" "}
                                 <a href="/privacy">privacy policy</a>.
                             </p>
                         </details>

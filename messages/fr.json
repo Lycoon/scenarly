@@ -357,6 +357,7 @@
       "appleBilledInfo": "Votre abonnement est facturé via l'App Store. Résiliez-le ou renouvelez-le depuis les abonnements de votre identifiant Apple.",
       "webBilledInfo": "Votre abonnement est facturé via le site web de Scenarly.",
       "playNotSold": "Scenarly {plan} ne peut pas encore être acheté dans l'application Android. Un abonnement souscrit sur le site web de Scenarly fonctionne ici une fois connecté.",
+      "grantedInfo": "Ce forfait a été offert à votre compte. Rien n'est facturé et il ne sera pas renouvelé.",
       "checkoutConsent": "J'accepte les [Conditions d'utilisation]({termsUrl}) et demande que Scenarly {plan} commence immédiatement. Si je me rétracte dans les 14 jours, je suis remboursé des jours non utilisés.",
       "withdraw": "Se rétracter du contrat",
       "withdrawHint": "Jusqu'au {date}, vous pouvez vous rétracter : {plan} prend fin immédiatement et {refund} vous est remboursé. Résilier conserve {plan} jusqu'à la fin de la période, sans remboursement.",
@@ -873,15 +874,24 @@
     "signInAndUpgrade": "Se connecter et passer à Cloud"
   },
   "auth": {
-    "intro": "Saisissez votre e-mail et nous vous enverrons un lien de connexion à usage unique. Aucun mot de passe nécessaire.",
+    "intro": "Saisissez votre e-mail et nous vous enverrons un code de connexion à 6 chiffres. Aucun mot de passe nécessaire.",
     "emailLabel": "E-mail",
-    "sendLink": "Envoyer le lien de connexion",
+    "sendCode": "Envoyer le code de connexion",
     "sending": "Envoi en cours...",
-    "checkInbox": "Si un compte est associé à {email}, un lien de connexion a été envoyé. Le lien est valable pendant les 10 prochaines minutes.",
+    "codeSent": "Nous avons envoyé un code à 6 chiffres à {email}. Il est valable 10 minutes.",
+    "codeLabel": "Code de connexion",
+    "verify": "Se connecter",
+    "verifying": "Connexion...",
+    "resendCode": "Envoyer un nouveau code",
+    "newCodeSent": "Un nouveau code est en route. Seul le dernier code fonctionne.",
     "useDifferentEmail": "Utiliser une autre adresse e-mail",
-    "waitingForClick": "En attente du clic sur le lien dans votre boîte de réception...",
-    "requestFailed": "Impossible d'envoyer le lien de connexion. Veuillez réessayer dans un instant.",
-    "desktopTimeout": "La connexion a expiré. Veuillez demander un nouveau lien."
+    "requestFailed": "Impossible d'envoyer le code de connexion. Veuillez réessayer dans un instant.",
+    "verifyFailed": "Impossible de vous connecter. Veuillez réessayer dans un instant.",
+    "throttled": "Trop de codes demandés pour cette adresse. Veuillez patienter quelques minutes.",
+    "invalidCode": "Ce code est incorrect. Vérifiez-le et réessayez.",
+    "expiredCode": "Ce code a expiré ou a déjà été utilisé. Veuillez en demander un nouveau.",
+    "locked": "Trop de codes erronés pour cette adresse. Réessayez demain, ou continuez avec Google ou Apple.",
+    "notAllowed": "Cette adresse n'a pas accès à cet environnement."
   },
   "oauth": {
     "orContinueWith": "ou continuer avec",
