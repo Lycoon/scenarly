@@ -12,6 +12,7 @@ export const SignInCodeError = {
     INVALID: "SIGN_IN_CODE_INVALID",
     EXPIRED: "SIGN_IN_CODE_EXPIRED",
     LOCKED: "SIGN_IN_LOCKED",
+    NOT_ALLOWED: "SIGN_IN_NOT_ALLOWED",
 } as const;
 
 export const RequestSignInCodeBodySchema = z.object({

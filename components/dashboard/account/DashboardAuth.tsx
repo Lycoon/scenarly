@@ -23,6 +23,7 @@ const ERROR_KEYS = {
     [SignInCodeError.INVALID]: "invalidCode",
     [SignInCodeError.EXPIRED]: "expiredCode",
     [SignInCodeError.LOCKED]: "locked",
+    [SignInCodeError.NOT_ALLOWED]: "notAllowed",
 } as const;
 
 /**

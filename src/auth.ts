@@ -23,6 +23,7 @@ import { UserRole } from "./generated/client/client";
 import prisma from "@src/server/db";
 import * as UserService from "@src/server/service/user-service";
 import { SESSION_TTL_SECONDS } from "@src/lib/auth-tokens";
+import { isEmailAllowed } from "@src/lib/access-allowlist";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
@@ -52,6 +53,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }),
     ],
     callbacks: {
+        // A restricted environment (staging) turns away addresses off its
+        // allowlist before the adapter creates or links an account.
+        signIn: ({ user }) => isEmailAllowed(user.email),
         // Apple uses response_mode=form_post; the cross-site POST back from
         // appleid.apple.com drops the `callbackUrl` cookie, so Auth.js falls back to
         // url.origin and never calls this callback for that case. The actual Apple

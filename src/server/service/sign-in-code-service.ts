@@ -16,6 +16,7 @@ import * as Mail from "@src/lib/mail/mail";
 import { AppError } from "@src/lib/utils/api-utils";
 import { SIGN_IN_CODE_PATTERN, SignInCodeError } from "@src/lib/utils/api-bodies";
 import { logger } from "@src/lib/utils/logger";
+import { isEmailAllowed } from "@src/lib/access-allowlist";
 
 const repository = new SignInCodeRepository();
 
@@ -34,18 +35,21 @@ const locked = () =>
     new AppError(429, "Too many wrong codes for this address. Please try again tomorrow.", SignInCodeError.LOCKED);
 const invalid = () => new AppError(422, "This code is not right.", SignInCodeError.INVALID);
 const expired = () => new AppError(422, "This code has expired. Please request a new one.", SignInCodeError.EXPIRED);
+const notAllowed = () =>
+    new AppError(403, "This address does not have access to this environment.", SignInCodeError.NOT_ALLOWED);
 
 /**
- * The code of the account the app stores' reviewers sign in with, when
- * `email` is that account: it never changes and is never emailed, so no
- * mailbox has to be shared. Both values live in the server environment only
- * — the source shows how it works, never how to get in — and unset, it is
- * off. The usual guessing limits still apply.
+ * The code of the accounts the app stores' reviewers sign in with, when
+ * `email` is one of them (`REVIEW_ACCOUNT_EMAIL` is comma-separated, one
+ * account per store whose review needs a different plan): it never changes
+ * and is never emailed, so no mailbox has to exist. Both values live in the
+ * server environment only — the source shows how it works, never how to get
+ * in — and unset, it is off. The usual guessing limits still apply.
  */
 function reviewCodeFor(email: string): string | null {
-    const reviewEmail = process.env.REVIEW_ACCOUNT_EMAIL?.toLowerCase().trim();
+    const reviewEmails = (process.env.REVIEW_ACCOUNT_EMAIL ?? "").split(",").map((entry) => entry.toLowerCase().trim());
     const reviewCode = process.env.REVIEW_ACCOUNT_CODE;
-    if (!reviewEmail || !reviewCode || email !== reviewEmail) return null;
+    if (!reviewCode || !reviewEmails.includes(email)) return null;
     if (!SIGN_IN_CODE_PATTERN.test(reviewCode)) {
         logger.error("[SignInCode] REVIEW_ACCOUNT_CODE must be 6 digits; emailing a code instead");
         return null;
@@ -55,6 +59,10 @@ function reviewCodeFor(email: string): string | null {
 
 /** Issue a new code for `email` and mail it. `inviteToken` is accepted once the code is. */
 export async function sendCode(email: string, inviteToken: string | null): Promise<void> {
+    // A restricted environment (staging) names its allowlist openly: it only
+    // serves the team, so saying who is in costs nothing and saves confusion.
+    if (!isEmailAllowed(email)) throw notAllowed();
+
     const now = Date.now();
     // Kept a day, not just until expiry, so today's wrong guesses still count.
     await repository.deleteCreatedBefore(new Date(now - DAY_MS));

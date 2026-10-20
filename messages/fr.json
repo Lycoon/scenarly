@@ -890,7 +890,8 @@
     "throttled": "Trop de codes demandés pour cette adresse. Veuillez patienter quelques minutes.",
     "invalidCode": "Ce code est incorrect. Vérifiez-le et réessayez.",
     "expiredCode": "Ce code a expiré ou a déjà été utilisé. Veuillez en demander un nouveau.",
-    "locked": "Trop de codes erronés pour cette adresse. Réessayez demain, ou continuez avec Google ou Apple."
+    "locked": "Trop de codes erronés pour cette adresse. Réessayez demain, ou continuez avec Google ou Apple.",
+    "notAllowed": "Cette adresse n'a pas accès à cet environnement."
   },
   "oauth": {
     "orContinueWith": "ou continuer avec",

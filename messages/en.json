@@ -889,7 +889,8 @@
     "throttled": "Too many codes requested for this address. Please wait a few minutes.",
     "invalidCode": "This code is not right. Check it and try again.",
     "expiredCode": "This code has expired or was already used. Please request a new one.",
-    "locked": "Too many wrong codes for this address. Please try again tomorrow, or continue with Google or Apple."
+    "locked": "Too many wrong codes for this address. Please try again tomorrow, or continue with Google or Apple.",
+    "notAllowed": "This address does not have access to this environment."
   },
   "oauth": {
     "orContinueWith": "or continue with",

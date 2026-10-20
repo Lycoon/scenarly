@@ -889,7 +889,8 @@
     "throttled": "Zbyt wiele kodów dla tego adresu. Odczekaj kilka minut.",
     "invalidCode": "Ten kod jest nieprawidłowy. Sprawdź go i spróbuj ponownie.",
     "expiredCode": "Ten kod wygasł lub został już użyty. Poproś o nowy.",
-    "locked": "Zbyt wiele błędnych kodów dla tego adresu. Spróbuj ponownie jutro lub kontynuuj przez Google albo Apple."
+    "locked": "Zbyt wiele błędnych kodów dla tego adresu. Spróbuj ponownie jutro lub kontynuuj przez Google albo Apple.",
+    "notAllowed": "Ten adres nie ma dostępu do tego środowiska."
   },
   "oauth": {
     "orContinueWith": "lub kontynuuj z",

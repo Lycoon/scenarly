@@ -2,6 +2,7 @@ import { decode, getToken, type JWT } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 import { DESKTOP_BEARER_SALT, getWebSessionCookie } from "@src/lib/auth-tokens";
+import { isEmailAllowed } from "@src/lib/access-allowlist";
 
 // Routes that handle their own auth or are intentionally public
 const PUBLIC_API_PREFIXES = [
@@ -70,7 +71,9 @@ export async function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
-    const token = await resolveCaller(request);
+    // On a restricted environment, a caller off the allowlist counts as signed out.
+    const caller = await resolveCaller(request);
+    const token = caller && isEmailAllowed(caller.email) ? caller : null;
 
     // Admin pages: proxy only checks authentication.
     // Role enforcement happens in src/app/admin/layout.tsx via auth(), which runs the

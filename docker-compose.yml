@@ -18,51 +18,14 @@ services:
             - traefik.enable=true
             - traefik.docker.network=webproxy
             # Catch-all: the app owns everything the static landing does not claim
-            # (/_next, /images, /fonts, /dictionaries, /tts, /admin, /auth,
-            # /desktop-oauth, /favicon.ico, ...). Lowest priority so the landing
-            # and the auth routers below win for their paths.
+            # (/_next, /images, /fonts, /dictionaries, /tts, /api, /projects,
+            # /admin, /auth, /desktop-oauth, /favicon.ico, ...). Lowest priority so
+            # the landing wins for its paths.
             - traefik.http.routers.scenarly-app.rule=Host(`scenarly.com`)
             - traefik.http.routers.scenarly-app.entrypoints=secure
             - traefik.http.routers.scenarly-app.tls=true
             - traefik.http.routers.scenarly-app.tls.certresolver=letsencrypt
             - traefik.http.routers.scenarly-app.priority=1
-            # Restricted router: /projects and /api require basic auth
-            - traefik.http.routers.scenarly-app-auth.rule=Host(`scenarly.com`) && (PathPrefix(`/projects`) || PathPrefix(`/api`))
-            - traefik.http.routers.scenarly-app-auth.entrypoints=secure
-            - traefik.http.routers.scenarly-app-auth.tls=true
-            - traefik.http.routers.scenarly-app-auth.tls.certresolver=letsencrypt
-            - traefik.http.routers.scenarly-app-auth.priority=100
-            - traefik.http.routers.scenarly-app-auth.middlewares=prod-auth
-            - traefik.http.middlewares.prod-auth.basicauth.users=${PROD_AUTH_USERS}
-            # Allow CORS OPTIONS preflight to bypass basic auth
-            - traefik.http.routers.scenarly-app-auth-options.rule=Host(`scenarly.com`) && (PathPrefix(`/projects`) || PathPrefix(`/api`)) && Method(`OPTIONS`)
-            - traefik.http.routers.scenarly-app-auth-options.entrypoints=secure
-            - traefik.http.routers.scenarly-app-auth-options.tls=true
-            - traefik.http.routers.scenarly-app-auth-options.tls.certresolver=letsencrypt
-            - traefik.http.routers.scenarly-app-auth-options.priority=200
-            # Public contact form (from the static homepage) must reach the API
-            # without basic auth. Higher priority than the auth router, no
-            # middleware, so only /api/contact is exempt — the rest of /api stays gated.
-            - traefik.http.routers.scenarly-app-contact.rule=Host(`scenarly.com`) && Path(`/api/contact`)
-            - traefik.http.routers.scenarly-app-contact.entrypoints=secure
-            - traefik.http.routers.scenarly-app-contact.tls=true
-            - traefik.http.routers.scenarly-app-contact.tls.certresolver=letsencrypt
-            - traefik.http.routers.scenarly-app-contact.priority=300
-            # Community reads meant for everyone (Showcase, proof of existence):
-            # crawlers and signed-out readers must reach them, and the Showcase
-            # PDF viewer fetches its presigned URL from here.
-            - traefik.http.routers.scenarly-app-community-public.rule=Host(`scenarly.com`) && PathPrefix(`/api/community/public/`)
-            - traefik.http.routers.scenarly-app-community-public.entrypoints=secure
-            - traefik.http.routers.scenarly-app-community-public.tls=true
-            - traefik.http.routers.scenarly-app-community-public.tls.certresolver=letsencrypt
-            - traefik.http.routers.scenarly-app-community-public.priority=300
-            # The Worker cron's Community tick: it authenticates with its own
-            # Bearer JWT (checked in the route), which basic auth would reject.
-            - traefik.http.routers.scenarly-app-community-tick.rule=Host(`scenarly.com`) && Path(`/api/internal/community-tick`)
-            - traefik.http.routers.scenarly-app-community-tick.entrypoints=secure
-            - traefik.http.routers.scenarly-app-community-tick.tls=true
-            - traefik.http.routers.scenarly-app-community-tick.tls.certresolver=letsencrypt
-            - traefik.http.routers.scenarly-app-community-tick.priority=300
 
     # Public homepage: standalone static site (/, /manifesto, /privacy, /terms, /contact, and
     # /robots.txt, which points crawlers at the app's Community sitemap) served by
@@ -103,12 +66,17 @@ services:
         labels:
             - traefik.enable=true
             - traefik.docker.network=webproxy
-            # Catch-all (no basic auth on staging), mirrors the prod split.
+            # Catch-all, mirrors the prod split. Staging is not gated here: the
+            # app turns away accounts off ACCESS_ALLOWLIST (.env.staging), which
+            # leaves webhooks, Worker callbacks and the desktop apps untouched.
             - traefik.http.routers.scenarly-staging.rule=Host(`staging.scenarly.com`)
             - traefik.http.routers.scenarly-staging.entrypoints=secure
             - traefik.http.routers.scenarly-staging.tls=true
             - traefik.http.routers.scenarly-staging.tls.certresolver=letsencrypt
             - traefik.http.routers.scenarly-staging.priority=1
+            # Keep staging out of search results (the Showcase pages are public).
+            - traefik.http.routers.scenarly-staging.middlewares=staging-noindex
+            - traefik.http.middlewares.staging-noindex.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow
 
     # Staging homepage: standalone static site, mirrors landing-prod.
     landing-staging:
@@ -126,6 +94,7 @@ services:
             - traefik.http.routers.scenarly-landing-staging.tls=true
             - traefik.http.routers.scenarly-landing-staging.tls.certresolver=letsencrypt
             - traefik.http.routers.scenarly-landing-staging.priority=100
+            - traefik.http.routers.scenarly-landing-staging.middlewares=staging-noindex
             - traefik.http.services.scenarly-landing-staging.loadbalancer.server.port=80
 
     # Production Database

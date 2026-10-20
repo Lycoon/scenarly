@@ -889,7 +889,8 @@
     "throttled": "此地址请求的验证码过多，请等待几分钟。",
     "invalidCode": "验证码不正确，请检查后重试。",
     "expiredCode": "此验证码已过期或已被使用，请重新获取。",
-    "locked": "此地址输入错误验证码的次数过多。请明天再试，或使用 Google 或 Apple 继续。"
+    "locked": "此地址输入错误验证码的次数过多。请明天再试，或使用 Google 或 Apple 继续。",
+    "notAllowed": "此地址无权访问此环境。"
   },
   "oauth": {
     "orContinueWith": "或继续使用",
