@@ -1,3 +1,21 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
+-- CreateEnum
+CREATE TYPE "ProjectRole" AS ENUM ('OWNER', 'ADMIN', 'EDITOR', 'VIEWER');
+
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('USER', 'ADMIN');
+
+-- CreateEnum
+CREATE TYPE "DataExportStatus" AS ENUM ('PENDING', 'COMPLETED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "Plan" AS ENUM ('CLOUD');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionProvider" AS ENUM ('STRIPE', 'APPLE', 'GRANT');
+
 -- CreateEnum
 CREATE TYPE "CommunityFormat" AS ENUM ('FEATURE', 'SHORT', 'PILOT', 'OTHER');
 
@@ -20,16 +38,152 @@ CREATE TYPE "CommunityReviewStatus" AS ENUM ('DRAFT', 'SUBMITTED');
 CREATE TYPE "CommunityRating" AS ENUM ('USEFUL', 'NOT_USEFUL');
 
 -- CreateEnum
-CREATE TYPE "CommunityShowcaseKind" AS ENUM ('FULL_SCRIPT', 'PILOT', 'SHORT', 'LOGLINE');
+CREATE TYPE "CommunityShowcaseKind" AS ENUM ('FULL_SCRIPT', 'PILOT', 'SHORT');
 
 -- CreateEnum
 CREATE TYPE "CommunityReportReason" AS ENUM ('ABUSIVE', 'OFF_TOPIC', 'LOW_EFFORT', 'AI_GENERATED', 'OTHER');
 
 -- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "email" TEXT NOT NULL,
+    "emailVerified" TIMESTAMP(3),
+    "username" TEXT,
+    "color" TEXT,
+    "role" "UserRole" NOT NULL DEFAULT 'USER',
+    "stripeCustomerId" TEXT,
+    "settings" JSONB,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Subscription" (
+    "plan" "Plan" NOT NULL,
+    "provider" "SubscriptionProvider" NOT NULL,
+    "providerId" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "cancelled" BOOLEAN NOT NULL DEFAULT false,
+    "userId" TEXT NOT NULL,
+
+    CONSTRAINT "Subscription_pkey" PRIMARY KEY ("userId","plan")
+);
+
+-- CreateTable
+CREATE TABLE "Account" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+
+    CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VerificationToken" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "SignInCode" (
+    "id" SERIAL NOT NULL,
+    "email" TEXT NOT NULL,
+    "codeHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "usedAt" TIMESTAMP(3),
+    "inviteToken" TEXT,
+
+    CONSTRAINT "SignInCode_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Project" (
+    "id" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "author" TEXT,
+    "hasPoster" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProjectAsset" (
+    "id" TEXT NOT NULL,
+    "hash" TEXT NOT NULL,
+    "mime" TEXT NOT NULL,
+    "size" INTEGER NOT NULL,
+    "width" INTEGER NOT NULL DEFAULT 0,
+    "height" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "projectId" TEXT NOT NULL,
+
+    CONSTRAINT "ProjectAsset_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DataExport" (
+    "id" TEXT NOT NULL,
+    "status" "DataExportStatus" NOT NULL DEFAULT 'PENDING',
+    "key" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMP(3),
+    "userId" TEXT NOT NULL,
+
+    CONSTRAINT "DataExport_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProjectMember" (
+    "id" SERIAL NOT NULL,
+    "role" "ProjectRole" NOT NULL DEFAULT 'VIEWER',
+    "userId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+
+    CONSTRAINT "ProjectMember_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProjectInvitation" (
+    "id" SERIAL NOT NULL,
+    "token" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "projectId" TEXT NOT NULL,
+
+    CONSTRAINT "ProjectInvitation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "CommunityProfile" (
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "penName" TEXT NOT NULL,
     "activeClaimId" TEXT,
     "usefulCount" INTEGER NOT NULL DEFAULT 0,
     "notUsefulCount" INTEGER NOT NULL DEFAULT 0,
@@ -164,6 +318,48 @@ CREATE TABLE "CommunityUpvote" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_stripeCustomerId_key" ON "User"("stripeCustomerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Subscription_provider_providerId_key" ON "Subscription"("provider", "providerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+
+-- CreateIndex
+CREATE INDEX "SignInCode_email_createdAt_idx" ON "SignInCode"("email", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "ProjectAsset_projectId_idx" ON "ProjectAsset"("projectId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProjectAsset_projectId_hash_key" ON "ProjectAsset"("projectId", "hash");
+
+-- CreateIndex
+CREATE INDEX "DataExport_userId_idx" ON "DataExport"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProjectMember_userId_projectId_key" ON "ProjectMember"("userId", "projectId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProjectInvitation_token_key" ON "ProjectInvitation"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProjectInvitation_email_projectId_key" ON "ProjectInvitation"("email", "projectId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "CommunityProfile_activeClaimId_key" ON "CommunityProfile"("activeClaimId");
 
 -- CreateIndex
@@ -210,6 +406,30 @@ CREATE INDEX "CommunityShowcaseEntry_kind_publishedAt_idx" ON "CommunityShowcase
 
 -- CreateIndex
 CREATE INDEX "CommunityShowcaseEntry_unpublishedAt_upvoteCount_idx" ON "CommunityShowcaseEntry"("unpublishedAt", "upvoteCount");
+
+-- AddForeignKey
+ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectAsset" ADD CONSTRAINT "ProjectAsset_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataExport" ADD CONSTRAINT "DataExport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectInvitation" ADD CONSTRAINT "ProjectInvitation_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CommunityProfile" ADD CONSTRAINT "CommunityProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

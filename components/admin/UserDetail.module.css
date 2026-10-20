@@ -185,3 +185,54 @@
 .error {
     color: var(--error);
 }
+
+.grantRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--separator);
+}
+
+.dateInput {
+    background: transparent;
+    border: 1px solid var(--input-outline);
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: var(--primary-text);
+    font-family: var(--font-inter), sans-serif;
+    font-size: 14px;
+    color-scheme: light dark;
+}
+
+.dateInput:focus {
+    outline: none;
+    border-color: var(--primary-text);
+}
+
+.actionBtn {
+    padding: 8px 14px;
+    border: 1px solid var(--separator);
+    border-radius: 8px;
+    background: var(--tertiary);
+    color: var(--primary-text);
+    font-family: var(--font-inter), sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.actionBtn:hover:not(:disabled) {
+    border-color: var(--primary-text);
+}
+
+.actionBtn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.actionBtnDanger {
+    color: var(--error);
+}

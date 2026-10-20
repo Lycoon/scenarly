@@ -42,12 +42,19 @@ export async function POST(req: NextRequest) {
             await SubscriptionService.activateStripe(userId, plan, subscription);
             break;
         }
+        // Each of these may move the paid period or the status; which one
+        // arrives first does not matter, the subscription is read fresh.
         case "customer.subscription.updated":
-            await SubscriptionService.syncStripe(event.data.object);
-            break;
         case "customer.subscription.deleted":
-            await SubscriptionService.endStripe(event.data.object.id);
+            await SubscriptionService.syncStripe(event.data.object.id);
             break;
+        case "invoice.paid":
+        case "invoice.payment_failed": {
+            if (!event.data.object.id) break;
+            const subscriptionId = await SubscriptionService.stripeInvoiceSubscription(event.data.object.id);
+            if (subscriptionId) await SubscriptionService.syncStripe(subscriptionId);
+            break;
+        }
     }
 
     return NextResponse.json({ received: true });

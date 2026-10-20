@@ -11,7 +11,7 @@ import { DESKTOP_BEARER_SALT } from "@src/lib/auth-tokens";
  * 2. The NextAuth web session cookie (handled by `auth()`)
  *
  * Both paths verify against the same `AUTH_SECRET`. The desktop bearer JWE is
- * encoded by api/desktop/token and api/auth/magic-link/verify with
+ * encoded by api/desktop/token and api/auth/sign-in-code/verify with
  * `DESKTOP_BEARER_SALT` — see lib/auth-cookies.ts for why the salts differ
  * between the cookie path and the bearer path.
  */

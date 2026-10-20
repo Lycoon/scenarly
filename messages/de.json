@@ -357,6 +357,7 @@
       "appleBilledInfo": "Dein Abonnement wird über den App Store abgerechnet. Kündige oder verlängere es in den Abonnements deiner Apple ID.",
       "webBilledInfo": "Dein Abonnement wird über die Scenarly-Website abgerechnet.",
       "playNotSold": "Scenarly {plan} kann in der Android-App noch nicht gekauft werden. Ein auf der Scenarly-Website abgeschlossenes Abonnement funktioniert hier, sobald du angemeldet bist.",
+      "grantedInfo": "Dieser Plan wurde deinem Konto kostenlos zur Verfügung gestellt. Es wird nichts abgerechnet, und er verlängert sich nicht.",
       "checkoutConsent": "Ich stimme den [Nutzungsbedingungen]({termsUrl}) zu und verlange, dass Scenarly {plan} sofort beginnt. Wenn ich innerhalb von 14 Tagen widerrufe, werden mir die nicht genutzten Tage erstattet.",
       "withdraw": "Vertrag widerrufen",
       "withdrawHint": "Bis zum {date} kannst du widerrufen: {plan} endet sofort und {refund} wird erstattet. Eine Kündigung behält {plan} dagegen bis zum Ende des Zeitraums, ohne Erstattung.",
@@ -873,15 +874,23 @@
     "signInAndUpgrade": "Anmelden und upgraden"
   },
   "auth": {
-    "intro": "Geben Sie Ihre E-Mail ein und wir senden Ihnen einen einmaligen Anmeldelink. Kein Passwort erforderlich.",
+    "intro": "Geben Sie Ihre E-Mail ein und wir senden Ihnen einen 6-stelligen Anmeldecode. Kein Passwort erforderlich.",
     "emailLabel": "E-Mail-Adresse",
-    "sendLink": "Anmeldelink senden",
+    "sendCode": "Anmeldecode senden",
     "sending": "Senden...",
-    "checkInbox": "Falls ein Konto mit {email} verknüpft ist, wurde ein Anmeldelink gesendet. Der Link ist 10 Minuten lang gültig.",
+    "codeSent": "Wir haben einen 6-stelligen Code an {email} gesendet. Er ist 10 Minuten lang gültig.",
+    "codeLabel": "Anmeldecode",
+    "verify": "Anmelden",
+    "verifying": "Anmeldung läuft...",
+    "resendCode": "Neuen Code senden",
+    "newCodeSent": "Ein neuer Code ist unterwegs. Nur der neueste Code funktioniert.",
     "useDifferentEmail": "Andere E-Mail-Adresse verwenden",
-    "waitingForClick": "Warten, bis Sie auf den Link in Ihrem Posteingang klicken...",
-    "requestFailed": "Der Anmeldelink konnte nicht gesendet werden. Bitte versuchen Sie es gleich erneut.",
-    "desktopTimeout": "Die Anmeldung ist abgelaufen. Bitte fordern Sie einen neuen Link an."
+    "requestFailed": "Der Anmeldecode konnte nicht gesendet werden. Bitte versuchen Sie es gleich erneut.",
+    "verifyFailed": "Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es gleich erneut.",
+    "throttled": "Zu viele Codes für diese Adresse angefordert. Bitte warten Sie einige Minuten.",
+    "invalidCode": "Dieser Code ist nicht korrekt. Bitte prüfen Sie ihn und versuchen Sie es erneut.",
+    "expiredCode": "Dieser Code ist abgelaufen oder wurde bereits verwendet. Bitte fordern Sie einen neuen an.",
+    "locked": "Zu viele falsche Codes für diese Adresse. Bitte versuchen Sie es morgen erneut oder fahren Sie mit Google oder Apple fort."
   },
   "oauth": {
     "orContinueWith": "oder fortfahren mit",

@@ -111,6 +111,26 @@
                                             >
                                                 {{bodyText}}
                                             </p>
+                                            {{#code}}
+                                            <!-- CODE -->
+                                            <p
+                                                style="
+                                                    font-family: 'Courier New', Courier, monospace;
+                                                    font-size: 34px;
+                                                    font-weight: 700;
+                                                    color: #000000;
+                                                    letter-spacing: 8px;
+                                                    text-align: center;
+                                                    background-color: #f6f6f6;
+                                                    border-radius: 8px;
+                                                    padding: 18px 0 18px 8px;
+                                                    margin: 0 0 28px 0;
+                                                "
+                                            >
+                                                {{codeHead}}<span style="font-size: 14px">&nbsp;</span>{{codeTail}}
+                                            </p>
+                                            {{/code}}
+                                            {{#link}}
                                             <!-- BUTTON -->
                                             <table
                                                 role="presentation"
@@ -143,6 +163,7 @@
                                                     </td>
                                                 </tr>
                                             </table>
+                                            {{/link}}
                                             <p
                                                 style="
                                                     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;

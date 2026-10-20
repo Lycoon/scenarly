@@ -4,7 +4,7 @@ import prettier from "eslint-config-prettier";
 
 const config = [
     // `landing/` is a standalone app with its own config — lint it there, not here.
-    { ignores: ["public/**", "out/**", "src-tauri/**", ".next/**", "landing/**"] },
+    { ignores: ["public/**", "out/**", "src-tauri/**", ".next/**", "landing/**", "video/**"] },
     ...coreWebVitals,
     ...typescript,
     prettier,

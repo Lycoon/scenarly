@@ -2,17 +2,31 @@ import z from "zod";
 import { PERIODS, PLANS } from "@src/lib/plans";
 import type { UserLanguage } from "@src/lib/utils/types";
 
-export const RequestMagicLinkBodySchema = z.object({
-    email: z.email(),
-    desktopNonce: z.string().min(16).optional(),
+const SignInEmailSchema = z.email().transform((email) => email.toLowerCase().trim());
+
+export const SIGN_IN_CODE_PATTERN = /^\d{6}$/;
+
+/** Why a sign-in code request or check failed, for the sign-in form to translate. */
+export const SignInCodeError = {
+    THROTTLED: "SIGN_IN_THROTTLED",
+    INVALID: "SIGN_IN_CODE_INVALID",
+    EXPIRED: "SIGN_IN_CODE_EXPIRED",
+    LOCKED: "SIGN_IN_LOCKED",
+} as const;
+
+export const RequestSignInCodeBodySchema = z.object({
+    email: SignInEmailSchema,
     inviteToken: z.string().optional(),
 });
-export type RequestMagicLinkBody = z.infer<typeof RequestMagicLinkBodySchema>;
+export type RequestSignInCodeBody = z.input<typeof RequestSignInCodeBodySchema>;
 
-export const VerifyMagicLinkBodySchema = z.object({
-    token: z.string().min(1),
+export const VerifySignInCodeBodySchema = z.object({
+    email: SignInEmailSchema,
+    code: z.string().regex(SIGN_IN_CODE_PATTERN),
+    // The desktop and mobile apps take the session as a bearer token, not a cookie.
+    desktop: z.boolean().optional(),
 });
-export type VerifyMagicLinkBody = z.infer<typeof VerifyMagicLinkBodySchema>;
+export type VerifySignInCodeBody = z.input<typeof VerifySignInCodeBodySchema>;
 
 export const CreateProjectBodySchema = z.object({
     title: z.string(),
@@ -50,6 +64,11 @@ export const PlanBodySchema = z.object({
     plan: z.enum(PLANS),
 });
 export type PlanBody = z.infer<typeof PlanBodySchema>;
+
+export const GrantPlanBodySchema = PlanBodySchema.extend({
+    expiresAt: z.coerce.date().refine((date) => date > new Date(), "Must be in the future"),
+});
+export type GrantPlanBody = z.infer<typeof GrantPlanBodySchema>;
 
 const UI_LANGUAGES = ["en", "es", "fr", "zh", "ko", "ja", "de", "pl"] as const satisfies readonly UserLanguage[];
 

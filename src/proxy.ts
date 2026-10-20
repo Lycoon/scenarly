@@ -30,7 +30,7 @@ function isAdminPageRoute(pathname: string): boolean {
 /**
  * Resolve the caller's identity from either:
  *  - `Authorization: Bearer <jwe>` — desktop clients (Tauri). Encoded by
- *    /api/desktop/token and /api/auth/magic-link/verify with `DESKTOP_BEARER_SALT`.
+ *    /api/desktop/token and /api/auth/sign-in-code/verify with `DESKTOP_BEARER_SALT`.
  *  - The Auth.js session cookie — web clients. Cookie name and JWE salt vary by
  *    environment and are centralized in `getWebSessionCookie()`.
  *

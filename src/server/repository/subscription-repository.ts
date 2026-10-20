@@ -49,7 +49,8 @@ export class SubscriptionRepository {
         return prisma.subscription.delete({ where: { userId_plan: { userId, plan } } });
     }
 
+    /** Paid ones only: a grant bills nothing. */
     countActive(plan: Plan, now: Date = new Date()) {
-        return prisma.subscription.count({ where: { plan, expiresAt: { gt: now } } });
+        return prisma.subscription.count({ where: { plan, provider: { not: "GRANT" }, expiresAt: { gt: now } } });
     }
 }

@@ -50,12 +50,12 @@ async function acceptProjectInvite(req: NextRequest, { searchParams }: ApiContex
         }
 
         // If user is not logged in, send them to the home page with the email pre-filled
-        // so they can request a magic link.
+        // so they can request a sign-in code.
         const cookieUser = await getCookieUser();
         if (cookieUser) redirectScreenplay(invite.projectId);
         else redirect(`/?email=${encodeURIComponent(invite.email)}`);
     } else {
-        // Unknown email — pre-fill the home page with email + invite token; the magic link
+        // Unknown email — pre-fill the home page with email + invite token; the sign-in code
         // route will pick the invite token up from the request body and accept it on sign-in.
         redirect(`/?email=${encodeURIComponent(invite.email)}&inviteToken=${encodeURIComponent(token)}`);
     }
