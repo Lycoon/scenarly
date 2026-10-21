@@ -257,9 +257,11 @@ export default function UserDetail({ userId }: Props) {
                                         <span className={styles.fieldLabel}>
                                             {sub?.provider === "APPLE"
                                                 ? "Apple transaction"
-                                                : sub?.provider === "GRANT"
-                                                  ? "Grant"
-                                                  : "Stripe subscription"}
+                                                : sub?.provider === "GOOGLE"
+                                                  ? "Google purchase token"
+                                                  : sub?.provider === "GRANT"
+                                                    ? "Grant"
+                                                    : "Stripe subscription"}
                                         </span>
                                         {sub?.providerUrl ? (
                                             <a

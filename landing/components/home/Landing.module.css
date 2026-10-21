@@ -848,7 +848,8 @@
     -webkit-mask-image: linear-gradient(to right, transparent, black 10rem, black calc(100% - 10rem), transparent);
 }
 
-.pageContainer ul {
+.pageContainer ul,
+.pageContainer ol {
     padding-left: 2rem;
 }
 

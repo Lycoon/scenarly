@@ -203,14 +203,18 @@ export const getStripePrices = async (plan: Plan, locale: string): Promise<Parti
     return data ?? {};
 };
 
-export type AppleLinkResult =
+export type StoreLinkResult =
     | { status: "linked" }
     // The subscription backs another account's plan; `ownerEmail` is masked.
     | { status: "owned"; ownerEmail: string }
     | { status: "error" };
 
-export const linkApplePurchase = async (jwsTransaction: string): Promise<AppleLinkResult> => {
-    const res = await request("/api/apple/link", "POST", { jwsTransaction });
+export const linkApplePurchase = (jwsTransaction: string) => linkStorePurchase("/api/apple/link", { jwsTransaction });
+
+export const linkGooglePurchase = (purchaseToken: string) => linkStorePurchase("/api/google/link", { purchaseToken });
+
+const linkStorePurchase = async (url: string, body: object): Promise<StoreLinkResult> => {
+    const res = await request(url, "POST", body);
     if (res.ok) return { status: "linked" };
     if (res.status === 409) {
         const { data } = (await res.json()) as ApiResponse<{ ownerEmail: string }>;

@@ -18,7 +18,7 @@ android {
     namespace = "app.scriptio.staging"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "app.scriptio.staging"
+        applicationId = "com.scenarly.staging"
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

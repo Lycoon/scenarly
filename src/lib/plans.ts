@@ -4,10 +4,10 @@
  * Each plan is an independent monthly subscription; a user can hold any
  * combination, billed monthly or yearly — the period is a price of a plan,
  * not a plan. Adding a plan means: a value in the Prisma `Plan` enum, its
- * Stripe prices (subscription-service) and App Store products (below), its
- * perks and wording (SubscriptionSettings + messages), then listing it in
- * `PLANS_ON_SALE` once it can be bought. Kept free of server imports so
- * components can use it.
+ * Stripe prices (subscription-service), App Store and Google Play products
+ * (below), its perks and wording (SubscriptionSettings + messages), then
+ * listing it in `PLANS_ON_SALE` once it can be bought. Kept free of server
+ * imports so components can use it.
  */
 
 import type { Plan, SubscriptionProvider } from "@src/generated/client/browser";
@@ -30,6 +30,18 @@ export const appleProductId = (bundleId: string, plan: Plan, period: Period) =>
 
 export const planForAppleProduct = (bundleId: string, productId: string): Plan | null =>
     PLANS.find((plan) => PERIODS.some((period) => appleProductId(bundleId, plan, period) === productId)) ?? null;
+
+/**
+ * Google Play sells each plan as one subscription product whose periods are
+ * its base plans (`cloud` → `monthly`, `yearly`). Staging and production are
+ * separate Play apps, so the ids need no package prefix to stay apart.
+ */
+export const googleProductId = (plan: Plan) => plan.toLowerCase();
+
+export const GOOGLE_BASE_PLAN_IDS: Record<Period, string> = { MONTHLY: "monthly", YEARLY: "yearly" };
+
+export const planForGoogleProduct = (productId: string): Plan | null =>
+    PLANS.find((plan) => googleProductId(plan) === productId) ?? null;
 
 /** A subscription row as `/api/users` hands it to the browser. */
 export type UserSubscription = {

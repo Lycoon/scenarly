@@ -41,6 +41,7 @@ enum Plan {
 enum SubscriptionProvider {
   STRIPE
   APPLE
+  GOOGLE
   GRANT
 }
 
@@ -77,12 +78,14 @@ model User {
 model Subscription {
   plan                Plan
   provider            SubscriptionProvider
-  // Stripe subscription id, or Apple's original transaction id — the one every
-  // renewal of an App Store subscription shares. Unique across the store so
-  // one store subscription can only ever back one account.
+  // Stripe subscription id, Apple's original transaction id — the one every
+  // renewal of an App Store subscription shares — or Google Play's purchase
+  // token, which every renewal shares too until an upgrade or resubscribe
+  // issues a new one. Unique across the store so one store subscription can
+  // only ever back one account.
   providerId          String
   expiresAt           DateTime
-  // Will not renew: cancelled at period end (Stripe) or auto-renew off (Apple).
+  // Will not renew: cancelled at period end (Stripe) or auto-renew off (Apple, Google).
   cancelled           Boolean     @default(false)
 
   user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)

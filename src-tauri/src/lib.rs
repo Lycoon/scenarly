@@ -234,8 +234,9 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init());
 
-    // StoreKit in-app purchase, App Store builds only (see Cargo.toml).
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    // In-app purchase: StoreKit on the App Store builds, Play Billing on the
+    // Google Play build (see Cargo.toml).
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
     let builder = builder.plugin(tauri_plugin_iap::init());
 
     // ORDER IS LOAD-BEARING: this must come after `tauri_plugin_fs`.
