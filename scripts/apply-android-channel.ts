@@ -2,18 +2,19 @@ import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
 // Switches the committed Android project between the staging and release
-// identities. The tree is generated once with the staging identifier, so
+// identities. The tree was generated with the pre-rename staging identifier, so
 // `namespace` and the Kotlin package stay app.scriptio.staging (compile-time
-// only, and the build regenerates those sources from the config identifier).
-// Only applicationId — the published Play package name, which Android allows to
-// differ from the namespace — and the launcher label vary per channel.
+// only, never seen by users, and the build regenerates those sources from the
+// config identifier). Only applicationId — the published Play package name,
+// which Android allows to differ from the namespace — and the launcher label
+// vary per channel.
 //
 // The single place these two identities are defined: used by CI's apply-version
 // action and by build:android:release for local store builds.
 
 const CHANNELS = {
-    staging: { applicationId: "app.scriptio.staging", label: "Scenarly (Staging)" },
-    release: { applicationId: "app.scriptio", label: "Scenarly" },
+    staging: { applicationId: "com.scenarly.staging", label: "Scenarly (Staging)" },
+    release: { applicationId: "com.scenarly", label: "Scenarly" },
 };
 
 const channel = process.argv[2];

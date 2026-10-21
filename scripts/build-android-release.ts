@@ -24,5 +24,5 @@ try {
 }
 
 if (existsSync(AAB)) {
-    console.log(`\n[android-release] upload this to the Play Console (built as app.scriptio):\n    ${AAB}`);
+    console.log(`\n[android-release] upload this to the Play Console (built as com.scenarly):\n    ${AAB}`);
 }

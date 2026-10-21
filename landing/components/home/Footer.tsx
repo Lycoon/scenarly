@@ -24,6 +24,9 @@ export default function Footer() {
                     <Link href="/terms" className={styles.footerLink}>
                         Terms
                     </Link>
+                    <Link href="/delete-account" className={styles.footerLink}>
+                        Delete account
+                    </Link>
                 </div>
                 <div className={styles.footerLinks}>
                     {SOCIALS.map(({ href, label, icon }) => (

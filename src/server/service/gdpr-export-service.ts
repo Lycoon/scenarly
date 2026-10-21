@@ -6,8 +6,9 @@
  *
  *   user.json          — the User row: account info, settings, Stripe customer id
  *   subscriptions.json — every plan bought, with the store billing it and the
- *                        id it is known by there (Stripe subscription id or
- *                        Apple original transaction id)
+ *                        id it is known by there (Stripe subscription id,
+ *                        Apple original transaction id or Google Play
+ *                        purchase token)
  *   memberships.json   — every project membership with its role
  *   community.json     — Community membership, when they joined: ticket
  *                        ledger, submissions and Showcase entries, reviews
