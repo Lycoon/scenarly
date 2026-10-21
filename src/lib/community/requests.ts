@@ -10,7 +10,6 @@ import type {
     CommunityGenre,
     CommunityRating,
     CommunityReportReason,
-    CommunityShowcaseKind,
 } from "@src/generated/client/browser";
 import type { ClaimView, OfferSetView, PresignedPdf } from "./types";
 
@@ -80,14 +79,11 @@ export const getSubmissionPdfUrl = (submissionId: string) =>
 // ── Showcase ────────────────────────────────────────────────────────────────
 
 /** Upload straight to Showcase: a Showcase-only submission, published at once. */
-export const uploadToShowcase = (file: Blob, fields: SubmissionFields, kind: CommunityShowcaseKind) => {
-    const form = submissionForm(file, fields);
-    form.append("kind", kind);
-    return call<{ id: string; slug: string }>("/api/community/showcase/upload", { method: "POST", body: form });
-};
+export const uploadToShowcase = (file: Blob, fields: SubmissionFields) =>
+    call<{ id: string; slug: string }>("/api/community/showcase/upload", { method: "POST", body: submissionForm(file, fields) });
 
-export const publishToShowcase = (submissionId: string, kind: CommunityShowcaseKind) =>
-    call<{ slug: string }>("/api/community/showcase", json("POST", { submissionId, kind }));
+export const publishToShowcase = (submissionId: string) =>
+    call<{ slug: string }>("/api/community/showcase", json("POST", { submissionId }));
 
 export const unpublishFromShowcase = (submissionId: string) =>
     call<void>(`/api/community/showcase/${submissionId}`, json("DELETE"));

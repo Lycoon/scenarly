@@ -2,16 +2,16 @@
  * NextAuth (Auth.js v5) configuration.
  *
  * This file is the spine of four cooperating auth flows:
- *   1. Browser magic link  — verify route mints a JWE and sets the session cookie.
+ *   1. Browser email code  — sign-in-code verify route mints a JWE and sets the session cookie.
  *   2. Browser OAuth       — Google/Apple, handled end-to-end by NextAuth.
- *   3. Desktop magic link  — verify route puts a JWE on the bridge for Tauri.
+ *   3. Desktop email code  — the same verify route returns the JWE to Tauri directly.
  *   4. Desktop OAuth       — browser OAuth here, then /api/desktop/token mints
  *                            a fresh JWE for Tauri to pick up via the bridge.
  *
  * The desktop bearer JWEs all use `DESKTOP_BEARER_SALT` (lib/auth-tokens.ts)
  * so lib/session.ts can decrypt them in middleware. The web cookie uses Auth.js's
  * default salt (= cookie name) and is never encoded by us directly except in the
- * magic-link verify route, which uses `getWebSessionCookie()` to stay aligned.
+ * sign-in-code verify route, which uses `getWebSessionCookie()` to stay aligned.
  */
 
 import NextAuth from "next-auth";
@@ -23,6 +23,7 @@ import { UserRole } from "./generated/client/client";
 import prisma from "@src/server/db";
 import * as UserService from "@src/server/service/user-service";
 import { SESSION_TTL_SECONDS } from "@src/lib/auth-tokens";
+import { isEmailAllowed } from "@src/lib/access-allowlist";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
@@ -52,6 +53,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }),
     ],
     callbacks: {
+        // A restricted environment (staging) turns away addresses off its
+        // allowlist before the adapter creates or links an account.
+        signIn: ({ user }) => isEmailAllowed(user.email),
         // Apple uses response_mode=form_post; the cross-site POST back from
         // appleid.apple.com drops the `callbackUrl` cookie, so Auth.js falls back to
         // url.origin and never calls this callback for that case. The actual Apple
@@ -59,7 +63,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // the 302 response before it leaves the server.
         //
         // This callback still runs for explicit callbackUrl values (e.g. Google OAuth,
-        // magic-link flows). Apple form_post with no callbackUrl bypasses it entirely.
+        // desktop OAuth flows). Apple form_post with no callbackUrl bypasses it entirely.
         redirect: async ({ url, baseUrl }) => {
             if (url === baseUrl || url === `${baseUrl}/`) return `${baseUrl}/projects`;
             if (url.startsWith("/")) return `${baseUrl}${url}`;

@@ -4,6 +4,7 @@ import { decode } from "next-auth/jwt";
 import { UserRole } from "../generated/client/client";
 import { auth } from "@src/auth";
 import { DESKTOP_BEARER_SALT } from "@src/lib/auth-tokens";
+import { isEmailAllowed } from "@src/lib/access-allowlist";
 
 /**
  * Resolve the current user from either:
@@ -11,11 +12,18 @@ import { DESKTOP_BEARER_SALT } from "@src/lib/auth-tokens";
  * 2. The NextAuth web session cookie (handled by `auth()`)
  *
  * Both paths verify against the same `AUTH_SECRET`. The desktop bearer JWE is
- * encoded by api/desktop/token and api/auth/magic-link/verify with
+ * encoded by api/desktop/token and api/auth/sign-in-code/verify with
  * `DESKTOP_BEARER_SALT` — see lib/auth-cookies.ts for why the salts differ
  * between the cookie path and the bearer path.
+ *
+ * On a restricted environment, a user off the allowlist resolves to no one.
  */
 export const getCookieUser = async (): Promise<CookieUser | undefined> => {
+    const user = await resolveCookieUser();
+    return user && isEmailAllowed(user.email) ? user : undefined;
+};
+
+const resolveCookieUser = async (): Promise<CookieUser | undefined> => {
     const headersList = await headers();
     const authHeader = headersList.get("authorization");
 

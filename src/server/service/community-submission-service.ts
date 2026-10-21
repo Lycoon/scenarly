@@ -36,10 +36,9 @@ import {
     CommunityFormat,
     CommunityGenre,
     CommunityReviewStatus,
-    CommunityShowcaseKind,
     CommunitySubmissionStatus,
 } from "@src/generated/client/client";
-import { showcaseSlug } from "@src/lib/community/showcase";
+import { FULL_KIND_BY_FORMAT, showcaseSlug } from "@src/lib/community/showcase";
 import { revalidateShowcase } from "@src/server/service/community-showcase-cache";
 import { CommunityShowcaseRepository } from "../repository/community-showcase-repository";
 import { CommunitySubmissionRepository } from "../repository/community-submission-repository";
@@ -56,8 +55,8 @@ export interface SubmissionInput {
     format: CommunityFormat;
     sourceProjectId?: string | null;
     destination: SubmissionDestination;
-    /** Showcase-only uploads published in the same transaction (see `ShowcaseService.publishUpload`). */
-    showcaseKind?: CommunityShowcaseKind;
+    /** Publish a Showcase-only upload in the same transaction, as its format's kind (see `ShowcaseService.publishUpload`). */
+    publish?: boolean;
 }
 
 export class DuplicatePdfError extends AppError {
@@ -133,11 +132,9 @@ export async function createSubmission(authorId: string, bytes: Uint8Array, inpu
             tx,
         );
         if (pooled) await TicketService.chargeSubmission(authorId, created.id, tx);
-        if (!pooled && input.showcaseKind) {
-            await showcase.create(
-                { submissionId: created.id, kind: input.showcaseKind, slug: showcaseSlug(created.title, created.id), publishedAt: now },
-                tx,
-            );
+        if (!pooled && input.publish) {
+            const entry = { kind: FULL_KIND_BY_FORMAT[format], slug: showcaseSlug(created.title, created.id), publishedAt: now };
+            await showcase.create({ submissionId: created.id, ...entry }, tx);
         }
 
         // Upload inside the transaction: a failed put rolls the charge back.

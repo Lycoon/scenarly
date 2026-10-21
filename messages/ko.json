@@ -352,10 +352,13 @@
       "restoring": "복원 중...",
       "restoreDone": "구독이 복원되었습니다.",
       "restoreError": "복원에 실패했습니다. App Store에 로그인되어 있는지 확인한 후 다시 시도해 주세요.",
+      "googleRestoreError": "복원에 실패했습니다. Google Play에 로그인되어 있는지 확인한 후 다시 시도해 주세요.",
       "manageApple": "App Store에서 관리",
       "appleBilledInfo": "구독은 App Store를 통해 청구됩니다. Apple ID 구독 설정에서 취소하거나 갱신할 수 있습니다.",
       "webBilledInfo": "구독은 Scenarly 웹사이트를 통해 청구됩니다.",
-      "playNotSold": "Scenarly {plan}은(는) 아직 Android 앱에서 구매할 수 없습니다. Scenarly 웹사이트에서 구매한 플랜은 로그인하면 여기서도 사용할 수 있습니다.",
+      "manageGoogle": "Google Play에서 관리",
+      "googleBilledInfo": "구독은 Google Play를 통해 청구됩니다. Google Play 정기 결제에서 취소하거나 갱신할 수 있습니다.",
+      "grantedInfo": "이 플랜은 계정에 무료로 제공되었습니다. 요금이 청구되지 않으며 갱신되지 않습니다.",
       "checkoutConsent": "[서비스 약관]({termsUrl})에 동의하며 Scenarly {plan}을(를) 즉시 시작할 것을 요청합니다. 14일 이내에 청약을 철회하면 사용하지 않은 일수만큼 환불받습니다.",
       "withdraw": "계약 철회",
       "withdrawHint": "{date}까지 철회할 수 있습니다. {plan}이(가) 즉시 종료되고 {refund}이(가) 환불됩니다. 대신 구독을 취소하면 환불 없이 기간이 끝날 때까지 {plan}을(를) 이용할 수 있습니다.",
@@ -366,6 +369,7 @@
       "withdrawError": "철회에 실패했습니다. 다시 시도하거나 contact@scenarly.com으로 문의해 주세요.",
       "alreadySubscribed": "이 계정에는 이미 활성 구독이 있습니다.",
       "appleTerms": "표시된 가격으로 자동 갱신되며, 현재 기간 종료 24시간 전까지 Apple ID 설정에서 취소할 수 있습니다.",
+      "googleTerms": "표시된 가격으로 자동 갱신되며, Google Play 정기 결제에서 취소할 수 있습니다.",
       "termsLink": "이용 약관",
       "privacyLink": "개인정보 처리방침",
       "purchasing": "구매 중...",
@@ -376,6 +380,7 @@
       "cancelNo": "{plan} 유지",
       "welcome": "Scenarly {plan}를 구독하셨습니다. 환영합니다!",
       "restoreNone": "이 Apple ID에서 활성 구독을 찾을 수 없습니다.",
+      "googleRestoreNone": "이 Google 계정에서 활성 구독을 찾을 수 없습니다.",
       "plans": {
         "CLOUD": {
           "name": "Cloud",
@@ -872,15 +877,24 @@
     "signInAndUpgrade": "로그인하고 업그레이드"
   },
   "auth": {
-    "intro": "이메일을 입력하시면 일회용 로그인 링크를 보내드립니다. 비밀번호가 필요 없습니다.",
+    "intro": "이메일을 입력하시면 6자리 로그인 코드를 보내드립니다. 비밀번호가 필요 없습니다.",
     "emailLabel": "이메일",
-    "sendLink": "로그인 링크 보내기",
+    "sendCode": "로그인 코드 보내기",
     "sending": "전송 중...",
-    "checkInbox": "{email}에 연결된 계정이 있는 경우, 로그인 링크가 전송되었습니다. 링크는 10분 동안 유효합니다.",
+    "codeSent": "{email}(으)로 6자리 코드를 보냈습니다. 코드는 10분 동안 유효합니다.",
+    "codeLabel": "로그인 코드",
+    "verify": "로그인",
+    "verifying": "로그인 중...",
+    "resendCode": "새 코드 보내기",
+    "newCodeSent": "새 코드를 보냈습니다. 가장 최근 코드만 사용할 수 있습니다.",
     "useDifferentEmail": "다른 이메일 사용",
-    "waitingForClick": "받은 편지함의 링크를 클릭할 때까지 대기 중...",
-    "requestFailed": "로그인 링크를 보낼 수 없습니다. 잠시 후 다시 시도해 주세요.",
-    "desktopTimeout": "로그인 시간이 초과되었습니다. 새 링크를 요청해 주세요."
+    "requestFailed": "로그인 코드를 보낼 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    "verifyFailed": "로그인할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    "throttled": "이 주소로 요청된 코드가 너무 많습니다. 몇 분 후에 다시 시도해 주세요.",
+    "invalidCode": "코드가 올바르지 않습니다. 확인 후 다시 시도해 주세요.",
+    "expiredCode": "이 코드는 만료되었거나 이미 사용되었습니다. 새 코드를 요청해 주세요.",
+    "locked": "이 주소에 잘못된 코드가 너무 많이 입력되었습니다. 내일 다시 시도하거나 Google 또는 Apple로 계속하세요.",
+    "notAllowed": "이 주소는 이 환경에 접근할 수 없습니다."
   },
   "oauth": {
     "orContinueWith": "또는 다음으로 계속",
@@ -1012,7 +1026,6 @@
       "rendering": "PDF 생성 중…",
       "uploading": "업로드 중…",
       "errors": {
-        "noFormat": "형식을 고르세요.",
         "notPdf": "PDF 파일을 선택하세요.",
         "tooLarge": "PDF가 {mb} MB를 초과합니다.",
         "noFile": "먼저 PDF를 선택하세요.",
@@ -1023,13 +1036,15 @@
         "duplicate": "이 PDF는 이미 Coverage에 있습니다.",
         "failed": "제출에 실패했습니다. 다시 시도해 주세요."
       },
-      "showLabel": "다음만 표시",
-      "showScript": "시나리오",
-      "showLogline": "로그라인"
+      "next": "다음",
+      "steps": {
+        "script": "시나리오",
+        "details": "세부 정보",
+        "genres": "장르"
+      }
     },
     "offers": {
-      "title": "리뷰할 시나리오 고르기",
-      "subtitle": "회원님을 위해 추첨된 다섯 편입니다. 하나를 맡으면 읽고 의견을 쓸 3주가 주어지며, 1주 후부터 보낼 수 있습니다.",
+      "title": "시나리오 리뷰",
       "pages": "{count}페이지",
       "reviewsSoFar": "{count, plural, =0 {아직 리뷰 없음} other {지금까지 리뷰 #개}}",
       "claim": "이 시나리오 리뷰하기",
@@ -1157,8 +1172,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "전체 시나리오",
         "PILOT": "파일럿",
-        "SHORT": "단편",
-        "LOGLINE": "로그라인"
+        "SHORT": "단편"
       }
     },
     "showcase": {
@@ -1182,8 +1196,7 @@
       "previous": "이전",
       "next": "다음",
       "pageOf": "{page} / {count}페이지",
-      "backToWall": "모든 시나리오",
-      "loglineOnly": "작가가 로그라인만 공유했습니다."
+      "backToWall": "모든 시나리오"
     }
   }
 }

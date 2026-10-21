@@ -352,10 +352,13 @@
       "restoring": "Restoring...",
       "restoreDone": "Your subscription has been restored.",
       "restoreError": "Restore failed. Make sure you're signed in to the App Store and try again.",
+      "googleRestoreError": "Restore failed. Make sure you're signed in to Google Play and try again.",
       "manageApple": "Manage in App Store",
       "appleBilledInfo": "Your subscription is billed through the App Store. Cancel or renew it from your Apple ID subscriptions.",
       "webBilledInfo": "Your subscription is billed through the Scenarly website.",
-      "playNotSold": "Scenarly {plan} can't be purchased in the Android app yet. A plan bought on the Scenarly website works here once you're signed in.",
+      "manageGoogle": "Manage in Google Play",
+      "googleBilledInfo": "Your subscription is billed through Google Play. Cancel or renew it from your Google Play subscriptions.",
+      "grantedInfo": "This plan was given to your account free of charge. Nothing is billed, and it will not renew.",
       "checkoutConsent": "I agree to the [Terms of Service]({termsUrl}) and ask for Scenarly {plan} to start immediately. If I withdraw within 14 days, I am refunded for the days I have not used.",
       "withdraw": "Withdraw from contract",
       "withdrawHint": "Until {date}, you can withdraw: {plan} ends right away and {refund} is refunded. Cancelling instead keeps {plan} until the end of the period, without a refund.",
@@ -366,6 +369,7 @@
       "withdrawError": "The withdrawal failed. Please try again, or write to contact@scenarly.com.",
       "alreadySubscribed": "This account already has an active subscription.",
       "appleTerms": "Renews automatically at the price shown until cancelled in your Apple ID settings, at least 24 hours before the end of the current period.",
+      "googleTerms": "Renews automatically at the price shown until cancelled in your Google Play subscriptions.",
       "termsLink": "Terms of Use",
       "privacyLink": "Privacy Policy",
       "purchasing": "Purchasing...",
@@ -376,6 +380,7 @@
       "cancelNo": "Keep {plan}",
       "welcome": "You're now subscribed to Scenarly {plan}. Welcome!",
       "restoreNone": "No active subscription was found for this Apple ID.",
+      "googleRestoreNone": "No active subscription was found for this Google account.",
       "plans": {
         "CLOUD": {
           "name": "Cloud",
@@ -872,15 +877,24 @@
     "signInAndUpgrade": "Sign in and Upgrade"
   },
   "auth": {
-    "intro": "Enter your email and we'll send you a single-use sign-in link. No password needed.",
+    "intro": "Enter your email and we'll send you a 6-digit sign-in code. No password needed.",
     "emailLabel": "Email",
-    "sendLink": "Send sign-in link",
+    "sendCode": "Send sign-in code",
     "sending": "Sending...",
-    "checkInbox": "If an account is associated with {email}, a sign-in link has been sent. The link is valid for the next 10 minutes.",
+    "codeSent": "We sent a 6-digit code to {email}. It is valid for 10 minutes.",
+    "codeLabel": "Sign-in code",
+    "verify": "Sign in",
+    "verifying": "Signing in...",
+    "resendCode": "Send a new code",
+    "newCodeSent": "A new code is on its way. Only the latest code works.",
     "useDifferentEmail": "Use a different email",
-    "waitingForClick": "Waiting for you to click the link in your inbox...",
-    "requestFailed": "Could not send the sign-in link. Please try again in a moment.",
-    "desktopTimeout": "Sign-in timed out. Please request a new link."
+    "requestFailed": "Could not send the sign-in code. Please try again in a moment.",
+    "verifyFailed": "Could not sign you in. Please try again in a moment.",
+    "throttled": "Too many codes requested for this address. Please wait a few minutes.",
+    "invalidCode": "This code is not right. Check it and try again.",
+    "expiredCode": "This code has expired or was already used. Please request a new one.",
+    "locked": "Too many wrong codes for this address. Please try again tomorrow, or continue with Google or Apple.",
+    "notAllowed": "This address does not have access to this environment."
   },
   "oauth": {
     "orContinueWith": "or continue with",
@@ -1012,7 +1026,6 @@
       "rendering": "Rendering PDF…",
       "uploading": "Uploading…",
       "errors": {
-        "noFormat": "Pick a format.",
         "notPdf": "Choose a PDF file.",
         "tooLarge": "The PDF is over {mb} MB.",
         "noFile": "Choose a PDF first.",
@@ -1023,13 +1036,15 @@
         "duplicate": "This exact PDF is already in Coverage.",
         "failed": "Submission failed. Please try again."
       },
-      "showLabel": "Only show",
-      "showScript": "The script",
-      "showLogline": "The logline"
+      "next": "Next",
+      "steps": {
+        "script": "Script",
+        "details": "Details",
+        "genres": "Genres"
+      }
     },
     "offers": {
-      "title": "Pick a script to review",
-      "subtitle": "Five scripts, drawn for you. Claim one and you have three weeks to read it and write your notes; they can be sent after one.",
+      "title": "Review a script",
       "pages": "{count, plural, one {# page} other {# pages}}",
       "reviewsSoFar": "{count, plural, =0 {no reviews yet} one {# review so far} other {# reviews so far}}",
       "claim": "Review this one",
@@ -1157,8 +1172,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "Full script",
         "PILOT": "Pilot",
-        "SHORT": "Short",
-        "LOGLINE": "Logline"
+        "SHORT": "Short"
       }
     },
     "showcase": {
@@ -1182,8 +1196,7 @@
       "previous": "Previous",
       "next": "Next",
       "pageOf": "Page {page} of {count}",
-      "backToWall": "All scripts",
-      "loglineOnly": "The writer shared the logline only."
+      "backToWall": "All scripts"
     }
   }
 }

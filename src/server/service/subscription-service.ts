@@ -1,21 +1,22 @@
 /**
- * Plan entitlements, fed by two stores that must never bill one plan twice.
+ * Plan entitlements, fed by three stores that must never bill one plan twice.
  *
  * Stripe bills the web and Windows apps; Apple bills the App Store builds
- * (iOS and macOS). Each plan a user holds is one Subscription row naming the
- * store that bills it, and every write goes through here so that:
+ * (iOS and macOS); Google bills the Google Play build (Android). Each plan a
+ * user holds is one Subscription row naming the store that bills it, and
+ * every write goes through here so that:
  *
  *  - a store's event only ever reaches the row it created — events are
  *    resolved by (provider, providerId), so a late "expired" from Stripe
  *    cannot touch a plan the user has since bought from Apple, and vice versa;
  *  - the checkout and purchase entry points refuse to sell a plan the user
  *    already holds (`assertNotSubscribed`) instead of stacking one on the other;
- *  - the one race that can still slip through (both stores charged for the
- *    same plan before either settled) resolves in Apple's favour, because
- *    Apple's subscription is the one we cannot cancel from here: the Stripe
+ *  - the one race that can still slip through (two stores charged for the
+ *    same plan before either settled) resolves in the app store's favour,
+ *    because the user manages that subscription from their device: the Stripe
  *    one is set to stop at period end rather than bill on.
  *
- * Stripe and Apple remain the source of truth for money; the rows only mirror
+ * The stores remain the source of truth for money; the rows only mirror
  * enough of their state to gate features and to route their events.
  */
 
@@ -23,12 +24,14 @@ import Stripe from "stripe";
 import { SubscriptionRepository } from "../repository/subscription-repository";
 import * as UserService from "./user-service";
 import {
+    googleProductId,
     isSubscriptionActive,
     Period,
     PERIODS,
     Plan,
     PLAN_NAMES,
     planForAppleProduct,
+    planForGoogleProduct,
     PLANS,
     PLANS_ON_SALE,
 } from "@src/lib/plans";
@@ -43,6 +46,8 @@ import {
 } from "@src/lib/mail/mail";
 import { withdrawalDeadline, withdrawalRefund } from "@src/lib/withdrawal";
 import type { AppleTransaction } from "@src/lib/apple-jws";
+import { acknowledgeGooglePurchase, cancelGooglePurchase, getGooglePurchase } from "@src/lib/google-play";
+import { GooglePurchase, isGoogleEntitled } from "@src/lib/google-play-purchase";
 
 const repository = new SubscriptionRepository();
 
@@ -131,7 +136,12 @@ export async function cancelAllForDeletion(userId: string): Promise<void> {
             // no longer map the subscription back to anyone.
             await getStripe().subscriptions.cancel(row.providerId);
             if (user) void sendDeletionCancellationEmail(user.email, PLAN_NAMES[row.plan], now);
-        } else {
+        } else if (row.provider === "GOOGLE") {
+            // Play lets us stop the renewal, not end the period already paid
+            // for — and nobody is left to use it, which the mail says.
+            await cancelGooglePurchase(googleProductId(row.plan), row.providerId);
+            if (user) void sendDeletionCancellationEmail(user.email, PLAN_NAMES[row.plan], now);
+        } else if (row.provider === "APPLE") {
             // Only the user can cancel an App Store subscription, from their
             // Apple ID settings; logged so support can point them there.
             logger.info("[Subscription] Deleted account still had an App Store subscription", {
@@ -141,6 +151,39 @@ export async function cancelAllForDeletion(userId: string): Promise<void> {
             });
         }
     }
+}
+
+/* Grants */
+
+/**
+ * Give a plan away until `expiresAt`: a store reviewer who must see every
+ * plan without buying one, or a goodwill gesture from support. Who holds a
+ * grant is data, set from the admin panel, so nothing about
+ * it lives in the source. Nothing is billed and nothing renews, hence
+ * `cancelled`. A plan a store is billing is never replaced — its events
+ * would no longer find their row while the user went on paying.
+ */
+export async function grantPlan(userId: string, plan: Plan, expiresAt: Date) {
+    const current = await getSubscription(userId, plan);
+    if (current && current.provider !== "GRANT" && isSubscriptionActive(current)) {
+        throw new ConflictError(`${plan} is already billed through ${current.provider}`);
+    }
+    await repository.upsert(userId, plan, {
+        provider: "GRANT",
+        // Unique per provider, and a user can hold a grant of each plan.
+        providerId: `${userId}:${plan}`,
+        expiresAt,
+        cancelled: true,
+    });
+    logger.info("[Subscription] Plan granted", { userId, plan, expiresAt });
+}
+
+/** Take a granted plan back now. No store is involved, so the row just goes. */
+export async function revokeGrant(userId: string, plan: Plan) {
+    const current = await getSubscription(userId, plan);
+    if (current?.provider !== "GRANT") throw new ConflictError(`${plan} is not a granted plan`);
+    await repository.delete(userId, plan);
+    logger.info("[Subscription] Grant revoked", { userId, plan });
 }
 
 /* Stripe */
@@ -153,13 +196,14 @@ export async function activateStripe(userId: string, plan: Plan, subscription: S
     const current = await getSubscription(userId, plan);
     // Stripe may deliver the event more than once; only the first confirms.
     const isNew = current?.providerId !== subscription.id;
-    if (current?.provider === "APPLE" && isSubscriptionActive(current)) {
-        // Only reachable by racing a checkout against an App Store purchase.
-        // Apple's next notification takes the plan back and stops this Stripe
-        // subscription (see grantApple); logged so it is not a mystery.
-        logger.warn("[Subscription] Stripe checkout completed over a live Apple subscription", {
+    if ((current?.provider === "APPLE" || current?.provider === "GOOGLE") && isSubscriptionActive(current)) {
+        // Only reachable by racing a checkout against an app store purchase.
+        // The store's next notification takes the plan back and stops this
+        // Stripe subscription (see stopLiveStripe); logged so it is not a mystery.
+        logger.warn("[Subscription] Stripe checkout completed over a live app store subscription", {
             userId,
             plan,
+            store: current.provider,
             stripeSubscriptionId: subscription.id,
         });
     }
@@ -192,11 +236,19 @@ async function confirmStripeSubscription(userId: string, plan: Plan, subscriptio
     });
 }
 
-/** customer.subscription.updated — renewal, cancellation toggle, or payment trouble. */
-export async function syncStripe(subscription: Stripe.Subscription) {
+/**
+ * Bring the plan in line with the Stripe subscription as it stands now — on a
+ * renewal paid or failed, a cancellation toggled, or the subscription ending.
+ * Every such event lands here with only the subscription id: Stripe does not
+ * deliver events in order, so the subscription is read fresh rather than
+ * taken from the event, and a late "active" cannot reopen an ended plan.
+ */
+export async function syncStripe(subscriptionId: string) {
     // No row means it is not ours, or the plan has since moved to Apple.
-    const row = await repository.fetchByProviderId("STRIPE", subscription.id);
+    const row = await repository.fetchByProviderId("STRIPE", subscriptionId);
     if (!row) return;
+
+    const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
 
     // Stripe advances the period on a renewal attempt before the charge
     // succeeds, so the period end alone would extend the plan through a
@@ -211,8 +263,17 @@ export async function syncStripe(subscription: Stripe.Subscription) {
     if (!periodEnd) return;
     await repository.update(row.userId, row.plan, {
         expiresAt: periodEnd,
-        cancelled: subscription.cancel_at_period_end,
+        // A cancellation set from the Dashboard may name a date instead of the period end.
+        cancelled: subscription.cancel_at_period_end || subscription.cancel_at !== null,
     });
+}
+
+/** The subscription an invoice bills, if any — read fresh, whatever API version the webhook payload uses. */
+export async function stripeInvoiceSubscription(invoiceId: string): Promise<string | null> {
+    const invoice = await getStripe().invoices.retrieve(invoiceId);
+    const subscription = invoice.parent?.subscription_details?.subscription;
+    if (!subscription) return null;
+    return typeof subscription === "string" ? subscription : subscription.id;
 }
 
 /** customer.subscription.deleted — the subscription is gone for good. */
@@ -359,7 +420,8 @@ function stripePeriodEnd(subscription: Stripe.Subscription): Date | null {
 
 /* Apple */
 
-export type AppleLinkResult = { ok: true } | { ok: false; ownerEmail: string };
+/** What linking an app store subscription to an account came to; `ownerEmail` is masked. */
+export type StoreLinkResult = { ok: true } | { ok: false; ownerEmail: string };
 
 /**
  * Attach the App Store subscription behind `tx` to the user's account and
@@ -372,7 +434,7 @@ export type AppleLinkResult = { ok: true } | { ok: false; ownerEmail: string };
  * lapsed and the Apple ID bought again — is moved, since there is nothing
  * left to strand.
  */
-export async function linkApple(userId: string, plan: Plan, tx: AppleTransaction): Promise<AppleLinkResult> {
+export async function linkApple(userId: string, plan: Plan, tx: AppleTransaction): Promise<StoreLinkResult> {
     const holder = await repository.fetchByProviderId("APPLE", tx.originalTransactionId);
     if (holder && holder.userId !== userId) {
         if (isSubscriptionActive(holder)) return { ok: false, ownerEmail: maskEmail(holder.user.email) };
@@ -412,20 +474,7 @@ export async function getAppleSubscriber(tx: AppleTransaction): Promise<Subscrib
  * period end (see the module comment) — the plan carries on uninterrupted.
  */
 export async function grantApple({ userId, plan }: Subscriber, tx: AppleTransaction, autoRenewOff = false) {
-    const current = await getSubscription(userId, plan);
-    if (current?.provider === "STRIPE" && isSubscriptionActive(current) && !current.cancelled) {
-        logger.warn("[Subscription] Apple subscription over a live Stripe one; Stripe stops at period end", {
-            userId,
-            plan,
-            stripeSubscriptionId: current.providerId,
-        });
-        try {
-            await getStripe().subscriptions.update(current.providerId, { cancel_at_period_end: true });
-        } catch (e) {
-            logger.error("[Subscription] Failed to stop the Stripe subscription", { userId, plan, error: e });
-        }
-    }
-
+    await stopLiveStripe(userId, plan, "APPLE");
     await repository.upsert(userId, plan, {
         provider: "APPLE",
         providerId: tx.originalTransactionId,
@@ -450,6 +499,121 @@ export async function extendApple(tx: AppleTransaction, until: Date) {
 export async function endApple(tx: AppleTransaction) {
     const row = await repository.fetchByProviderId("APPLE", tx.originalTransactionId);
     if (row) await repository.update(row.userId, row.plan, { expiresAt: endedNow(row.expiresAt), cancelled: false });
+}
+
+/* Google */
+
+/**
+ * Attach the Play subscription behind `purchase` to the user's account and
+ * grant its plan. Called after an in-app purchase or a Restore Purchases,
+ * under the same rule as `linkApple`: a live subscription stays with the
+ * account that bought it, a lapsed one may move.
+ */
+export async function linkGoogle(userId: string, plan: Plan, purchase: GooglePurchase): Promise<StoreLinkResult> {
+    const holder = await repository.fetchByProviderId("GOOGLE", purchase.purchaseToken);
+    if (holder && holder.userId !== userId) {
+        if (isSubscriptionActive(holder)) return { ok: false, ownerEmail: maskEmail(holder.user.email) };
+
+        await repository.delete(holder.userId, holder.plan);
+        logger.info("[Subscription] Lapsed Google subscription re-linked to another account", {
+            plan,
+            from: holder.userId,
+            to: userId,
+        });
+    }
+
+    await grantGoogle({ userId, plan }, purchase);
+    return { ok: true };
+}
+
+/**
+ * Who a Play subscription belongs to: the account holding its token, else
+ * the one holding the token it replaced (an upgrade or resubscribe issues a
+ * new token), else the one whose id was passed as obfuscated account id at
+ * purchase time — which covers a notification arriving before the app's own
+ * link request did.
+ */
+async function getGoogleSubscriber(purchase: GooglePurchase): Promise<Subscriber | null> {
+    for (const token of [purchase.purchaseToken, purchase.linkedPurchaseToken]) {
+        if (!token) continue;
+        const row = await repository.fetchByProviderId("GOOGLE", token);
+        if (row) return { userId: row.userId, plan: row.plan };
+    }
+
+    const plan = planForGoogleProduct(purchase.productId);
+    if (!plan || !purchase.accountId) return null;
+    const user = await UserService.getUserFromId(purchase.accountId);
+    return user ? { userId: user.id, plan } : null;
+}
+
+/**
+ * Grant a plan from a Play subscription and make Google the store that bills
+ * it, then acknowledge the purchase. The row follows the newest token, so a
+ * replaced subscription's own later events no longer find it.
+ */
+async function grantGoogle({ userId, plan }: Subscriber, purchase: GooglePurchase) {
+    await stopLiveStripe(userId, plan, "GOOGLE");
+    await repository.upsert(userId, plan, {
+        provider: "GOOGLE",
+        providerId: purchase.purchaseToken,
+        expiresAt: new Date(purchase.expiresAt ?? Date.now()),
+        cancelled: !purchase.autoRenewing,
+    });
+
+    if (!purchase.acknowledged) {
+        // Left to the next notification on failure: Google allows 3 days.
+        await acknowledgeGooglePurchase(purchase).catch((e) =>
+            logger.error("[Subscription] Failed to acknowledge a Google purchase", { userId, plan, error: e }),
+        );
+    }
+}
+
+/**
+ * Bring the plan in line with the Play subscription as it stands now. Every
+ * real-time notification lands here with only the token: like Stripe's, they
+ * may arrive out of order, so the subscription is read fresh from Google.
+ */
+export async function syncGoogle(purchaseToken: string): Promise<Subscriber | null> {
+    const purchase = await getGooglePurchase(purchaseToken);
+    const subscriber = await getGoogleSubscriber(purchase);
+    if (!subscriber) return null;
+
+    if (isGoogleEntitled(purchase)) {
+        await grantGoogle(subscriber, purchase);
+    } else if (purchase.state !== "PENDING") {
+        // On hold, paused, expired, or a pending purchase that never got paid.
+        await endGoogle(purchaseToken);
+    }
+    return subscriber;
+}
+
+/** A voided purchase (refund or chargeback), or a subscription that stopped granting its plan. */
+export async function endGoogle(purchaseToken: string) {
+    const row = await repository.fetchByProviderId("GOOGLE", purchaseToken);
+    if (row) await repository.update(row.userId, row.plan, { expiresAt: endedNow(row.expiresAt), cancelled: false });
+}
+
+/* Shared */
+
+/**
+ * An app store just started billing `plan`: a live Stripe subscription for it
+ * stops at period end instead of billing on (see the module comment), and
+ * the plan carries on uninterrupted.
+ */
+async function stopLiveStripe(userId: string, plan: Plan, store: "APPLE" | "GOOGLE") {
+    const current = await getSubscription(userId, plan);
+    if (current?.provider !== "STRIPE" || !isSubscriptionActive(current) || current.cancelled) return;
+    logger.warn("[Subscription] App store subscription over a live Stripe one; Stripe stops at period end", {
+        userId,
+        plan,
+        store,
+        stripeSubscriptionId: current.providerId,
+    });
+    try {
+        await getStripe().subscriptions.update(current.providerId, { cancel_at_period_end: true });
+    } catch (e) {
+        logger.error("[Subscription] Failed to stop the Stripe subscription", { userId, plan, error: e });
+    }
 }
 
 /** An ended subscription keeps its natural expiry when that has passed, and is cut to now otherwise. */

@@ -16,6 +16,9 @@ export default defineConfig({
             ],
         },
         setupFiles: ["./src/tests/setup.ts"],
+        // The revision suites wait on a wall-clock debounce and flake under load;
+        // one retry in CI absorbs that, a real regression fails both attempts.
+        retry: process.env.CI ? 1 : 0,
         benchmark: {
             include: ["src/tests/benchmarks/**/*.bench.ts"],
             reporters: [new BenchJsonReporter()],

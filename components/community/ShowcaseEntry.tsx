@@ -6,7 +6,6 @@ import { ArrowLeft, PenLine } from "lucide-react";
 
 import { useShowcaseVotes } from "@src/lib/community/hooks";
 import { getShowcasePdfUrl } from "@src/lib/community/requests";
-import { showsPdf } from "@src/lib/community/showcase";
 import type { ShowcaseEntryView } from "@src/lib/community/types";
 import { join } from "@src/lib/utils/misc";
 
@@ -16,9 +15,8 @@ import PdfViewer from "./PdfViewer";
 import UpvoteButton from "./UpvoteButton";
 
 /**
- * `/community/showcase/[slug]`: what the entry is, its upvote, and the script
- * itself — the PDF, or for a LOGLINE entry the logline, which is all there is.
- * Signed out, the PDF still reads; only the vote asks for a session. A script
+ * `/community/showcase/[slug]`: what the entry is, its upvote, its logline
+ * and the script itself. Signed out, the PDF still reads; only the vote asks for a session. A script
  * exported from the editor says so, linking to the homepage: the one mention of
  * the app a reader who is not a user gets, and only where it is true.
  */
@@ -28,7 +26,6 @@ const ShowcaseEntry = ({ entry }: { entry: ShowcaseEntryView }) => {
     const format = useFormatter();
     const { votes, toggle } = useShowcaseVotes([entry.submissionId]);
     const vote = votes?.[entry.submissionId];
-    const pdf = showsPdf(entry.kind);
 
     return (
         <div className={community.page}>
@@ -47,7 +44,7 @@ const ShowcaseEntry = ({ entry }: { entry: ShowcaseEntryView }) => {
                                     {tEnum(`genres.${g}`)}
                                 </span>
                             ))}
-                            {pdf && <span>{t("pages", { count: entry.pageCount })}</span>}
+                            <span>{t("pages", { count: entry.pageCount })}</span>
                             {/* In English and UTC on the server and the client alike (see ShowcaseIntl). */}
                             {entry.fromScenarly && (
                                 // The app's `/` hands off to the landing site (HomeClient).
@@ -66,17 +63,8 @@ const ShowcaseEntry = ({ entry }: { entry: ShowcaseEntryView }) => {
                     />
                 </div>
 
-                {pdf ? (
-                    <>
-                        <p className={community.pageSubtitle}>{entry.logline}</p>
-                        <PdfViewer getUrl={() => getShowcasePdfUrl(entry.slug)} />
-                    </>
-                ) : (
-                    <div className={community.card}>
-                        <p style={{ fontSize: "1.05rem", lineHeight: 1.6, whiteSpace: "pre-line" }}>{entry.logline}</p>
-                        <span className={community.hint}>{t("loglineOnly")}</span>
-                    </div>
-                )}
+                <p className={community.pageSubtitle}>{entry.logline}</p>
+                <PdfViewer getUrl={() => getShowcasePdfUrl(entry.slug)} />
             </div>
         </div>
     );

@@ -100,7 +100,7 @@ const ScreenplayFormatDropdown = () => {
             }
             setIsOpen(false);
         },
-        [isTitleContext, activeScreenplayEditor, titlePageEditor, setSelectedElement, setSelectedTitlePageElement],
+        [isReadOnly, isTitleContext, activeScreenplayEditor, titlePageEditor, setSelectedElement, setSelectedTitlePageElement],
     );
 
     const toggleStyle = useCallback(
@@ -113,7 +113,7 @@ const ScreenplayFormatDropdown = () => {
                 applyMarkToggle(activeScreenplayEditor, style);
             }
         },
-        [isTitleContext, activeScreenplayEditor, titlePageEditor, setSelectedStyles],
+        [isReadOnly, isTitleContext, activeScreenplayEditor, titlePageEditor, setSelectedStyles],
     );
 
     const getActiveStyleClass = (style: Style) => (selectedStyles & style ? styles.active_style : "");
@@ -151,7 +151,7 @@ const ScreenplayFormatDropdown = () => {
                 activeScreenplayEditor.chain().focus().updateAttributes(nodeType, { textAlign: align === "left" ? null : align }).run();
             }
         },
-        [isTitleContext, titlePageEditor, activeScreenplayEditor],
+        [isReadOnly, isTitleContext, titlePageEditor, activeScreenplayEditor],
     );
 
     // Resolve which labels, order, and selected element to display

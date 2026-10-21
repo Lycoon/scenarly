@@ -1,0 +1,4 @@
+{
+    "$comment": "High/critical advisories accepted by scripts/audit-gate.ts. Each entry covers only the listed install paths and lapses on `expires`, after which the release is blocked until it is fixed or re-reviewed.",
+    "entries": []
+}

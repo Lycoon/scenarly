@@ -20,11 +20,11 @@ import * as SubmissionService from "@src/server/service/community-submission-ser
 import * as TicketService from "@src/server/service/community-ticket-service";
 import prisma from "@src/server/db";
 import { PRESIGN_TTL_S, SHOWCASE_PAGE_SIZE, submissionObjectKey } from "@src/lib/community/constants";
-import { showcaseKindsFor, showcaseSlug, showsPdf, type ShowcaseQuery } from "@src/lib/community/showcase";
+import { FULL_KIND_BY_FORMAT, showcaseSlug, type ShowcaseQuery } from "@src/lib/community/showcase";
 import type { ShowcaseEntryView, ShowcasePageView } from "@src/lib/community/types";
-import { AppError, BodyFieldError, NotFoundError } from "@src/lib/utils/api-utils";
+import { AppError, NotFoundError } from "@src/lib/utils/api-utils";
 import { logger } from "@src/lib/utils/logger";
-import { CommunityFormat, CommunityShowcaseKind, CommunitySubmissionStatus, Prisma } from "@src/generated/client/client";
+import { CommunitySubmissionStatus, Prisma } from "@src/generated/client/client";
 import { CommunityShowcaseRepository, type ShowcasePublicRow } from "../repository/community-showcase-repository";
 import { CommunitySubmissionRepository } from "../repository/community-submission-repository";
 import { applyUpvote } from "./community-upvote";
@@ -40,12 +40,6 @@ export class AlreadyPublishedError extends AppError {
 }
 
 const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
-
-function assertKindFits(kind: CommunityShowcaseKind, format: CommunityFormat) {
-    if (!showcaseKindsFor(format).includes(kind)) {
-        throw new BodyFieldError(`A ${format.toLowerCase()} can be shown as ${showcaseKindsFor(format).join(" or ")}`);
-    }
-}
 
 export const toView = (row: ShowcasePublicRow): ShowcaseEntryView => ({
     submissionId: row.submissionId,
@@ -63,13 +57,13 @@ export const toView = (row: ShowcasePublicRow): ShowcaseEntryView => ({
 
 // ── Author side ─────────────────────────────────────────────────────────────
 
-/** Opt an existing submission in. 409 if it is already on the wall. */
-export async function publish(submissionId: string, authorId: string, kind: CommunityShowcaseKind, now = new Date()) {
+/** Opt an existing submission in, as its format's kind. 409 if it is already on the wall. */
+export async function publish(submissionId: string, authorId: string, now = new Date()) {
     const submission = await submissions.findById(submissionId);
     if (!submission || submission.authorId !== authorId || submission.status === CommunitySubmissionStatus.REMOVED) {
         throw new NotFoundError("Submission not found");
     }
-    assertKindFits(kind, submission.format);
+    const kind = FULL_KIND_BY_FORMAT[submission.format];
 
     const existing = await showcase.findBySubmissionId(submissionId);
     if (existing && !existing.unpublishedAt) throw new AlreadyPublishedError();
@@ -94,14 +88,12 @@ export async function publish(submissionId: string, authorId: string, kind: Comm
 export async function publishUpload(
     authorId: string,
     bytes: Uint8Array,
-    input: Omit<SubmissionService.SubmissionInput, "destination" | "showcaseKind">,
-    kind: CommunityShowcaseKind,
+    input: Omit<SubmissionService.SubmissionInput, "destination" | "publish">,
 ) {
-    assertKindFits(kind, input.format);
     const submission = await SubmissionService.createSubmission(authorId, bytes, {
         ...input,
         destination: "SHOWCASE_ONLY",
-        showcaseKind: kind,
+        publish: true,
     });
     const slug = showcaseSlug(submission.title, submission.id);
     revalidateShowcase(slug);
@@ -170,7 +162,7 @@ export async function getBySlugForViewer(slug: string, viewerId: string | null) 
 /** Presigned inline URL of a published entry's PDF. No watermark: the author made it public. */
 export async function getPublicPdfUrl(slug: string) {
     const row = await showcase.findPublishedBySlug(slug);
-    if (!row || !showsPdf(row.kind) || row.submission.fileDeletedAt) throw new NotFoundError("Not on Showcase");
+    if (!row || row.submission.fileDeletedAt) throw new NotFoundError("Not on Showcase");
 
     const url = await S3.getSignedDownloadUrl(submissionObjectKey(row.submissionId), PRESIGN_TTL_S, {
         contentType: "application/pdf",

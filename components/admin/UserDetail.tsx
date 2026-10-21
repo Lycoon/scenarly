@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { ArrowLeft } from "lucide-react";
 import { UserRole, ProjectRole, Plan, SubscriptionProvider } from "../../src/generated/client/browser";
 import { PLANS, PLAN_NAMES } from "@src/lib/plans";
+import { grantPlan, revokeGrant } from "@src/lib/utils/requests";
 import styles from "./UserDetail.module.css";
 
 type UserDetailPayload = {
@@ -55,10 +57,89 @@ function isActive(expiresAt: string | null | undefined) {
     return !!expiresAt && new Date(expiresAt) > new Date();
 }
 
+/** `YYYY-MM-DD` in local time, as a date input reads and writes it. */
+function toDateInput(date: Date) {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function defaultGrantEnd() {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 1);
+    return toDateInput(date);
+}
+
+type GrantControlsProps = {
+    userId: string;
+    plan: Plan;
+    sub: UserDetailPayload["subscriptions"][number] | undefined;
+    onChange: () => Promise<unknown>;
+};
+
+/**
+ * Give the plan away until a date, or take a grant back — how the account
+ * the store reviewers sign in with gets every plan. Hidden while a store
+ * bills the plan: a grant never replaces a paid subscription.
+ */
+function GrantControls({ userId, plan, sub, onChange }: GrantControlsProps) {
+    const granted = sub?.provider === "GRANT";
+    const [until, setUntil] = useState(() => (granted ? toDateInput(new Date(sub.expiresAt)) : defaultGrantEnd()));
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    if (sub && !granted && isActive(sub.expiresAt)) return null;
+
+    const run = async (task: () => Promise<Response>) => {
+        setBusy(true);
+        setError(null);
+        try {
+            const res = await task();
+            if (res.ok) await onChange();
+            else setError(((await res.json().catch(() => null)) as { message?: string } | null)?.message ?? "Request failed");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className={styles.grantRow}>
+            <label className={styles.field}>
+                <span className={styles.fieldLabel}>Granted until</span>
+                <input
+                    type="date"
+                    className={styles.dateInput}
+                    value={until}
+                    min={toDateInput(new Date())}
+                    onChange={(e) => setUntil(e.target.value)}
+                    disabled={busy}
+                />
+            </label>
+            <button
+                className={styles.actionBtn}
+                disabled={busy || !until}
+                // Through the end of the chosen day.
+                onClick={() => run(() => grantPlan(userId, plan, new Date(`${until}T23:59:59`)))}
+            >
+                {granted ? "Update grant" : `Grant ${PLAN_NAMES[plan]}`}
+            </button>
+            {granted && (
+                <button
+                    className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                    disabled={busy}
+                    onClick={() => run(() => revokeGrant(userId, plan))}
+                >
+                    Revoke
+                </button>
+            )}
+            {error && <span className={`${styles.message} ${styles.error}`}>{error}</span>}
+        </div>
+    );
+}
+
 type Props = { userId: string };
 
 export default function UserDetail({ userId }: Props) {
-    const { data, error, isLoading } = useSWR<UserDetailPayload>(
+    const { data, error, isLoading, mutate } = useSWR<UserDetailPayload>(
         `/api/admin/users/${userId}`,
     );
     const { data: memberships } = useSWR<Membership[]>(
@@ -174,7 +255,13 @@ export default function UserDetail({ userId }: Props) {
                                     </div>
                                     <div className={styles.field}>
                                         <span className={styles.fieldLabel}>
-                                            {sub?.provider === "APPLE" ? "Apple transaction" : "Stripe subscription"}
+                                            {sub?.provider === "APPLE"
+                                                ? "Apple transaction"
+                                                : sub?.provider === "GOOGLE"
+                                                  ? "Google purchase token"
+                                                  : sub?.provider === "GRANT"
+                                                    ? "Grant"
+                                                    : "Stripe subscription"}
                                         </span>
                                         {sub?.providerUrl ? (
                                             <a
@@ -190,6 +277,14 @@ export default function UserDetail({ userId }: Props) {
                                         )}
                                     </div>
                                 </div>
+                                <GrantControls
+                                    // Remount after a change so the date picks up the saved end.
+                                    key={`${sub?.provider}:${sub?.expiresAt}`}
+                                    userId={userId}
+                                    plan={plan}
+                                    sub={sub}
+                                    onChange={mutate}
+                                />
                             </section>
                         );
                     })}

@@ -1,0 +1,22 @@
+diff --git a/node_modules/emscripten-wasm-loader/dist/cjs/path/mountBuffer.js b/node_modules/emscripten-wasm-loader/dist/cjs/path/mountBuffer.js
+index 86d8d65..a73aa4a 100644
+--- a/node_modules/emscripten-wasm-loader/dist/cjs/path/mountBuffer.js
++++ b/node_modules/emscripten-wasm-loader/dist/cjs/path/mountBuffer.js
+@@ -1,6 +1,6 @@
+ "use strict";
+ Object.defineProperty(exports, "__esModule", { value: true });
+-const nanoid = require("nanoid");
++const { nanoid } = require("nanoid");
+ const logger_1 = require("../util/logger");
+ const isMounted_1 = require("./isMounted");
+ /**
+diff --git a/node_modules/emscripten-wasm-loader/dist/esm/path/mountBuffer.js b/node_modules/emscripten-wasm-loader/dist/esm/path/mountBuffer.js
+index a494e92..1c7d6cf 100644
+--- a/node_modules/emscripten-wasm-loader/dist/esm/path/mountBuffer.js
++++ b/node_modules/emscripten-wasm-loader/dist/esm/path/mountBuffer.js
+@@ -1,4 +1,4 @@
+-import * as nanoid from 'nanoid';
++import { nanoid } from 'nanoid';
+ import { log } from '../util/logger';
+ import { isMounted } from './isMounted';
+ /**

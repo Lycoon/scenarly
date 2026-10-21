@@ -1,0 +1,8 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "iap",
+    "description": "App store builds only: in-app purchase for the Cloud subscription (purchase, restore, price lookup) — StoreKit on the App Store builds, Play Billing on the Google Play build. Scoped to the platforms the iap plugin is compiled for — Tauri skips a capability whose platforms do not match the build target, so this never references a permission the Windows/Linux binaries do not have.",
+    "platforms": ["macOS", "iOS", "android"],
+    "windows": ["main"],
+    "permissions": ["iap:default"]
+}

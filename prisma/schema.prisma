@@ -36,10 +36,13 @@ enum Plan {
 
 // Which store bills a subscription: Stripe on the web and Windows, StoreKit on
 // the App Store builds (iOS and macOS). One plan is only ever billed by one of
-// them at a time.
+// them at a time. GRANT is no store at all: an admin gave the plan away until
+// a set date (store reviewers, support), nothing is billed and nothing renews.
 enum SubscriptionProvider {
   STRIPE
   APPLE
+  GOOGLE
+  GRANT
 }
 
 model User {
@@ -75,12 +78,14 @@ model User {
 model Subscription {
   plan                Plan
   provider            SubscriptionProvider
-  // Stripe subscription id, or Apple's original transaction id — the one every
-  // renewal of an App Store subscription shares. Unique across the store so
-  // one store subscription can only ever back one account.
+  // Stripe subscription id, Apple's original transaction id — the one every
+  // renewal of an App Store subscription shares — or Google Play's purchase
+  // token, which every renewal shares too until an upgrade or resubscribe
+  // issues a new one. Unique across the store so one store subscription can
+  // only ever back one account.
   providerId          String
   expiresAt           DateTime
-  // Will not renew: cancelled at period end (Stripe) or auto-renew off (Apple).
+  // Will not renew: cancelled at period end (Stripe) or auto-renew off (Apple, Google).
   cancelled           Boolean     @default(false)
 
   user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -125,14 +130,19 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model MagicLinkToken {
+// A 6-digit code emailed to sign in. Only the newest code of an address works.
+// Rows outlive their 10 minutes for a day, so the wrong guesses made against an
+// address over that day can be counted (see sign-in-code-service).
+model SignInCode {
   id                  Int         @id @default(autoincrement())
   email               String
-  tokenHash           String      @unique
+  codeHash            String
   expiresAt           DateTime
   createdAt           DateTime    @default(now())
+  // Wrong guesses against this code; it stops working after a few.
+  attempts            Int         @default(0)
+  usedAt              DateTime?
 
-  desktopNonce        String?
   inviteToken         String?
 
   @@index([email, createdAt])
@@ -289,7 +299,6 @@ enum CommunityShowcaseKind {
   FULL_SCRIPT
   PILOT
   SHORT
-  LOGLINE
 }
 
 enum CommunityReportReason {

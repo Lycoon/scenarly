@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { isTauri } from "@tauri-apps/api/core";
 import { ArrowRight, BadgePercent, Check, ExternalLink, Lock, Sparkles } from "lucide-react";
 import {
     cancelStripeSubscription,
@@ -10,6 +9,7 @@ import {
     getStripePrices,
     getStripeWithdrawal,
     linkApplePurchase,
+    linkGooglePurchase,
     resumeStripeSubscription,
     StripeWithdrawal,
     withdrawStripeSubscription,
@@ -21,9 +21,15 @@ import {
     purchaseApplePlan,
     restoreApplePlans,
 } from "@src/lib/apple-iap";
+import {
+    getGooglePrices,
+    GOOGLE_SUBSCRIPTIONS_URL,
+    isPlayStoreBuild,
+    purchaseGooglePlan,
+    restoreGooglePlans,
+} from "@src/lib/google-iap";
 import { getSubscription, isSubscriptionActive, Period, PERIODS, Plan, PLANS, PLANS_ON_SALE } from "@src/lib/plans";
 import { useUser } from "@src/lib/utils/hooks";
-import { isAndroid } from "@src/lib/utils/platform";
 import { useLocale } from "@src/context/LocaleContext";
 import { openExternal } from "@src/lib/utils/open-external";
 
@@ -39,25 +45,17 @@ const PLAN_PERKS: Record<Plan, readonly string[]> = {
 const TERMS_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://scenarly.com"}/terms`;
 const PRIVACY_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://scenarly.com"}/privacy`;
 
-/**
- * True inside the Android app, which is distributed through Google Play. Play
- * only allows its own billing for digital subscriptions, which is not wired
- * yet, so this build sells nothing: plans are bought on the website and work
- * here once signed in. Cancelling a Stripe subscription stays possible.
- */
-const isPlayStoreBuild = (): boolean => isTauri() && isAndroid();
-
 type Action = "upgrade" | "cancel" | "resume" | "withdraw";
 type LinkStatus = "linked" | "owned" | "error";
 
 /**
- * One card per plan. Each is billed by Stripe (web, Windows, Linux) or by Apple
- * (App Store builds), and a card only ever offers the store the current build
- * sells through — an App Store build must not point at any other way to pay,
- * and the Google Play build sells nothing at all.
+ * One card per plan. Each is billed by Stripe (web, Windows, Linux), by Apple
+ * (App Store builds) or by Google (the Google Play build), and a card only
+ * ever offers the store the current build sells through — an app store build
+ * must not point at any other way to pay.
  * Whichever store bills a plan is where it gets managed: Stripe in place,
- * Apple through the user's App Store settings. Restore Purchases is shared:
- * one call brings back every plan the Apple ID holds.
+ * Apple and Google through the user's store subscriptions. Restore Purchases
+ * is shared: one call brings back every plan the store account holds.
  *
  * During the 14 days after a Stripe purchase, the card also offers the legal
  * right of withdrawal next to Cancel: withdrawing ends the plan now and
@@ -85,11 +83,12 @@ const SubscriptionSettings = () => {
         return PLANS.includes(plan as Plan) ? (plan as Plan) : null;
     });
     const [welcomeLeaving, setWelcomeLeaving] = useState(false);
-    // Detect the App Store build after mount so SSR renders the same tree the
+    // Detect the app store builds after mount so SSR renders the same tree the
     // client initially does, avoiding hydration mismatches; done inline with
     // the price fetch below so the right store is asked on the first try.
     const [isAppleBuild, setIsAppleBuild] = useState(false);
     const [isPlayBuild, setIsPlayBuild] = useState(false);
+    const isAppStoreBuild = isAppleBuild || isPlayBuild;
 
     // A plan shows up once it is on sale, or as long as the user still holds it.
     const visiblePlans = PLANS.filter((plan) => PLANS_ON_SALE.includes(plan) || getSubscription(user, plan));
@@ -102,9 +101,12 @@ const SubscriptionSettings = () => {
         setIsAppleBuild(appleBuild);
         const playBuild = isPlayStoreBuild();
         setIsPlayBuild(playBuild);
-        if (playBuild) return;
         for (const plan of PLANS_ON_SALE) {
-            const planPrices = appleBuild ? getApplePrices(plan) : getStripePrices(plan, locale);
+            const planPrices = appleBuild
+                ? getApplePrices(plan)
+                : playBuild
+                  ? getGooglePrices(plan)
+                  : getStripePrices(plan, locale);
             planPrices.then((prices) => setPrices((p) => ({ ...p, [plan]: prices }))).catch(() => {});
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps -- platform + prices, fetched once on mount
@@ -195,16 +197,22 @@ const SubscriptionSettings = () => {
         setNotice(t("withdrawDone", { refund, email: user?.email ?? "" }));
     });
 
-    /* Apple */
+    /* App stores (Apple, Google) */
+
+    // The proof of purchase each store hands the app: a signed transaction
+    // from Apple, a purchase token from Google.
+    const store = isAppleBuild
+        ? { purchase: purchaseApplePlan, restore: restoreApplePlans, link: linkApplePurchase }
+        : { purchase: purchaseGooglePlan, restore: restoreGooglePlans, link: linkGooglePurchase };
 
     /**
-     * Hand a signed transaction to the server; "linked" once the account holds
+     * Hand a proof of purchase to the server; "linked" once the account holds
      * the plan. A subscription bought under another Scenarly account stays
      * there — its cloud projects live in that account — so the user is told
      * which one to sign in with.
      */
-    const linkApple = async (plan: Plan, jws: string): Promise<LinkStatus> => {
-        const result = await linkApplePurchase(jws);
+    const linkStore = async (plan: Plan, proof: string): Promise<LinkStatus> => {
+        const result = await store.link(proof);
         if (result.status === "linked") {
             await mutate();
             setWelcome(plan);
@@ -216,20 +224,21 @@ const SubscriptionSettings = () => {
         return result.status;
     };
 
-    const handleApplePurchase = (plan: Plan) => run(`${plan}:upgrade`, async () => {
+    const handleStorePurchase = (plan: Plan) => run(`${plan}:upgrade`, async () => {
         if (!user?.id) return;
         try {
-            const jws = await purchaseApplePlan(plan, periodOf(plan), user.id);
-            // Sheet dismissed, or the purchase is pending approval (Ask to Buy).
-            if (jws) await linkApple(plan, jws);
+            const proof = await store.purchase(plan, periodOf(plan), user.id);
+            // Sheet dismissed, or the payment is pending (Ask to Buy, cash).
+            if (proof) await linkStore(plan, proof);
         } catch (err) {
-            // StoreKit refuses to sell a subscription the Apple ID already
-            // holds; when that is what happened, the existing one is what to link.
-            const existing = (await restoreApplePlans().catch((): Partial<Record<Plan, string>> => ({})))[plan];
+            // Both stores refuse to sell a subscription the store account
+            // already holds; when that is what happened, the existing one is
+            // what to link.
+            const existing = (await store.restore().catch((): Partial<Record<Plan, string>> => ({})))[plan];
             if (existing) {
-                await linkApple(plan, existing);
+                await linkStore(plan, existing);
             } else {
-                console.error("[SubscriptionSettings] Apple purchase failed:", err);
+                console.error("[SubscriptionSettings] Store purchase failed:", err);
                 setError(t("purchaseError"));
             }
         }
@@ -237,20 +246,20 @@ const SubscriptionSettings = () => {
 
     const handleRestore = () => run("restore", async () => {
         try {
-            const found = Object.entries(await restoreApplePlans()) as [Plan, string][];
+            const found = Object.entries(await store.restore()) as [Plan, string][];
             if (!found.length) {
-                setNotice(t("restoreNone"));
+                setNotice(t(isAppleBuild ? "restoreNone" : "googleRestoreNone"));
                 return;
             }
             let restored = 0;
-            for (const [plan, jws] of found) {
-                if ((await linkApple(plan, jws)) === "linked") restored++;
+            for (const [plan, proof] of found) {
+                if ((await linkStore(plan, proof)) === "linked") restored++;
             }
             if (restored) setNotice(t("restoreDone"));
         } catch (err) {
-            // Typically no Apple ID signed in on the device.
+            // Typically no store account signed in on the device.
             console.error("[SubscriptionSettings] Restore failed:", err);
-            setError(t("restoreError"));
+            setError(t(isAppleBuild ? "restoreError" : "googleRestoreError"));
         }
     });
 
@@ -262,6 +271,11 @@ const SubscriptionSettings = () => {
         const name = planName(plan);
         const expiry = subscription ? formatDate(subscription.expiresAt) : "";
 
+        if (active && subscription?.provider === "GRANT") {
+            // Given by us: nothing to cancel, resume or withdraw from.
+            return <p className={styles.infoText}>{t("grantedInfo")}</p>;
+        }
+
         if (active && subscription?.provider === "APPLE") {
             // Cancelling or resuming an App Store subscription is Apple's UI.
             return (
@@ -269,6 +283,19 @@ const SubscriptionSettings = () => {
                     <p className={styles.infoText}>{t("appleBilledInfo")}</p>
                     <button className={styles.secondaryBtn} onClick={() => openExternal(APPLE_SUBSCRIPTIONS_URL)}>
                         {t("manageApple")}
+                        <ExternalLink size={16} />
+                    </button>
+                </>
+            );
+        }
+
+        if (active && subscription?.provider === "GOOGLE") {
+            // Cancelling or resuming a Play subscription is Google's UI.
+            return (
+                <>
+                    <p className={styles.infoText}>{t("googleBilledInfo")}</p>
+                    <button className={styles.secondaryBtn} onClick={() => openExternal(GOOGLE_SUBSCRIPTIONS_URL)}>
+                        {t("manageGoogle")}
                         <ExternalLink size={16} />
                     </button>
                 </>
@@ -364,9 +391,6 @@ const SubscriptionSettings = () => {
         // A lapsed plan that is no longer sold: nothing to offer.
         if (!PLANS_ON_SALE.includes(plan)) return null;
 
-        // No link to the website either: Play forbids steering to another way to pay.
-        if (isPlayBuild) return <p className={styles.infoText}>{t("playNotSold", { plan: name })}</p>;
-
         const period = periodOf(plan);
         const purchasing = isBusy(plan, "upgrade");
         const labelFor = (option: Period) => {
@@ -418,15 +442,15 @@ const SubscriptionSettings = () => {
             </div>
         );
 
-        if (isAppleBuild) {
+        if (isAppStoreBuild) {
             return (
                 <>
                     <div className={styles.purchaseRow}>
                         {periodToggle}
-                        {purchaseButton(() => handleApplePurchase(plan), t("purchasing"))}
+                        {purchaseButton(() => handleStorePurchase(plan), t("purchasing"))}
                     </div>
                     <p className={styles.legalText}>
-                        {t("appleTerms")}{" "}
+                        {t(isAppleBuild ? "appleTerms" : "googleTerms")}{" "}
                         <a onClick={() => openExternal(TERMS_URL)}>{t("termsLink")}</a>
                         {" · "}
                         <a onClick={() => openExternal(PRIVACY_URL)}>{t("privacyLink")}</a>
@@ -490,7 +514,7 @@ const SubscriptionSettings = () => {
         <div className={styles.list}>
             {visiblePlans.map(renderCard)}
 
-            {isAppleBuild && (
+            {isAppStoreBuild && (
                 <button className={styles.secondaryBtn} onClick={handleRestore} disabled={busy !== null}>
                     {busy === "restore" ? t("restoring") : t("restorePurchases")}
                 </button>

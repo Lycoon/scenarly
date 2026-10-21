@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import type { ShowcaseEntryView } from "@src/lib/community/types";
-import { showsPdf } from "@src/lib/community/showcase";
 import { join } from "@src/lib/utils/misc";
 
 import community from "./Community.module.css";
@@ -28,11 +27,10 @@ const ShowcaseCard = ({ entry, count, upvoted, onToggle }: ShowcaseCardProps) =>
     const t = useTranslations("community.showcase");
     const tEnum = useTranslations("community.enums");
 
-    const hasPdf = showsPdf(entry.kind);
     const meta = [
         tEnum(`showcaseKinds.${entry.kind}`),
         entry.genres.map((g) => tEnum(`genres.${g}`)).join(", "),
-        hasPdf && t("pages", { count: entry.pageCount }),
+        t("pages", { count: entry.pageCount }),
     ].filter(Boolean);
 
     return (

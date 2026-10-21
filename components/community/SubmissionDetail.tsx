@@ -17,13 +17,11 @@ import {
     withdrawSubmission,
 } from "@src/lib/community/requests";
 import { MIN_COMPLETED_REVIEWS, SUBMISSION_COST } from "@src/lib/community/constants";
-import { FULL_KIND_BY_FORMAT } from "@src/lib/community/showcase";
 import type { SubmissionDetail as SubmissionDetailView } from "@src/lib/community/types";
 
 import styles from "./Community.module.css";
 import PdfViewer from "./PdfViewer";
 import ReviewCard from "./ReviewCard";
-import { Chip } from "./SubmitForm";
 import { formatDate } from "./format";
 
 /** `/community/submissions/[id]`: status, the reviews received, the frozen PDF, Showcase, withdraw. */
@@ -181,13 +179,11 @@ const SubmissionDetail = ({ submissionId }: { submissionId: string }) => {
 
 /**
  * Where the submission stands on Showcase: its public page and upvotes when
- * published, else the choice of what to show and the button to publish.
+ * published, else the button to publish its script.
  */
 const ShowcaseSection = ({ submission, onChanged }: { submission: SubmissionDetailView; onChanged: () => Promise<unknown> }) => {
     const t = useTranslations("community.submissions");
-    const tSubmit = useTranslations("community.submit");
     const tEnum = useTranslations("community.enums");
-    const [loglineOnly, setLoglineOnly] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const entry = submission.showcase;
@@ -233,24 +229,11 @@ const ShowcaseSection = ({ submission, onChanged }: { submission: SubmissionDeta
                 ) : (
                     <>
                         <p className={styles.muted}>{t("showcaseOff")}</p>
-                        <div className={styles.field}>
-                            <span className={styles.label}>{tSubmit("showLabel")}</span>
-                            <div className={styles.row} style={{ gap: 6 }}>
-                                <Chip on={!loglineOnly} onClick={() => setLoglineOnly(false)}>
-                                    {tSubmit("showScript")}
-                                </Chip>
-                                <Chip on={loglineOnly} onClick={() => setLoglineOnly(true)}>
-                                    {tSubmit("showLogline")}
-                                </Chip>
-                            </div>
-                        </div>
                         <div className={styles.row}>
                             <button
                                 className={styles.btn}
                                 disabled={busy}
-                                onClick={() =>
-                                    run(() => publishToShowcase(submission.id, loglineOnly ? "LOGLINE" : FULL_KIND_BY_FORMAT[submission.format]))
-                                }
+                                onClick={() => run(() => publishToShowcase(submission.id))}
                             >
                                 {busy ? t("showcasePublishing") : t("showcasePublish")}
                             </button>

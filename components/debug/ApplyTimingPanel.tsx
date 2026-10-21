@@ -46,15 +46,18 @@ const heatColor = (ms: number): string => {
 };
 
 const ApplyTimingPanel = () => {
-    const [visible, setVisible] = useState(false);
+    // Mounted client-side only (after the project resolves), so reading
+    // localStorage here can't cause a hydration mismatch.
+    const [visible, setVisible] = useState(() => {
+        if (!ENABLED) return false;
+        try {
+            return localStorage.getItem(STORAGE_KEY) === "1";
+        } catch {
+            return false;
+        }
+    });
     const [rows, setRows] = useState<Row[]>([]);
     const lastRevision = useRef(-1);
-
-    // Restore persisted visibility once mounted (client only).
-    useEffect(() => {
-        if (!ENABLED) return;
-        setVisible(localStorage.getItem(STORAGE_KEY) === "1");
-    }, []);
 
     // Measure the WHOLE keydown step — handlers + ProseMirror dispatch + view
     // update + the forced reflow it triggers inline — which the per-extension

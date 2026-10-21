@@ -58,11 +58,11 @@ const SubmitPage = () => {
     }
 
     return (
-        <div className={styles.page}>
+        <div className={`${styles.page} ${styles.pageStepped}`}>
             <div className={`${styles.pageInner} ${styles.pageInnerForm}`}>
-                <h1 className={styles.pageTitle}>{destination === "COVERAGE" ? t("titleCoverage") : t("titleShowcase")}</h1>
                 <SubmitForm
                     key={destination}
+                    title={<h1 className={styles.pageTitle}>{destination === "COVERAGE" ? t("titleCoverage") : t("titleShowcase")}</h1>}
                     source={{ kind: "upload" }}
                     destination={destination}
                     onSubmitted={(id) => router.push(`/community/submissions/${id}`)}

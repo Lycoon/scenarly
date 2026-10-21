@@ -35,7 +35,7 @@ const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "";
 
 const APP_STORE_URL = "https://apps.apple.com/app/scenarly";
 const MICROSOFT_STORE_URL = "https://apps.microsoft.com/detail/9p4m1xphjks1";
-const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=app.scriptio";
+const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=com.scenarly";
 
 const DESKTOP_STORES: StoreLink[] = [
     { href: APP_STORE_URL, name: "App Store", icon: <AppleIcon size={18} /> },
@@ -327,7 +327,7 @@ export default function HomePageContainer() {
                             <p className={styles.faqAnswer}>
                                 Your data is hosted entirely on European servers, and all communications are encrypted
                                 with TLS. We don't store any passwords: signing in is handled through OAuth with Apple
-                                and Google, or an email magic link. We never sell or share your data. Read more in our{" "}
+                                and Google, or a one-time code sent by email. We never sell or share your data. Read more in our{" "}
                                 <a href="/privacy">privacy policy</a>.
                             </p>
                         </details>

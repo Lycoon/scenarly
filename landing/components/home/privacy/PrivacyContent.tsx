@@ -62,7 +62,7 @@ export default function PrivacyContent() {
                         <b> project</b> information. Scenarly® is passwordless — we do not store passwords or any other
                         credentials. Signing in is entirely optional, on desktop, mobile and in the browser alike, and
                         is only needed to enable cloud synchronization and collaboration features. The only sign-in
-                        methods available are a magic-link sent to your e-mail address and OAuth sign-in with Apple or
+                        methods available are a one-time code sent to your e-mail address and OAuth sign-in with Apple or
                         Google.
                     </p>
                     <p className={styles.pageText}>

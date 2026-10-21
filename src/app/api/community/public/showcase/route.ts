@@ -9,8 +9,8 @@ import { parseShowcaseQuery } from "@src/lib/community/showcase";
  * GET `/community/public/showcase?sort=top|new&kind=&page=`
  *
  * One page (24) of the wall. `top` ranks by a time-decayed upvote score,
- * `new` by publication date. `kind` is `full-script`, `pilot`, `short` or
- * `logline`. Unknown values fall back to the defaults. Public.
+ * `new` by publication date. `kind` is `full-script`, `pilot` or `short`.
+ * Unknown values fall back to the defaults. Public.
  */
 async function listShowcase(req: NextRequest, { searchParams }: ApiContext) {
     return Success(await ShowcaseService.listWall(parseShowcaseQuery(searchParams)));

@@ -26,7 +26,7 @@ const MySubmissions = () => {
 
     return (
         <div className={row.list}>
-            <div className={page.list_header}>
+            <div className={row.list_header}>
                 <span>{t("columns.title")}</span>
                 <span>{t("columns.submitted")}</span>
                 <span>{t("columns.coverage")}</span>

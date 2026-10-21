@@ -9,7 +9,7 @@ import { SHOWCASE_GRAVITY } from "./constants";
 
 export type ShowcaseSort = "top" | "new";
 
-export const SHOWCASE_KINDS: CommunityShowcaseKind[] = ["FULL_SCRIPT", "PILOT", "SHORT", "LOGLINE"];
+export const SHOWCASE_KINDS: CommunityShowcaseKind[] = ["FULL_SCRIPT", "PILOT", "SHORT"];
 
 /**
  * Top-sort score of an entry. The repository orders by the same expression in
@@ -40,7 +40,7 @@ export function showcaseSlug(title: string, submissionId: string): string {
     return base ? `${base}-${suffix}` : suffix;
 }
 
-/** The kind that shows a submission's PDF, by its format. */
+/** The kind a submission is shown as, by its format. A feature is never listed as a pilot. */
 export const FULL_KIND_BY_FORMAT: Record<CommunityFormat, CommunityShowcaseKind> = {
     FEATURE: "FULL_SCRIPT",
     PILOT: "PILOT",
@@ -48,23 +48,11 @@ export const FULL_KIND_BY_FORMAT: Record<CommunityFormat, CommunityShowcaseKind>
     OTHER: "FULL_SCRIPT",
 };
 
-/**
- * Kinds a submission may be published as: its PDF under the kind matching its
- * format, or the logline alone. A feature is never listed as a pilot.
- */
-export const showcaseKindsFor = (format: CommunityFormat): CommunityShowcaseKind[] => [
-    FULL_KIND_BY_FORMAT[format],
-    "LOGLINE",
-];
-
-export const showsPdf = (kind: CommunityShowcaseKind) => kind !== "LOGLINE";
-
 /** `?kind=` values: readable in a URL, one per kind. */
 export const KIND_PARAM: Record<CommunityShowcaseKind, string> = {
     FULL_SCRIPT: "full-script",
     PILOT: "pilot",
     SHORT: "short",
-    LOGLINE: "logline",
 };
 
 const KIND_BY_PARAM = Object.fromEntries(

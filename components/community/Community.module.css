@@ -4,10 +4,12 @@
 /* Same top/side padding and left alignment as the projects list (.list in
    ProjectPageContainer.module.css) so the two pages line up under the navbar. */
 .page {
+    /* The top gutter. A stepped page hands it to its .formHeader instead. */
+    --page-top: 40px;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 40px calc(48px + var(--safe-right)) calc(48px + var(--safe-bottom)) 48px;
+    padding: var(--page-top) calc(48px + var(--safe-right)) calc(48px + var(--safe-bottom)) 48px;
 }
 
 .pageInner {
@@ -20,6 +22,14 @@
 
 .pageInnerNarrow {
     max-width: 620px;
+}
+
+/* A page whose .formHeader sticks: the header carries the top gutter, so the
+   page has none and the header sticks at the very top. WebKit sticks below a
+   scroller's padding, so a gutter left on the page would push the header down
+   by that much over the form. */
+.page.pageStepped {
+    padding-top: 0;
 }
 
 /* Single-column forms (the submit page). */
@@ -211,10 +221,53 @@
     justify-content: flex-end;
 }
 
-/* The Coverage dashboard's tab buttons, split from the tab's content. */
+/* The list header above the Showcase wall and the Coverage dashboard's
+   tabs, split from the content below. */
 .tabRow {
     padding-bottom: 16px;
     border-bottom: 1px solid var(--separator);
+}
+
+.tabLabels {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Plain capslock labels, as the navbar tabs (CommunityTabs.module.css): the
+   active one is the bright one. Links on the Showcase, buttons on Coverage. */
+.tabLabel {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 0.8rem;
+    /* The kind dropdown's chevron height, so the Showcase row (labels and
+       dropdown) and the Coverage row (labels only) are the same height. */
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-decoration: none;
+    color: var(--secondary-text);
+    opacity: 0.6;
+    cursor: pointer;
+    transition:
+        opacity 0.15s ease,
+        color 0.15s ease;
+}
+
+.tabLabel:hover {
+    opacity: 0.85;
+}
+
+.tabLabelActive,
+.tabLabelActive:hover {
+    color: var(--primary-text);
+    opacity: 1;
 }
 
 .tag {
@@ -368,6 +421,113 @@
     text-align: right;
 }
 
+/* A stepped form's title, separator and steps, held in place while the step
+   below scrolls. On a page (.pageStepped) it carries the page's top gutter;
+   in a popup, which has no --page-top, it sticks at the top of the popup's
+   scrolling body. The background hides what scrolls under it: the page's, or
+   the popup's through --form-surface. */
+.formHeader {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: var(--page-top, 0px) 0 14px;
+    background: var(--form-surface, var(--main-bg));
+}
+
+/* The steps under a separator, joined by hairlines like the ledger's rows. */
+.steps {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 16px 0 0;
+    list-style: none;
+    border-top: 1px solid var(--separator);
+}
+
+.stepItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+/* Every step after the first carries the line that leads to it. */
+.stepItem + .stepItem {
+    flex: 1;
+}
+
+.stepLine {
+    flex: 1;
+    min-width: 12px;
+    height: 1px;
+    background: var(--separator);
+}
+
+/* The navbar tabs' capslock label (CommunityTabs.module.css): the step you
+   are on is the bright one, those already reached a step dimmer, and the
+   ones ahead dimmer still. */
+.step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 4px 0;
+    border: none;
+    background: none;
+    color: var(--secondary-text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0.75;
+    cursor: pointer;
+    transition:
+        opacity 0.15s ease,
+        color 0.15s ease;
+}
+
+.step:hover:not(:disabled) {
+    opacity: 1;
+}
+
+.step:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.step.stepActive {
+    color: var(--primary-text);
+    opacity: 1;
+}
+
+.stepNumber {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--tertiary);
+    font-size: 0.7rem;
+    letter-spacing: 0;
+}
+
+/* Filled like the primary button. */
+.stepActive .stepNumber {
+    background: var(--tertiary);
+}
+
+.stepLabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .success {
     color: var(--success);
     font-size: 0.85rem;
@@ -438,7 +598,13 @@
 
 @media (max-width: 767px) {
     .page {
-        padding: 8px calc(16px + var(--safe-right)) calc(32px + var(--safe-bottom)) calc(16px + var(--safe-left));
+        --page-top: 8px;
+        padding: var(--page-top) calc(16px + var(--safe-right)) calc(32px + var(--safe-bottom)) calc(16px + var(--safe-left));
+    }
+
+    /* Only the current step keeps its name; the others are their number. */
+    .step:not(.stepActive) .stepLabel {
+        display: none;
     }
 
     .pageTitle {

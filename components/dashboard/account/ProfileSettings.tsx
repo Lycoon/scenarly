@@ -40,9 +40,9 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
     const confirmPhrase = t("deleteConfirmPhrase");
 
     // A subscription still renewing is money at stake, so the dialog has to
-    // say what deletion does to it before they confirm. A Stripe one is
-    // cancelled on the spot; an App Store one cannot be cancelled from here
-    // and keeps billing until the user stops it in their Apple ID settings.
+    // say what deletion does to it before they confirm. A Stripe or Google
+    // Play one is cancelled on the spot; an App Store one cannot be cancelled
+    // from here and keeps billing until the user stops it in their Apple ID settings.
     // With several plans, the one paid furthest ahead is the date that matters.
     const renewing = ((user?.subscriptions ?? []) as UserSubscription[]).filter(
         (s) => isSubscriptionActive(s) && !s.cancelled,

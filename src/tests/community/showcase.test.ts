@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 
 import {
+    FULL_KIND_BY_FORMAT,
     parseShowcaseQuery,
     showcaseHref,
-    showcaseKindsFor,
     showcaseScore,
     showcaseSlug,
     slugify,
@@ -79,10 +79,11 @@ describe("slugs", () => {
 });
 
 describe("kinds", () => {
-    it("offers the format's full kind or the logline", () => {
-        expect(showcaseKindsFor("FEATURE")).toEqual(["FULL_SCRIPT", "LOGLINE"]);
-        expect(showcaseKindsFor("PILOT")).toEqual(["PILOT", "LOGLINE"]);
-        expect(showcaseKindsFor("OTHER")).toEqual(["FULL_SCRIPT", "LOGLINE"]);
+    it("shows each format as its own kind, never a feature as a pilot", () => {
+        expect(FULL_KIND_BY_FORMAT.FEATURE).toBe("FULL_SCRIPT");
+        expect(FULL_KIND_BY_FORMAT.PILOT).toBe("PILOT");
+        expect(FULL_KIND_BY_FORMAT.SHORT).toBe("SHORT");
+        expect(FULL_KIND_BY_FORMAT.OTHER).toBe("FULL_SCRIPT");
     });
 });
 

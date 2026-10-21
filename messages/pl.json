@@ -352,10 +352,13 @@
       "restoring": "Przywracanie...",
       "restoreDone": "Twoja subskrypcja została przywrócona.",
       "restoreError": "Przywracanie nie powiodło się. Upewnij się, że jesteś zalogowany w App Store, i spróbuj ponownie.",
+      "googleRestoreError": "Przywracanie nie powiodło się. Upewnij się, że jesteś zalogowany w Google Play, i spróbuj ponownie.",
       "manageApple": "Zarządzaj w App Store",
       "appleBilledInfo": "Twoja subskrypcja jest rozliczana przez App Store. Anuluj ją lub odnów w subskrypcjach swojego Apple ID.",
       "webBilledInfo": "Twoja subskrypcja jest rozliczana przez stronę internetową Scenarly.",
-      "playNotSold": "Scenarly {plan} nie można jeszcze kupić w aplikacji na Androida. Plan kupiony na stronie internetowej Scenarly działa tutaj po zalogowaniu.",
+      "manageGoogle": "Zarządzaj w Google Play",
+      "googleBilledInfo": "Twoja subskrypcja jest rozliczana przez Google Play. Anuluj ją lub odnów w subskrypcjach Google Play.",
+      "grantedInfo": "Ten plan został przyznany Twojemu kontu bezpłatnie. Nic nie jest naliczane i nie zostanie on odnowiony.",
       "checkoutConsent": "Akceptuję [Warunki korzystania]({termsUrl}) i żądam natychmiastowego rozpoczęcia Scenarly {plan}. Jeśli odstąpię od umowy w ciągu 14 dni, otrzymam zwrot za niewykorzystane dni.",
       "withdraw": "Odstąp od umowy",
       "withdrawHint": "Do {date} możesz odstąpić od umowy: {plan} kończy się od razu, a {refund} zostaje zwrócone. Anulowanie zachowuje {plan} do końca okresu, bez zwrotu.",
@@ -366,6 +369,7 @@
       "withdrawError": "Odstąpienie nie powiodło się. Spróbuj ponownie lub napisz na contact@scenarly.com.",
       "alreadySubscribed": "To konto ma już aktywną subskrypcję.",
       "appleTerms": "Odnawia się automatycznie w podanej cenie, dopóki nie zostanie anulowana w ustawieniach Apple ID co najmniej 24 godziny przed końcem bieżącego okresu.",
+      "googleTerms": "Odnawia się automatycznie w podanej cenie, dopóki nie zostanie anulowana w subskrypcjach Google Play.",
       "termsLink": "Warunki użytkowania",
       "privacyLink": "Polityka prywatności",
       "purchasing": "Zakup w toku...",
@@ -376,6 +380,7 @@
       "cancelNo": "Zachowaj {plan}",
       "welcome": "Subskrybujesz teraz Scenarly {plan}. Witamy!",
       "restoreNone": "Nie znaleziono aktywnej subskrypcji dla tego Apple ID.",
+      "googleRestoreNone": "Nie znaleziono aktywnej subskrypcji dla tego konta Google.",
       "plans": {
         "CLOUD": {
           "name": "Cloud",
@@ -872,15 +877,24 @@
     "signInAndUpgrade": "Zaloguj się i przejdź na Cloud"
   },
   "auth": {
-    "intro": "Wprowadź swój e-mail, a wyślemy Ci jednorazowy link do logowania. Hasło nie jest potrzebne.",
+    "intro": "Wprowadź swój e-mail, a wyślemy Ci 6-cyfrowy kod logowania. Hasło nie jest potrzebne.",
     "emailLabel": "E-mail",
-    "sendLink": "Wyślij link logowania",
+    "sendCode": "Wyślij kod logowania",
     "sending": "Wysyłanie...",
-    "checkInbox": "Jeśli konto jest powiązane z {email}, link do logowania został wysłany. Link jest ważny przez następne 10 minut.",
+    "codeSent": "Wysłaliśmy 6-cyfrowy kod na adres {email}. Jest ważny przez 10 minut.",
+    "codeLabel": "Kod logowania",
+    "verify": "Zaloguj się",
+    "verifying": "Logowanie...",
+    "resendCode": "Wyślij nowy kod",
+    "newCodeSent": "Nowy kod jest w drodze. Działa tylko najnowszy kod.",
     "useDifferentEmail": "Użyj innego adresu e-mail",
-    "waitingForClick": "Oczekiwanie na kliknięcie linku w skrzynce odbiorczej...",
-    "requestFailed": "Nie udało się wysłać linku logowania. Spróbuj ponownie za chwilę.",
-    "desktopTimeout": "Czas logowania upłynął. Poproś o nowy link."
+    "requestFailed": "Nie udało się wysłać kodu logowania. Spróbuj ponownie za chwilę.",
+    "verifyFailed": "Nie udało się zalogować. Spróbuj ponownie za chwilę.",
+    "throttled": "Zbyt wiele kodów dla tego adresu. Odczekaj kilka minut.",
+    "invalidCode": "Ten kod jest nieprawidłowy. Sprawdź go i spróbuj ponownie.",
+    "expiredCode": "Ten kod wygasł lub został już użyty. Poproś o nowy.",
+    "locked": "Zbyt wiele błędnych kodów dla tego adresu. Spróbuj ponownie jutro lub kontynuuj przez Google albo Apple.",
+    "notAllowed": "Ten adres nie ma dostępu do tego środowiska."
   },
   "oauth": {
     "orContinueWith": "lub kontynuuj z",
@@ -1012,7 +1026,6 @@
       "rendering": "Generowanie PDF…",
       "uploading": "Przesyłanie…",
       "errors": {
-        "noFormat": "Wybierz format.",
         "notPdf": "Wybierz plik PDF.",
         "tooLarge": "PDF przekracza {mb} MB.",
         "noFile": "Najpierw wybierz PDF.",
@@ -1023,13 +1036,15 @@
         "duplicate": "Dokładnie ten PDF jest już w Coverage.",
         "failed": "Zgłoszenie nie powiodło się. Spróbuj ponownie."
       },
-      "showLabel": "Pokaż tylko",
-      "showScript": "Scenariusz",
-      "showLogline": "Logline"
+      "next": "Dalej",
+      "steps": {
+        "script": "Scenariusz",
+        "details": "Szczegóły",
+        "genres": "Gatunki"
+      }
     },
     "offers": {
-      "title": "Wybierz scenariusz do recenzji",
-      "subtitle": "Pięć scenariuszy wylosowanych dla Ciebie. Weź jeden — masz trzy tygodnie, by go przeczytać i napisać uwagi; wysłać możesz po jednym.",
+      "title": "Zrecenzuj scenariusz",
       "pages": "{count, plural, one {# strona} few {# strony} other {# stron}}",
       "reviewsSoFar": "{count, plural, =0 {brak recenzji} one {# recenzja dotąd} few {# recenzje dotąd} other {# recenzji dotąd}}",
       "claim": "Zrecenzuj ten",
@@ -1157,8 +1172,7 @@
       "showcaseKinds": {
         "FULL_SCRIPT": "Pełny scenariusz",
         "PILOT": "Pilot",
-        "SHORT": "Krótkometrażowy",
-        "LOGLINE": "Logline"
+        "SHORT": "Krótkometrażowy"
       }
     },
     "showcase": {
@@ -1182,8 +1196,7 @@
       "previous": "Poprzednia",
       "next": "Następna",
       "pageOf": "Strona {page} z {count}",
-      "backToWall": "Wszystkie scenariusze",
-      "loglineOnly": "Autor udostępnił tylko logline."
+      "backToWall": "Wszystkie scenariusze"
     }
   }
 }

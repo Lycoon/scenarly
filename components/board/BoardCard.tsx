@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useRef, useState, useCallback, useEffect } from "react";
+import { memo, useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import styles from "./BoardCanvas.module.css";
 import { useTranslations } from "next-intl";
 import { Play, Pause } from "lucide-react";
@@ -336,7 +336,9 @@ const BoardCard = ({
     // Latest card data for touch handlers, which capture their closure at
     // gesture start but must merge against the current card on each update.
     const cardDataRef = useRef(card);
-    cardDataRef.current = card;
+    useLayoutEffect(() => {
+        cardDataRef.current = card;
+    });
     const [isDragging, setIsDragging] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isResizing, setIsResizing] = useState(false);

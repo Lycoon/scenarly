@@ -2,6 +2,7 @@ import { decode, getToken, type JWT } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 import { DESKTOP_BEARER_SALT, getWebSessionCookie } from "@src/lib/auth-tokens";
+import { isEmailAllowed } from "@src/lib/access-allowlist";
 
 // Routes that handle their own auth or are intentionally public
 const PUBLIC_API_PREFIXES = [
@@ -30,7 +31,7 @@ function isAdminPageRoute(pathname: string): boolean {
 /**
  * Resolve the caller's identity from either:
  *  - `Authorization: Bearer <jwe>` — desktop clients (Tauri). Encoded by
- *    /api/desktop/token and /api/auth/magic-link/verify with `DESKTOP_BEARER_SALT`.
+ *    /api/desktop/token and /api/auth/sign-in-code/verify with `DESKTOP_BEARER_SALT`.
  *  - The Auth.js session cookie — web clients. Cookie name and JWE salt vary by
  *    environment and are centralized in `getWebSessionCookie()`.
  *
@@ -70,7 +71,9 @@ export async function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
-    const token = await resolveCaller(request);
+    // On a restricted environment, a caller off the allowlist counts as signed out.
+    const caller = await resolveCaller(request);
+    const token = caller && isEmailAllowed(caller.email) ? caller : null;
 
     // Admin pages: proxy only checks authentication.
     // Role enforcement happens in src/app/admin/layout.tsx via auth(), which runs the
