@@ -8,6 +8,10 @@
         "start": "next start"
     },
     "dependencies": {
+        "@fontsource-variable/inter": "^5.3.0",
+        "@fontsource-variable/josefin-sans": "^5.3.0",
+        "@fontsource-variable/playfair-display": "^5.3.0",
+        "@fontsource/courier-prime": "^5.3.0",
         "lucide-react": "^0.562.0",
         "next": "^16.1.6",
         "react": "^19.2.4",

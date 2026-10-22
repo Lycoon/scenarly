@@ -1,6 +1,6 @@
 import "@styles/globals.css";
 
-import { playfair, inter, courier, josefin } from "@styles/fonts";
+import "@styles/fonts";
 import layout from "@components/utils/Layout.module.css";
 import { Providers } from "./providers";
 import { Metadata } from "next";
@@ -13,16 +13,7 @@ const URL = "https://scenarly.com/";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        // Font variables live on <html>, not on <main>: the phone drawers render
-        // through a portal to document.body, which is outside <main>, so a
-        // var(--font-inter) there resolved to nothing and the whole drawer fell
-        // back to the OS font. next-themes only swaps its own theme class here,
-        // so these survive a theme change.
-        <html
-            lang="en"
-            suppressHydrationWarning
-            className={`${courier.variable} ${inter.variable} ${playfair.variable} ${josefin.variable}`}
-        >
+        <html lang="en" suppressHydrationWarning>
             <body>
                 <Providers>
                     <div className="app-layout">

@@ -1,6 +1,6 @@
 import "@styles/globals.css";
 
-import { playfair, inter, courier, josefin } from "@styles/fonts";
+import "@styles/fonts";
 import layout from "@components/utils/Layout.module.css";
 import { Metadata } from "next";
 
@@ -14,11 +14,7 @@ const URL = "https://scenarly.com/";
 // or next-themes: the class is fixed at build time, not toggled client-side.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        // Font variables sit on <html> here too, matching the app layout.
-        <html
-            lang="en"
-            className={`dark ${courier.variable} ${inter.variable} ${playfair.variable} ${josefin.variable}`}
-        >
+        <html lang="en" className="dark">
             <body>
                 <div className="app-layout">
                     <main className={layout.main}>{children}</main>
