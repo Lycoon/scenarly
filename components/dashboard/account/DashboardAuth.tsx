@@ -9,6 +9,7 @@ import { requestSignInCode, verifySignInCode } from "@src/lib/utils/requests";
 import { ApiResponse } from "@src/lib/utils/api-utils";
 import { SignInCodeError } from "@src/lib/utils/api-bodies";
 
+import CodeInput from "./CodeInput";
 import OAuthButtons from "./OAuthButtons";
 
 import form from "./../../utils/Form.module.css";
@@ -94,35 +95,22 @@ const DashboardAuth = () => {
     if (step === "code") {
         return (
             <form
-                className={`${sharedStyles.settingsForm} ${styles.authForm}`}
+                className={`${sharedStyles.settingsForm} ${styles.authForm} ${styles.codeForm}`}
                 onSubmit={(e) => {
                     e.preventDefault();
                     verifyCode();
                 }}
             >
                 <p className={styles.authInfoText}>{tAuth("codeSent", { email })}</p>
-                <div className={sharedStyles.formGroup}>
-                    <label htmlFor="auth-code" className={form.label}>
-                        {tAuth("codeLabel")}
-                    </label>
-                    <input
-                        id="auth-code"
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        pattern="\d{6}"
-                        maxLength={6}
-                        value={code}
-                        onChange={(e) => {
-                            // Pasted codes may come with spaces or dashes.
-                            setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
-                            setMessage(null);
-                        }}
-                        className={sharedStyles.input}
-                        autoFocus
-                        required
-                    />
-                </div>
+                <CodeInput
+                    value={code}
+                    onChange={(next) => {
+                        setCode(next);
+                        setMessage(null);
+                    }}
+                    label={tAuth("codeLabel")}
+                    invalid={message?.type === "error"}
+                />
 
                 {message && <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>}
 
@@ -136,25 +124,21 @@ const DashboardAuth = () => {
                     </button>
                 </div>
 
-                <div className={styles.authLinks}>
-                    <p className={styles.authSwitchRow}>
-                        <button type="button" className={styles.authSwitchLink} onClick={() => sendCode(true)} disabled={loading}>
-                            {tAuth("resendCode")}
-                        </button>
-                    </p>
-                    <p className={styles.authSwitchRow}>
-                        <button
-                            type="button"
-                            className={styles.authSwitchLink}
-                            onClick={() => {
-                                setStep("email");
-                                setMessage(null);
-                            }}
-                            disabled={loading}
-                        >
-                            {tAuth("useDifferentEmail")}
-                        </button>
-                    </p>
+                <div className={styles.authTextActions}>
+                    <button
+                        type="button"
+                        className={styles.authTextBtn}
+                        onClick={() => {
+                            setStep("email");
+                            setMessage(null);
+                        }}
+                        disabled={loading}
+                    >
+                        {tAuth("useDifferentEmail")}
+                    </button>
+                    <button type="button" className={styles.authTextBtn} onClick={() => sendCode(true)} disabled={loading}>
+                        {tAuth("resendCode")}
+                    </button>
                 </div>
             </form>
         );

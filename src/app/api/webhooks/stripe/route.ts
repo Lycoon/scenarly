@@ -16,45 +16,57 @@ export async function POST(req: NextRequest) {
             sig,
             process.env.STRIPE_WEBHOOK_SECRET!,
         );
-    } catch {
+    } catch (e) {
+        // A wrong STRIPE_WEBHOOK_SECRET lands here for every event, plans going
+        // unactivated with nothing else to show for it.
+        logger.warn("[Stripe webhook] Rejected an event", { signed: sig !== "", error: e instanceof Error ? e.message : e });
         return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    switch (event.type) {
-        case "checkout.session.completed": {
-            const session = event.data.object;
-            const userId = session.client_reference_id;
-            if (!userId || !session.subscription) break;
+    try {
+        switch (event.type) {
+            case "checkout.session.completed": {
+                const session = event.data.object;
+                const userId = session.client_reference_id;
+                if (!userId || !session.subscription) {
+                    logger.warn("[Stripe webhook] Checkout without a user or a subscription", { sessionId: session.id, userId });
+                    break;
+                }
 
-            const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
-            // The first invoice rides along for the confirmation mail.
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["latest_invoice"] });
-            // The price on the subscription says which plan was bought.
-            const priceId = subscription.items.data[0]?.price.id;
-            const plan = priceId ? SubscriptionService.planForStripePrice(priceId) : null;
-            if (!plan) {
-                logger.warn("[Stripe webhook] Checkout for an unknown price", { userId, subscriptionId, priceId });
+                const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
+                // The first invoice rides along for the confirmation mail.
+                const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["latest_invoice"] });
+                // The price on the subscription says which plan was bought.
+                const priceId = subscription.items.data[0]?.price.id;
+                const plan = priceId ? SubscriptionService.planForStripePrice(priceId) : null;
+                if (!plan) {
+                    logger.warn("[Stripe webhook] Checkout for an unknown price", { userId, subscriptionId, priceId });
+                    break;
+                }
+
+                const customerId = typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
+                await UserService.updateUserFromId(userId, { stripeCustomerId: customerId });
+                await SubscriptionService.activateStripe(userId, plan, subscription);
                 break;
             }
-
-            const customerId = typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
-            await UserService.updateUserFromId(userId, { stripeCustomerId: customerId });
-            await SubscriptionService.activateStripe(userId, plan, subscription);
-            break;
+            // Each of these may move the paid period or the status; which one
+            // arrives first does not matter, the subscription is read fresh.
+            case "customer.subscription.updated":
+            case "customer.subscription.deleted":
+                await SubscriptionService.syncStripe(event.data.object.id);
+                break;
+            case "invoice.paid":
+            case "invoice.payment_failed": {
+                if (!event.data.object.id) break;
+                const subscriptionId = await SubscriptionService.stripeInvoiceSubscription(event.data.object.id);
+                if (subscriptionId) await SubscriptionService.syncStripe(subscriptionId);
+                break;
+            }
         }
-        // Each of these may move the paid period or the status; which one
-        // arrives first does not matter, the subscription is read fresh.
-        case "customer.subscription.updated":
-        case "customer.subscription.deleted":
-            await SubscriptionService.syncStripe(event.data.object.id);
-            break;
-        case "invoice.paid":
-        case "invoice.payment_failed": {
-            if (!event.data.object.id) break;
-            const subscriptionId = await SubscriptionService.stripeInvoiceSubscription(event.data.object.id);
-            if (subscriptionId) await SubscriptionService.syncStripe(subscriptionId);
-            break;
-        }
+    } catch (e) {
+        // The 500 has Stripe retry the event; the id is what to find it by in the Dashboard.
+        logger.error("[Stripe webhook] Failed to handle an event", { eventId: event.id, type: event.type, error: e });
+        return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
     }
 
     return NextResponse.json({ received: true });

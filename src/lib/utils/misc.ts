@@ -98,3 +98,9 @@ export const getRandomColor = () => {
             .padStart(6, "0")
     );
 };
+
+/** `h***@example.com` — enough to recognise an address, no more. */
+export const maskEmail = (email: string) => {
+    const [local, domain] = email.split("@");
+    return `${local[0] ?? ""}***@${domain ?? ""}`;
+};
