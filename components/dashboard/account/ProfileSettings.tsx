@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { editUserInfo, deleteUser, requestDataExport, downloadDataExport } from "@src/lib/utils/requests";
 import { signOut } from "next-auth/react";
 import { isTauri } from "@tauri-apps/api/core";
@@ -265,66 +266,70 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
                     </div>
                 </div>
 
-                {showDeleteDialog && (
-                    <div className={dangerStyles.overlay}>
-                        <div className={dangerStyles.modal}>
-                            <h2 className={dangerStyles.modalTitle}>{t("deleteModalTitle")}</h2>
-                            <p className={dangerStyles.modalDescription}>{t("deleteModalDesc")}</p>
-                            {hasLiveSubscription && (
-                                <div className={styles.subscriptionWarning}>
-                                    <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
-                                    <span>{t("deleteSubscriptionWarning", { date: cloudExpiryDate })}</span>
-                                </div>
-                            )}
-                            {hasLiveAppleSubscription && (
-                                <div className={styles.subscriptionWarning}>
-                                    <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
-                                    <span>{t("deleteSubscriptionWarningApple")}</span>
-                                </div>
-                            )}
-                            <label
-                                htmlFor="delete-confirm"
-                                className={dangerStyles.modalDescription}
-                                style={{ display: "block" }}
-                            >
-                                {t("deleteConfirmLabel")}
-                                <strong style={{ display: "block", marginTop: 6 }}>{confirmPhrase}</strong>
-                            </label>
-                            <input
-                                id="delete-confirm"
-                                type="text"
-                                className={`${sharedStyles.input} ${dangerStyles.modalInput}`}
-                                value={deleteConfirmInput}
-                                onChange={(e) => setDeleteConfirmInput(e.target.value)}
-                                autoComplete="off"
-                            />
-                            {deleteError && (
-                                <div className={`${styles.message} ${styles.error}`}>{deleteError}</div>
-                            )}
-                            <div className={dangerStyles.modalActions}>
-                                <button
-                                    className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
-                                    onClick={handleDeleteAccount}
-                                    disabled={deleteLoading || deleteConfirmInput !== confirmPhrase}
+                {/* Portaled to <body> like the dashboard's other confirm dialogs, so the
+                    overlay isn't confined to .modal (see DashboardSidebar). */}
+                {showDeleteDialog &&
+                    createPortal(
+                        <div className={dangerStyles.overlay}>
+                            <div className={dangerStyles.modal}>
+                                <h2 className={dangerStyles.modalTitle}>{t("deleteModalTitle")}</h2>
+                                <p className={dangerStyles.modalDescription}>{t("deleteModalDesc")}</p>
+                                {hasLiveSubscription && (
+                                    <div className={styles.subscriptionWarning}>
+                                        <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
+                                        <span>{t("deleteSubscriptionWarning", { date: cloudExpiryDate })}</span>
+                                    </div>
+                                )}
+                                {hasLiveAppleSubscription && (
+                                    <div className={styles.subscriptionWarning}>
+                                        <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
+                                        <span>{t("deleteSubscriptionWarningApple")}</span>
+                                    </div>
+                                )}
+                                <label
+                                    htmlFor="delete-confirm"
+                                    className={dangerStyles.modalDescription}
+                                    style={{ display: "block" }}
                                 >
-                                    <Trash2 size={16} color="#ffffff" />
-                                    {deleteLoading ? t("deleting") : t("deleteAccountBtn")}
-                                </button>
-                                <button
-                                    className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
-                                    onClick={() => {
-                                        setShowDeleteDialog(false);
-                                        setDeleteConfirmInput("");
-                                        setDeleteError(null);
-                                    }}
-                                    disabled={deleteLoading}
-                                >
-                                    {tCommon("cancel")}
-                                </button>
+                                    {t("deleteConfirmLabel")}
+                                    <strong style={{ display: "block", marginTop: 6 }}>{confirmPhrase}</strong>
+                                </label>
+                                <input
+                                    id="delete-confirm"
+                                    type="text"
+                                    className={`${sharedStyles.input} ${dangerStyles.modalInput}`}
+                                    value={deleteConfirmInput}
+                                    onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                                    autoComplete="off"
+                                />
+                                {deleteError && (
+                                    <div className={`${styles.message} ${styles.error}`}>{deleteError}</div>
+                                )}
+                                <div className={dangerStyles.modalActions}>
+                                    <button
+                                        className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
+                                        onClick={handleDeleteAccount}
+                                        disabled={deleteLoading || deleteConfirmInput !== confirmPhrase}
+                                    >
+                                        <Trash2 size={16} color="#ffffff" />
+                                        {deleteLoading ? t("deleting") : t("deleteAccountBtn")}
+                                    </button>
+                                    <button
+                                        className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
+                                        onClick={() => {
+                                            setShowDeleteDialog(false);
+                                            setDeleteConfirmInput("");
+                                            setDeleteError(null);
+                                        }}
+                                        disabled={deleteLoading}
+                                    >
+                                        {tCommon("cancel")}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                )}
+                        </div>,
+                        document.body,
+                    )}
             </>
         );
     }
