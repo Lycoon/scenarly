@@ -5,7 +5,19 @@
     justify-content: center;
     gap: 40px;
     padding: 60px 0;
-    height: 100%;
+    /* A floor rather than a fixed height: centred when the panel has room, and
+     * taller than .scrollArea when it doesn't. A fixed height squeezes the cards
+     * instead, since their overflow:hidden drops their flex minimum to zero and
+     * clips the rows. */
+    min-height: 100%;
+}
+
+/* Phone: the narrow drawer is short on height, so spend it on the cards. */
+@media (max-width: 767px) {
+    .container {
+        gap: 24px;
+        padding: 16px 0;
+    }
 }
 
 .brandSection {

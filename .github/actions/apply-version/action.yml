@@ -47,11 +47,17 @@ runs:
                   # the desktop PRODUCT_NAME above.
                   IOS_PRODUCT_NAME="Scenarly_Staging"
                   WINDOWS_IDENTIFIER="ArkoLogic.ScenarlyStaging"
-                  # MS Store reserves the 4th version field (must stay 0). Staging's
-                  # build counter (REVISION) sits in that slot, so fold PATCH+REVISION
-                  # into the 3rd field to keep MSIX versions strictly increasing
-                  # across staging pushes and release bumps.
-                  MSIX_VERSION="${MAJOR}.${MINOR}.$(( PATCH * 10000 + REVISION )).0"
+                  # MS Store reserves the 4th version field (must stay 0) and caps the
+                  # others at 65535, while serving the highest version it has. Staging's
+                  # build counter (REVISION) can't use the 4th field, so fold PATCH+REVISION
+                  # into the 3rd to keep MSIX versions strictly increasing across staging
+                  # pushes and release bumps. That leaves room for 65 patches per MINOR.
+                  MSIX_BUILD=$(( PATCH * 1000 + REVISION ))
+                  if [[ "$MSIX_BUILD" -gt 65535 ]]; then
+                      echo "MSIX build field $MSIX_BUILD exceeds 65535; bump MINOR in package.json" >&2
+                      exit 1
+                  fi
+                  MSIX_VERSION="${MAJOR}.${MINOR}.${MSIX_BUILD}.0"
               else
                   PRODUCT_NAME="Scenarly"
                   WINDOW_TITLE="Scenarly"
@@ -63,35 +69,36 @@ runs:
                   MSIX_VERSION="${MAJOR}.${MINOR}.${PATCH}.0"
               fi
 
-              # Play requires versionCode to strictly increase on every upload and
-              # caps it at 2,100,000,000. Tauri's default (major*1000000 +
-              # minor*1000 + patch) has no room for REVISION, so it would repeat
-              # across staging pushes between releases and Play would reject the
-              # second one. Widen every field and give REVISION its own, which
+              # The build number shared by iOS, macOS and Android. Play requires
+              # versionCode to strictly increase on every upload and caps it at
+              # 2,100,000,000, and the Mac App Store requires CFBundleVersion to be
+              # higher than every build ever uploaded for the app, not just those of
+              # the same version. Tauri's default (major*1000000 + minor*1000 + patch)
+              # has no room for REVISION, so it would repeat across staging pushes
+              # between releases. Widen every field and give REVISION its own, which
               # keeps both channels monotonic (they are separate listings, so their
               # counters are independent). Ceiling is MAJOR=200.
               if [[ "$REVISION" -ge 1000 ]]; then
-                  echo "REVISION $REVISION overflows the 3 digits reserved for it in versionCode" >&2
+                  echo "REVISION $REVISION overflows the 3 digits reserved for it in the build number" >&2
                   exit 1
               fi
-              ANDROID_VERSION_CODE=$(( MAJOR * 10000000 + MINOR * 100000 + PATCH * 1000 + REVISION ))
+              BUILD_NUMBER=$(( MAJOR * 10000000 + MINOR * 100000 + PATCH * 1000 + REVISION ))
 
               jq --arg v "$SEMVER" --arg t "$WINDOW_TITLE" --arg n "$PRODUCT_NAME" \
                   '.version = $v | .app.windows[0].title = $t | .productName = $n' \
                   src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp
               mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
 
-              jq --arg id "$APPSTORE_IDENTIFIER" '.identifier = $id' \
+              jq --arg id "$APPSTORE_IDENTIFIER" --arg bv "$BUILD_NUMBER" \
+                  '.identifier = $id | .bundle.macOS.bundleVersion = $bv' \
                   src-tauri/tauri.appstore.conf.json > src-tauri/tauri.appstore.conf.json.tmp
               mv src-tauri/tauri.appstore.conf.json.tmp src-tauri/tauri.appstore.conf.json
 
-              # bundle.iOS.bundleVersion maps straight to CFBundleVersion (same as
-              # macOS's bundle.macOS.bundleVersion below) — tauri ios build writes
-              # Info.plist's CFBundleVersion from this config value directly, so a
-              # PlistBuddy edit after the fact would just get overwritten. Use
-              # REVISION alone (not the full dotted version) so it stays a small,
-              # strictly-increasing integer across pushes, same as macOS's build number.
-              jq --arg id "$IOS_IDENTIFIER" --arg n "$IOS_PRODUCT_NAME" --arg bv "$REVISION" \
+              # bundle.iOS.bundleVersion maps straight to CFBundleVersion — tauri ios
+              # build writes Info.plist's CFBundleVersion from this config value
+              # directly, so a PlistBuddy edit after the fact would just get
+              # overwritten.
+              jq --arg id "$IOS_IDENTIFIER" --arg n "$IOS_PRODUCT_NAME" --arg bv "$BUILD_NUMBER" \
                   '.identifier = $id | .productName = $n | .bundle.iOS.bundleVersion = $bv' \
                   src-tauri/tauri.ios.conf.json > src-tauri/tauri.ios.conf.json.tmp
               mv src-tauri/tauri.ios.conf.json.tmp src-tauri/tauri.ios.conf.json
@@ -106,7 +113,7 @@ runs:
               # applicationId in gen/android, patched in the Android step below —
               # the config identifier has to keep matching the committed Kotlin
               # package tree, since the build regenerates those sources from it.
-              jq --argjson vc "$ANDROID_VERSION_CODE" \
+              jq --argjson vc "$BUILD_NUMBER" \
                   '.bundle.android.versionCode = $vc' \
                   src-tauri/tauri.android.conf.json > src-tauri/tauri.android.conf.json.tmp
               mv src-tauri/tauri.android.conf.json.tmp src-tauri/tauri.android.conf.json
@@ -120,7 +127,7 @@ runs:
               sed -i.bak "s/^version = \".*\"/version = \"$SEMVER\"/" src-tauri/Cargo.toml
               rm -f src-tauri/Cargo.toml.bak
 
-              echo "Applied version $INPUT_VERSION (MSIX: $MSIX_VERSION, productName: '$PRODUCT_NAME', appstore: $APPSTORE_IDENTIFIER, windows: $WINDOWS_IDENTIFIER, android versionCode: $ANDROID_VERSION_CODE)"
+              echo "Applied version $INPUT_VERSION (MSIX: $MSIX_VERSION, productName: '$PRODUCT_NAME', appstore: $APPSTORE_IDENTIFIER, windows: $WINDOWS_IDENTIFIER, build number: $BUILD_NUMBER)"
 
         # All the bundlers resolve icons out of src-tauri/icons at build time:
         # tauri.conf.json's bundle.icon list (macOS .app + Windows exe favicon),

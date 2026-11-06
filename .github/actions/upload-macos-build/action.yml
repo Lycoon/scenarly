@@ -1,0 +1,44 @@
+name: Upload macOS Build
+description: Uploads a signed .pkg to App Store Connect with altool and fails the step if Apple rejects it.
+
+inputs:
+    pkg-path:
+        description: Path to the signed .pkg installer.
+        required: true
+    issuer-id:
+        description: App Store Connect API issuer ID.
+        required: true
+    api-key-id:
+        description: App Store Connect API key ID.
+        required: true
+    api-private-key:
+        description: Contents of the App Store Connect API .p8 key.
+        required: true
+
+runs:
+    using: composite
+    steps:
+        - name: Upload with altool
+          shell: bash
+          env:
+              PKG_PATH: ${{ inputs.pkg-path }}
+              ISSUER_ID: ${{ inputs.issuer-id }}
+              API_KEY_ID: ${{ inputs.api-key-id }}
+              API_PRIVATE_KEY: ${{ inputs.api-private-key }}
+          run: |
+              set -eo pipefail
+
+              mkdir -p "$HOME/private_keys"
+              printf '%s' "$API_PRIVATE_KEY" > "$HOME/private_keys/AuthKey_$API_KEY_ID.p8"
+
+              LOG_PATH="$RUNNER_TEMP/altool-upload.log"
+              xcrun altool --upload-app --file "$PKG_PATH" --type macos \
+                  --apiKey "$API_KEY_ID" --apiIssuer "$ISSUER_ID" --verbose 2>&1 | tee "$LOG_PATH"
+
+              # altool exits 0 when App Store Connect rejects the build, which is why
+              # apple-actions/upload-testflight-build can't be used here: it only
+              # looks at the exit code, so rejected uploads showed up as green jobs.
+              if grep -q "UPLOAD FAILED" "$LOG_PATH"; then
+                  echo "::error::App Store Connect rejected the macOS build; see the altool output above."
+                  exit 1
+              fi

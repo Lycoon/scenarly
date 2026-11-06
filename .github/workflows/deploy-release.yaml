@@ -35,7 +35,6 @@ jobs:
         outputs:
             version: ${{ steps.version.outputs.version }}
             short_version: ${{ steps.version.outputs.short_version }}
-            revision: ${{ steps.version.outputs.revision }}
             git_tag: ${{ steps.version.outputs.git_tag }}
             commit_sha: ${{ steps.version.outputs.commit_sha }}
         steps:
@@ -88,12 +87,12 @@ jobs:
                   version: ${{ needs.prepare.outputs.version }}
 
             - name: Build and sign .app with Tauri
-              run: npm run tauri build -- --bundles app --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json --config "{\"bundle\":{\"macOS\":{\"bundleVersion\":\"${{ needs.prepare.outputs.revision }}\"}}}"
+              run: npm run tauri build -- --bundles app --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json
               env:
                   APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
                   NEXT_PUBLIC_API_URL: https://scenarly.com
                   NEXT_PUBLIC_CLOUD_URL: https://cloud.scenarly.com
-                  NEXT_PUBLIC_APP_VERSION: ${{ needs.prepare.outputs.version }}
+                  NEXT_PUBLIC_APP_VERSION: ${{ needs.prepare.outputs.short_version }}
                   NEXT_PUBLIC_COMMIT_SHA: ${{ needs.prepare.outputs.commit_sha }}
 
             - name: Build signed .pkg installer
@@ -104,14 +103,13 @@ jobs:
                     "$PKG_PATH"
 
             - name: Upload to App Store Connect
-              uses: apple-actions/upload-testflight-build@v5
+              uses: ./.github/actions/upload-macos-build
+              timeout-minutes: 30
               with:
-                  app-path: ${{ env.PKG_PATH }}
+                  pkg-path: ${{ env.PKG_PATH }}
                   issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
                   api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
                   api-private-key: ${{ secrets.APPSTORE_API_KEY_P8 }}
-                  backend: "altool"
-                  app-type: "macos"
 
     publish-ios:
         runs-on: macos-latest
@@ -198,7 +196,7 @@ jobs:
                   APPLE_DEVELOPMENT_TEAM: G93CJ6PWZH
                   NEXT_PUBLIC_API_URL: https://scenarly.com
                   NEXT_PUBLIC_CLOUD_URL: https://cloud.scenarly.com
-                  NEXT_PUBLIC_APP_VERSION: ${{ needs.prepare.outputs.version }}
+                  NEXT_PUBLIC_APP_VERSION: ${{ needs.prepare.outputs.short_version }}
                   NEXT_PUBLIC_COMMIT_SHA: ${{ needs.prepare.outputs.commit_sha }}
 
             - name: Locate built .ipa
@@ -260,7 +258,7 @@ jobs:
               env:
                   NEXT_PUBLIC_API_URL: https://scenarly.com
                   NEXT_PUBLIC_CLOUD_URL: https://cloud.scenarly.com
-                  NEXT_PUBLIC_APP_VERSION: ${{ needs.prepare.outputs.version }}
+                  NEXT_PUBLIC_APP_VERSION: ${{ needs.prepare.outputs.short_version }}
                   NEXT_PUBLIC_COMMIT_SHA: ${{ needs.prepare.outputs.commit_sha }}
 
             - name: Locate built .aab
@@ -314,7 +312,7 @@ jobs:
               env:
                   NEXT_PUBLIC_API_URL: https://scenarly.com
                   NEXT_PUBLIC_CLOUD_URL: https://cloud.scenarly.com
-                  NEXT_PUBLIC_APP_VERSION: ${{ needs.prepare.outputs.version }}
+                  NEXT_PUBLIC_APP_VERSION: ${{ needs.prepare.outputs.short_version }}
                   NEXT_PUBLIC_COMMIT_SHA: ${{ needs.prepare.outputs.commit_sha }}
 
             - name: Rename output to fixed name
@@ -381,12 +379,12 @@ jobs:
                   push: true
                   tags: |
                       ${{ env.IMAGE_NAME }}:latest
-                      ${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
+                      ${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.short_version }}
                   build-args: |
                       NEXT_PUBLIC_API_URL=https://scenarly.com
                       NEXT_PUBLIC_CLOUD_URL=https://cloud.scenarly.com
                       NEXT_PUBLIC_COMMIT_SHA=${{ env.COMMIT_SHA }}
-                      NEXT_PUBLIC_APP_VERSION=${{ needs.prepare.outputs.version }}
+                      NEXT_PUBLIC_APP_VERSION=${{ needs.prepare.outputs.short_version }}
 
             - name: Copy docker-compose and monitoring files to VPS
               uses: appleboy/scp-action@master

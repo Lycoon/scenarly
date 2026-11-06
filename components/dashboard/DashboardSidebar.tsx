@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useContext, useState } from "react";
+import { createPortal } from "react-dom";
 import { DashboardContext } from "@src/context/DashboardContext";
 import { Info, LogIn, LogOut, X } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -59,28 +60,33 @@ const SidebarMenu = ({ structure, activeTab, onTabChange }: SidebarMenuProps) =>
 
     return (
         <>
-            {showLogOutConfirm && (
-                <div className={dangerStyles.overlay} onClick={() => setShowLogOutConfirm(false)}>
-                    <div className={dangerStyles.modal} onClick={(e) => e.stopPropagation()}>
-                        <h2 className={dangerStyles.modalTitle}>{t("logOutConfirmTitle")}</h2>
-                        <p className={dangerStyles.modalDescription}>{t("logOutConfirmDesc")}</p>
-                        <div className={dangerStyles.modalActions}>
-                            <button
-                                className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
-                                onClick={onLogOut}
-                            >
-                                {t("logOutConfirmBtn")}
-                            </button>
-                            <button
-                                className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
-                                onClick={() => setShowLogOutConfirm(false)}
-                            >
-                                {t("logOutCancelBtn")}
-                            </button>
+            {/* Portal to <body>: .modal's will-change: transform makes it the containing
+                block for fixed descendants, which would confine this overlay to the
+                drawer on phone. Only ever open after a click, so `document` exists. */}
+            {showLogOutConfirm &&
+                createPortal(
+                    <div className={dangerStyles.overlay} onClick={() => setShowLogOutConfirm(false)}>
+                        <div className={dangerStyles.modal} onClick={(e) => e.stopPropagation()}>
+                            <h2 className={dangerStyles.modalTitle}>{t("logOutConfirmTitle")}</h2>
+                            <p className={dangerStyles.modalDescription}>{t("logOutConfirmDesc")}</p>
+                            <div className={dangerStyles.modalActions}>
+                                <button
+                                    className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
+                                    onClick={onLogOut}
+                                >
+                                    {t("logOutConfirmBtn")}
+                                </button>
+                                <button
+                                    className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
+                                    onClick={() => setShowLogOutConfirm(false)}
+                                >
+                                    {t("logOutCancelBtn")}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </div>,
+                    document.body,
+                )}
             <aside className={styles.sidebar}>
                 {/* The close button only shows on phone, where this list is a
                     full-drawer screen with no content header to close from. */}
