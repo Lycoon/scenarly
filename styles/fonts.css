@@ -1,3 +1,12 @@
+/* UI fonts, loaded from @fontsource in styles/fonts.ts. On :root so portals
+   rendered straight into document.body (phone drawers) resolve them too. */
+:root {
+    --font-courier: "Courier Prime";
+    --font-inter: "Inter Variable";
+    --font-playfair: "Playfair Display Variable";
+    --font-josefin: "Josefin Sans Variable";
+}
+
 /* CourierPrime */
 /* Used for screenplay latin/cyrillic characters */
 @font-face {

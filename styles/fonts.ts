@@ -1,25 +1,11 @@
-import { Courier_Prime, Inter, Playfair_Display, Josefin_Sans } from "next/font/google";
-
-export const courier = Courier_Prime({
-    subsets: ["latin"],
-    weight: ["400", "700"],
-    variable: "--font-courier",
-});
-
-export const inter = Inter({
-    subsets: ["latin"],
-    weight: ["400", "700"],
-    variable: "--font-inter",
-});
-
-export const playfair = Playfair_Display({
-    subsets: ["latin"],
-    weight: ["400", "700"],
-    variable: "--font-playfair",
-});
-
-export const josefin = Josefin_Sans({
-    subsets: ["latin"],
-    weight: ["400", "700"],
-    variable: "--font-josefin",
-});
+// Self-hosted from npm instead of next/font/google: that one downloads the files
+// from fonts.gstatic.com during `next build`, and any network hiccup there fails
+// the whole build ("next/font/google queries have exactly one entry").
+// Each package ships every subset with its unicode-range, so the browser still
+// only fetches the ones a page needs (latin-ext for Polish, etc.).
+// The --font-* variables pointing at these families are set on :root in CSS.
+import "@fontsource/courier-prime/400.css";
+import "@fontsource/courier-prime/700.css";
+import "@fontsource-variable/inter/wght.css";
+import "@fontsource-variable/playfair-display/wght.css";
+import "@fontsource-variable/josefin-sans/wght.css";

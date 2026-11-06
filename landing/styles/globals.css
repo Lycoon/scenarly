@@ -1,5 +1,13 @@
 @import "./colors.css";
 
+/* Loaded from @fontsource in styles/fonts.ts. */
+:root {
+    --font-courier: "Courier Prime";
+    --font-inter: "Inter Variable";
+    --font-playfair: "Playfair Display Variable";
+    --font-josefin: "Josefin Sans Variable";
+}
+
 html,
 body {
     height: 100%;

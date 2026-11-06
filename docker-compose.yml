@@ -41,7 +41,7 @@ services:
         labels:
             - traefik.enable=true
             - traefik.docker.network=webproxy
-            - traefik.http.routers.scenarly-landing.rule=Host(`scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/manifesto`) || PathPrefix(`/privacy`) || PathPrefix(`/terms`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
+            - traefik.http.routers.scenarly-landing.rule=Host(`scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/manifesto`) || PathPrefix(`/privacy`) || PathPrefix(`/terms`) || PathPrefix(`/contact`) || PathPrefix(`/delete-account`) || PathPrefix(`/_site`))
             - traefik.http.routers.scenarly-landing.entrypoints=secure
             - traefik.http.routers.scenarly-landing.tls=true
             - traefik.http.routers.scenarly-landing.tls.certresolver=letsencrypt
@@ -89,7 +89,7 @@ services:
         labels:
             - traefik.enable=true
             - traefik.docker.network=webproxy
-            - traefik.http.routers.scenarly-landing-staging.rule=Host(`staging.scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/manifesto`) || PathPrefix(`/privacy`) || PathPrefix(`/terms`) || PathPrefix(`/contact`) || PathPrefix(`/_site`))
+            - traefik.http.routers.scenarly-landing-staging.rule=Host(`staging.scenarly.com`) && (Path(`/`) || Path(`/robots.txt`) || PathPrefix(`/manifesto`) || PathPrefix(`/privacy`) || PathPrefix(`/terms`) || PathPrefix(`/contact`) || PathPrefix(`/delete-account`) || PathPrefix(`/_site`))
             - traefik.http.routers.scenarly-landing-staging.entrypoints=secure
             - traefik.http.routers.scenarly-landing-staging.tls=true
             - traefik.http.routers.scenarly-landing-staging.tls.certresolver=letsencrypt
