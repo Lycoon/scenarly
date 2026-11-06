@@ -6,7 +6,7 @@ outputs:
         description: Full MAJOR.MINOR.PATCH.REVISION version string.
         value: ${{ steps.compute.outputs.version }}
     short_version:
-        description: MAJOR.MINOR.PATCH (used for tags and App Store fallback).
+        description: MAJOR.MINOR.PATCH, the public version name on every platform and channel.
         value: ${{ steps.compute.outputs.short_version }}
     revision:
         description: Just the REVISION segment.
@@ -51,12 +51,16 @@ runs:
 
               GIT_TAG=""
 
+              # Staging is named after the release it's preparing, so the same code
+              # carries the same version name on both channels.
+              if [ -z "$LATEST_TAG" ]; then NEXT_PATCH=0; else NEXT_PATCH=$((CURRENT_PATCH + 1)); fi
+
               if [[ "${{ github.ref }}" == "refs/heads/release" ]]; then
-                  if [ -z "$LATEST_TAG" ]; then PATCH=0; else PATCH=$((CURRENT_PATCH + 1)); fi
+                  PATCH=$NEXT_PATCH
                   REVISION=0
                   GIT_TAG="$MAJOR.$MINOR.$PATCH"
               elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
-                  PATCH=$CURRENT_PATCH
+                  PATCH=$NEXT_PATCH
                   REVISION=$COMMITS_SINCE_TAG
                   if [ "$REVISION" -eq 0 ]; then REVISION=1; fi
               else

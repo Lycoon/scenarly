@@ -4,6 +4,7 @@ import { deleteProject, transferProjectOwnership } from "@src/lib/utils/requests
 import { useCookieUser, useProjectCollaborators, useProjectMembership } from "@src/lib/utils/hooks";
 import { useAppNavigation } from "@src/lib/utils/navigation";
 import { useContext, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { DashboardContext } from "@src/context/DashboardContext";
 import { ProjectRole } from "@src/generated/client/browser";
 import { ApiResponse } from "@src/lib/utils/api-utils";
@@ -144,87 +145,93 @@ const DangerZone = ({ projectId, isLocalOnly, isOpen }: DangerZoneProps) => {
                 </div>
             </div>
 
-            {/* Ownership transfer dialog */}
-            {showTransferDialog && (
-                <div className={styles.overlay}>
-                    <div className={styles.modal}>
-                        <h2 className={styles.modalTitle}>{t("transferModalTitle")}</h2>
-                        <p className={styles.modalDescription}>{t("transferModalDesc")}</p>
+            {/* Ownership transfer dialog. This and the delete dialog are portaled to <body>
+                like the dashboard's other confirm dialogs, so the overlay isn't confined
+                to .modal (see DashboardSidebar). */}
+            {showTransferDialog &&
+                createPortal(
+                    <div className={styles.overlay}>
+                        <div className={styles.modal}>
+                            <h2 className={styles.modalTitle}>{t("transferModalTitle")}</h2>
+                            <p className={styles.modalDescription}>{t("transferModalDesc")}</p>
 
-                        {candidates.length === 0 ? (
-                            <p className={styles.modalDescription}>{t("transferNoCandidates")}</p>
-                        ) : (
-                            <>
-                                <label htmlFor="transfer-new-owner" className={form.label}>
-                                    {t("transferSelectLabel")}
-                                </label>
-                                <select
-                                    id="transfer-new-owner"
-                                    className={`${collaborators.roleSelect} ${styles.modalSelect}`}
-                                    value={transferTargetId}
-                                    onChange={(e) => setTransferTargetId(e.target.value)}
+                            {candidates.length === 0 ? (
+                                <p className={styles.modalDescription}>{t("transferNoCandidates")}</p>
+                            ) : (
+                                <>
+                                    <label htmlFor="transfer-new-owner" className={form.label}>
+                                        {t("transferSelectLabel")}
+                                    </label>
+                                    <select
+                                        id="transfer-new-owner"
+                                        className={`${collaborators.roleSelect} ${styles.modalSelect}`}
+                                        value={transferTargetId}
+                                        onChange={(e) => setTransferTargetId(e.target.value)}
+                                        disabled={transferLoading}
+                                    >
+                                        {candidates.map((c) => (
+                                            <option key={c.user.id} value={c.user.id}>
+                                                {c.user.email}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </>
+                            )}
+
+                            {transferError && <p className={styles.modalError}>{transferError}</p>}
+
+                            <div className={styles.modalActions}>
+                                {candidates.length > 0 && (
+                                    <button
+                                        className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
+                                        onClick={handleTransferOwnership}
+                                        disabled={transferLoading || !transferTargetId}
+                                    >
+                                        <UserRoundCog size={16} color="#ffffff" />
+                                        {transferLoading ? t("transferring") : t("confirmTransferBtn")}
+                                    </button>
+                                )}
+                                <button
+                                    className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
+                                    onClick={closeTransferDialog}
                                     disabled={transferLoading}
                                 >
-                                    {candidates.map((c) => (
-                                        <option key={c.user.id} value={c.user.id}>
-                                            {c.user.email}
-                                        </option>
-                                    ))}
-                                </select>
-                            </>
-                        )}
-
-                        {transferError && <p className={styles.modalError}>{transferError}</p>}
-
-                        <div className={styles.modalActions}>
-                            {candidates.length > 0 && (
-                                <button
-                                    className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
-                                    onClick={handleTransferOwnership}
-                                    disabled={transferLoading || !transferTargetId}
-                                >
-                                    <UserRoundCog size={16} color="#ffffff" />
-                                    {transferLoading ? t("transferring") : t("confirmTransferBtn")}
+                                    {tCommon("cancel")}
                                 </button>
-                            )}
-                            <button
-                                className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
-                                onClick={closeTransferDialog}
-                                disabled={transferLoading}
-                            >
-                                {tCommon("cancel")}
-                            </button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </div>,
+                    document.body,
+                )}
 
             {/* Delete confirmation dialog */}
-            {showDeleteDialog && (
-                <div className={styles.overlay}>
-                    <div className={styles.modal}>
-                        <h2 className={styles.modalTitle}>{t("modalTitle")}</h2>
-                        <p className={styles.modalDescription}>{t("modalDesc")}</p>
-                        <div className={styles.modalActions}>
-                            <button
-                                className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
-                                onClick={handleDeleteProject}
-                                disabled={loading}
-                            >
-                                <Trash2 size={16} color="#ffffff" />
-                                {loading ? t("deleting") : t("confirmDeleteBtn")}
-                            </button>
-                            <button
-                                className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
-                                onClick={() => setShowDeleteDialog(false)}
-                                disabled={loading}
-                            >
-                                {tCommon("cancel")}
-                            </button>
+            {showDeleteDialog &&
+                createPortal(
+                    <div className={styles.overlay}>
+                        <div className={styles.modal}>
+                            <h2 className={styles.modalTitle}>{t("modalTitle")}</h2>
+                            <p className={styles.modalDescription}>{t("modalDesc")}</p>
+                            <div className={styles.modalActions}>
+                                <button
+                                    className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
+                                    onClick={handleDeleteProject}
+                                    disabled={loading}
+                                >
+                                    <Trash2 size={16} color="#ffffff" />
+                                    {loading ? t("deleting") : t("confirmDeleteBtn")}
+                                </button>
+                                <button
+                                    className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
+                                    onClick={() => setShowDeleteDialog(false)}
+                                    disabled={loading}
+                                >
+                                    {tCommon("cancel")}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </div>,
+                    document.body,
+                )}
         </>
     );
 };
