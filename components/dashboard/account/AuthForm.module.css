@@ -97,10 +97,21 @@
     height: 100%;
 }
 
+/* As wide as the six cells, so the text and the button line up with them. */
+.authForm.codeForm {
+    gap: 20px;
+    width: 100%;
+    max-width: 328px;
+    margin-inline: auto;
+}
+
 .authInfoText {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
     color: var(--secondary-text);
+    text-align: center;
+    overflow-wrap: anywhere;
 }
 
 .authActions {
@@ -131,34 +142,59 @@
     color: var(--primary-text);
 }
 
-.authLinks {
+.authTextActions {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 20px;
 }
 
-.authSwitchRow {
-    margin: 0;
-    font-size: 0.8rem;
-    color: var(--secondary-text);
-    text-align: right;
-}
-
-.authSwitchLink {
+.authTextBtn {
+    padding: 4px;
     background: none;
     border: none;
     color: var(--secondary-text);
-    cursor: pointer;
-    font-size: 0.8rem;
     font-family: var(--font-inter);
-    padding: 0;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s;
 }
 
-.authSwitchLink:hover {
+.authTextBtn:hover:not(:disabled) {
     color: var(--primary-text);
+}
+
+.authTextBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Cells keep their size and shrink only when the phone drawer has no room for it. */
+.codeCells {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 48px));
+    justify-content: center;
+    gap: 8px;
+}
+
+.codeCells .codeCell {
+    width: 100%;
+    height: 56px;
+    padding: 0;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.codeCells .codeCell:focus {
+    border-color: var(--primary-text);
+    box-shadow: 0 0 0 1px var(--primary-text);
+}
+
+.codeCells .codeCell.inputError:focus {
+    box-shadow: 0 0 0 1px var(--error);
 }
 
 .divider {

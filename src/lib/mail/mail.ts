@@ -1,6 +1,8 @@
-import nodemailer from "nodemailer";
+import nodemailer, { SendMailOptions } from "nodemailer";
 import * as fs from "fs";
 import { BASE_URL } from "../utils/constants";
+import { logger } from "../utils/logger";
+import { maskEmail } from "../utils/misc";
 import hogan from "hogan.js";
 
 const transporter = nodemailer.createTransport({
@@ -13,6 +15,23 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_SECRET,
     },
 });
+
+/**
+ * `label` names the mail in the log, because the subject cannot: it may carry
+ * a sign-in code. The error is reduced to named fields for the same reason.
+ */
+const logFailure = (label: string, to: string, err: unknown) => {
+    const { code, responseCode, message } = err as NodeJS.ErrnoException & { responseCode?: number };
+    logger.error("[Mail] Failed to send", { mail: label, to: maskEmail(to), code, responseCode, error: message });
+};
+
+/**
+ * Mail is best-effort: it neither blocks its caller nor fails it, so this is
+ * the one place a failed send surfaces.
+ */
+const deliver = (label: string, options: SendMailOptions & { to: string }) => {
+    transporter.sendMail(options).catch((err) => logFailure(label, options.to, err));
+};
 
 export const sendProjectInviteEmail = async (email: string, projectTitle: string, token: string) => {
     const link = `${BASE_URL}/api/projects/accept-invite?token=${token}`;
@@ -135,7 +154,7 @@ export const sendWithdrawalConfirmationEmail = async (email: string, planName: s
 
 /** Something support has to finish by hand. */
 export const sendInternalAlertEmail = async (subject: string, text: string) => {
-    transporter.sendMail({
+    deliver("Internal alert", {
         from: "Scenarly <no-reply@scenarly.com>",
         to: "contact@scenarly.com",
         subject: `[Alert] ${subject}`,
@@ -152,23 +171,33 @@ const sendFormattedEmail = async (
     link: string | null,
     code: string | null = null,
 ) => {
-    const template = fs.readFileSync("./src/lib/mail/template.html").toString();
-    const signature = fs.readFileSync("./src/lib/mail/signature.html").toString();
-    const compiled = hogan.compile(template);
-    const rendered = compiled.render({
-        bodyText,
-        buttonText,
-        welcomeMessage,
-        link,
-        code,
-        // Shown as two groups of three, which are easier to hold in mind; the
-        // gap is a small space, so a copied code still pastes (the form drops it).
-        codeHead: code?.slice(0, 3),
-        codeTail: code?.slice(3),
-        signature,
-    });
+    try {
+        const template = fs.readFileSync("./src/lib/mail/template.html").toString();
+        const signature = fs.readFileSync("./src/lib/mail/signature.html").toString();
+        const compiled = hogan.compile(template);
+        const rendered = compiled.render({
+            bodyText,
+            buttonText,
+            welcomeMessage,
+            link,
+            code,
+            // Shown as two groups of three, which are easier to hold in mind; the
+            // gap is a small space, so a copied code still pastes (the form drops it).
+            codeHead: code?.slice(0, 3),
+            codeTail: code?.slice(3),
+            signature,
+        });
 
-    sendEmail(email, subject, rendered, code ? `${code.slice(0, 3)} ${code.slice(3)}\n\n${bodyText}` : bodyText);
+        deliver(welcomeMessage, {
+            from: "Scenarly <no-reply@scenarly.com>",
+            to: email,
+            subject,
+            html: rendered,
+            text: code ? `${code.slice(0, 3)} ${code.slice(3)}\n\n${bodyText}` : bodyText,
+        });
+    } catch (err) {
+        logFailure(welcomeMessage, email, err);
+    }
 };
 
 export const sendContactEmail = async (email: string, reason: string, message: string) => {
@@ -180,22 +209,12 @@ export const sendContactEmail = async (email: string, reason: string, message: s
         <p>${message.replace(/\n/g, "<br>")}</p>
     `;
     const text = `From: ${email}\nReason: ${reason}\nMessage:\n${message}`;
-    transporter.sendMail({
+    deliver("Contact form", {
         from: "Scenarly Form <no-reply@scenarly.com>",
         replyTo: email,
         to: "contact@scenarly.com",
         subject: `[Contact] ${reason}`,
         html,
         text,
-    });
-};
-
-const sendEmail = async (to: string, subject: string, html: string, text: string) => {
-    transporter.sendMail({
-        from: "Scenarly <no-reply@scenarly.com>",
-        to,
-        subject,
-        html: html,
-        text: text,
     });
 };

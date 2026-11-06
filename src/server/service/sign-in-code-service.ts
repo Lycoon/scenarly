@@ -82,10 +82,8 @@ export async function sendCode(email: string, inviteToken: string | null): Promi
     if (reviewCode) return;
 
     // Never block the response on SMTP, nor tell the caller it failed: that
-    // would say whether the address exists.
-    Mail.sendSignInCodeEmail(email, code).catch((err) => {
-        logger.error("[SignInCode] Failed to send the code", { error: err });
-    });
+    // would say whether the address exists. The mail module logs a failure.
+    void Mail.sendSignInCodeEmail(email, code);
 }
 
 /** Spend `code` if it is `email`'s newest one; throws an AppError otherwise. */

@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { playwright } from "@vitest/browser-playwright";
 import path from "path";
 import { fileURLToPath } from "url";
 import BenchJsonReporter from "./src/tests/helpers/bench-json-reporter";
@@ -9,7 +10,7 @@ export default defineConfig({
     test: {
         browser: {
             enabled: true,
-            provider: "playwright",
+            provider: playwright(),
             instances: [
                 { browser: "chromium", headless: true },
                 { browser: "webkit", headless: true },
