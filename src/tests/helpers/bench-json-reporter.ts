@@ -1,19 +1,17 @@
 /**
  * Custom Vitest benchmark reporter that writes results to bench-results.json.
- * Uses onTaskUpdate to capture benchmark data as it arrives from the browser,
- * and onCollected to build the id→{name,suite,browser} lookup map.
+ * Uses onTestRunEnd to walk the finished test modules and read the benchmark
+ * data each task carries.
  */
-import { BenchmarkReporter } from "vitest/reporters";
-import type { RunnerTestFile, RunnerTask, RunnerTaskResultPack } from "vitest";
+import { BenchmarkReporter } from "vitest/node";
+import type { Reporter } from "vitest/node";
+import type { RunnerTask } from "vitest";
 import { writeFileSync } from "node:fs";
 
-interface TaskMeta {
+interface BenchEntry {
     name: string;
     suite: string;
     browser: string;
-}
-
-interface BenchEntry extends TaskMeta {
     hz: number;
     /** milliseconds per operation */
     meanMs: number;
@@ -28,43 +26,22 @@ interface BenchEntry extends TaskMeta {
 type TaskWithChildren = RunnerTask & { tasks?: RunnerTask[] };
 
 export default class BenchJsonReporter extends BenchmarkReporter {
-    /** id → task metadata (populated in onCollected) */
-    private readonly taskMeta = new Map<string, TaskMeta>();
-    /** id → benchmark result (populated in onTaskUpdate) */
-    private readonly benchData = new Map<string, BenchEntry>();
-
-    // ── Phase 1: index all tasks so we can look them up by id later ─────────
-    onCollected(files: RunnerTestFile[] = []) {
-        for (const file of files) {
-            const browser =
-                (file as unknown as { projectName?: string }).projectName ?? "unknown";
-            this.indexTasks(file.tasks as RunnerTask[], "", browser);
-        }
-    }
-
-    private indexTasks(tasks: RunnerTask[], suitePath: string, browser: string) {
+    private collectEntries(tasks: RunnerTask[], suitePath: string, browser: string, entries: BenchEntry[]) {
         for (const task of tasks) {
-            this.taskMeta.set(task.id, { name: task.name, suite: suitePath, browser });
             const sub = (task as TaskWithChildren).tasks;
             if (sub?.length) {
                 const childPath = suitePath ? `${suitePath} > ${task.name}` : task.name;
-                this.indexTasks(sub, childPath, browser);
+                this.collectEntries(sub, childPath, browser, entries);
             }
-        }
-    }
 
-    // ── Phase 2: capture benchmark results as they stream in ─────────────────
-    onTaskUpdate(packs: RunnerTaskResultPack[]) {
-        for (const [id, result] of packs) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const bm = (result as any)?.benchmark;
+            const bm = (task.result as any)?.benchmark;
             if (!bm || typeof bm.hz !== "number") continue;
 
-            const meta = this.taskMeta.get(id);
-            if (!meta) continue;
-
-            this.benchData.set(id, {
-                ...meta,
+            entries.push({
+                name: task.name,
+                suite: suitePath,
+                browser,
                 hz: bm.hz,
                 meanMs: bm.mean,
                 minMs: bm.min,
@@ -77,12 +54,20 @@ export default class BenchJsonReporter extends BenchmarkReporter {
         }
     }
 
-    // ── Phase 3: write JSON when everything has finished ─────────────────────
-    async onFinished() {
-        if (this.benchData.size === 0) return;
+    async onTestRunEnd(...args: Parameters<NonNullable<Reporter["onTestRunEnd"]>>) {
+        await super.onTestRunEnd(...args);
+
+        const [testModules] = args;
+        const entries: BenchEntry[] = [];
+        for (const testModule of testModules) {
+            // The benchmark data is only reachable through the runner task, which TestModule's types don't expose.
+            const { tasks } = (testModule as unknown as { task: { tasks: RunnerTask[] } }).task;
+            this.collectEntries(tasks, "", testModule.project.name, entries);
+        }
+        if (entries.length === 0) return;
 
         const grouped: Record<string, BenchEntry[]> = {};
-        for (const entry of this.benchData.values()) {
+        for (const entry of entries) {
             const key = `[${entry.browser}] ${entry.suite}`;
             (grouped[key] ??= []).push(entry);
         }
@@ -92,6 +77,6 @@ export default class BenchJsonReporter extends BenchmarkReporter {
             JSON.stringify({ generated: new Date().toISOString(), grouped }, null, 2),
             "utf-8",
         );
-        console.log(`\nBench results written to bench-results.json (${this.benchData.size} entries)`);
+        console.log(`\nBench results written to bench-results.json (${entries.length} entries)`);
     }
 }

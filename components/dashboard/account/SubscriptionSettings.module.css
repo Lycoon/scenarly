@@ -494,8 +494,12 @@
         flex: none;
     }
 
+    /* The explicit width is for WebKit: stretch alone is lost when the hint is
+       inserted, collapsing the toggle to its content width and leaving a gap
+       on its right. */
     .purchaseRow .periodToggleWrap {
         order: 1;
+        width: 100%;
     }
 
     .purchaseRow .periodToggle {

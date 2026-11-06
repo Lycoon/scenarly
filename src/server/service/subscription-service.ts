@@ -37,6 +37,7 @@ import {
 } from "@src/lib/plans";
 import { ConflictError, ForbiddenError } from "@src/lib/utils/api-utils";
 import { logger } from "@src/lib/utils/logger";
+import { maskEmail } from "@src/lib/utils/misc";
 import {
     sendCancellationConfirmationEmail,
     sendDeletionCancellationEmail,
@@ -618,9 +619,3 @@ async function stopLiveStripe(userId: string, plan: Plan, store: "APPLE" | "GOOG
 
 /** An ended subscription keeps its natural expiry when that has passed, and is cut to now otherwise. */
 const endedNow = (expiresAt: Date) => new Date(Math.min(expiresAt.getTime(), Date.now()));
-
-/** `h***@example.com` — enough for the user to recognise their own other account, no more. */
-function maskEmail(email: string): string {
-    const [local, domain] = email.split("@");
-    return `${local[0] ?? ""}***@${domain ?? ""}`;
-}
