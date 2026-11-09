@@ -23,6 +23,7 @@ import { SaveTargets, CollaboratorsDisplay } from "./ProjectNavbarShared";
 import SavesPanel from "./SavesPanel";
 import ProductionPanel from "./ProductionPanel";
 import ReadAloudPanel from "./ReadAloudPanel";
+import { READ_ALOUD_ENABLED } from "@src/context/ReadAloudContext";
 import DialogueTunerPanel from "./DialogueTunerPanel";
 import ScreenplayFormatDropdown from "./ScreenplayFormatDropdown";
 import ScreenplaySearch from "./ScreenplaySearch";
@@ -244,25 +245,27 @@ const ProjectNavbarDesktop = () => {
                                             triggerRef={productionBtnRef}
                                         />
                                     </div>
-                                    <div style={panelAnchorStyle}>
-                                        <div
-                                            ref={readAloudBtnRef}
-                                            className={join(
-                                                navBtn.button,
-                                                navbar.tools_icon,
-                                                isReadAloudOpen ? navbar.tools_icon_active : "",
-                                            )}
-                                            onClick={() => setIsReadAloudOpen(!isReadAloudOpen)}
-                                            aria-label={t("readAloud")}
-                                        >
-                                            <AudioLines size={18} />
+                                    {READ_ALOUD_ENABLED && (
+                                        <div style={panelAnchorStyle}>
+                                            <div
+                                                ref={readAloudBtnRef}
+                                                className={join(
+                                                    navBtn.button,
+                                                    navbar.tools_icon,
+                                                    isReadAloudOpen ? navbar.tools_icon_active : "",
+                                                )}
+                                                onClick={() => setIsReadAloudOpen(!isReadAloudOpen)}
+                                                aria-label={t("readAloud")}
+                                            >
+                                                <AudioLines size={18} />
+                                            </div>
+                                            <ReadAloudPanel
+                                                isOpen={isReadAloudOpen}
+                                                onClose={() => setIsReadAloudOpen(false)}
+                                                triggerRef={readAloudBtnRef}
+                                            />
                                         </div>
-                                        <ReadAloudPanel
-                                            isOpen={isReadAloudOpen}
-                                            onClose={() => setIsReadAloudOpen(false)}
-                                            triggerRef={readAloudBtnRef}
-                                        />
-                                    </div>
+                                    )}
                                     <div style={panelAnchorStyle}>
                                         <div
                                             ref={dialogueTunerBtnRef}

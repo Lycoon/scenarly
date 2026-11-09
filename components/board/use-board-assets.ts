@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { ProjectContext } from "@src/context/ProjectContext";
 import { BoardCardData } from "@src/lib/project/project-state";
 import { importAudioFile, importImageFile, syncAssetToCloud } from "@src/lib/assets/asset-store";
-import { CloudQuotaError } from "@src/lib/assets/cloud-asset-sync";
+import { CloudPlanRequiredError, CloudQuotaError } from "@src/lib/assets/cloud-asset-sync";
 import { createAudioCard, createImageCard } from "./board-cards";
 import { useAudioRecorder } from "./use-audio-recorder";
 import { BoardCamera } from "./use-board-camera";
@@ -62,7 +62,9 @@ export function useBoardAssets(
     );
 
     // Upload the new cards' assets to the cloud in the background. If an upload
-    // is rejected for quota, roll that card back and explain why.
+    // is rejected — for quota, or because the owner's Cloud plan has ended —
+    // roll that card back and explain why: left in place, it would reach the
+    // other members as an image they can never load.
     const syncCreatedAssets = useCallback(
         (createdCards: BoardCardData[], pid: string) => {
             for (const card of createdCards) {
@@ -72,6 +74,9 @@ export function useBoardAssets(
                     if (err instanceof CloudQuotaError) {
                         removeCards(new Set([cardId]));
                         showAssetError(t("storageLimitReached"));
+                    } else if (err instanceof CloudPlanRequiredError) {
+                        removeCards(new Set([cardId]));
+                        showAssetError(t("ownerCloudEnded"));
                     } else {
                         console.error("[BoardCanvas] cloud asset upload failed:", err);
                     }

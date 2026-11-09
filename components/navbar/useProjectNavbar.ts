@@ -29,7 +29,7 @@ export const useProjectNavbar = () => {
         setMobileMenuOpen,
         swapDrawerScreen,
     } = useContext(DashboardContext);
-    const { project: membership, setProjectTitle: setContextTitle } = useContext(ProjectContext);
+    const { project: membership, setProjectTitle: setContextTitle, isReadOnly } = useContext(ProjectContext);
     const userCtx = useContext(UserContext);
     const { hasCloudPlan } = useHasCloudPlan();
     const { user } = useCookieUser();
@@ -115,7 +115,9 @@ export const useProjectNavbar = () => {
     }, [projectTitle, isInProject]);
 
     const onTitleChange = (value: string) => {
-        if (!projectId) return;
+        // A viewer, or anyone in a project whose owner lost Cloud: the server
+        // would refuse the rename, and the title would differ here alone.
+        if (!projectId || isReadOnly) return;
         isLocalEdit.current = true;
         setProjectTitle(value);
         setContextTitle(value);

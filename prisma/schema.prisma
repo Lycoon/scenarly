@@ -65,8 +65,30 @@ model User {
   sessions            Session[]
   projects            ProjectMember[]
   subscriptions       Subscription[]
+  cloudLapse          CloudLapse?
   dataExports         DataExport[]
   communityProfile    CommunityProfile?
+}
+
+// An owner whose Cloud plan ended while they still own cloud projects (see
+// cloud-lapse-service). Those projects are read-only for every member from
+// `lapsedAt`; their media is deleted at `mediaDeletesAt`, the scripts are kept.
+// Kept apart from Subscription because that row is replaced when the plan moves
+// store and deleted when a grant is revoked, while this clock must not restart.
+// The row goes once the owner has Cloud again.
+model CloudLapse {
+  lapsedAt            DateTime
+  // Pushed back when the last reminder goes out late, so it always comes
+  // at least a week ahead of the date it announces.
+  mediaDeletesAt      DateTime
+  // 1 = the lapse notice, 2 = the 30-day reminder, 3 = the 7-day reminder.
+  noticesSent         Int         @default(0)
+  mediaDeletedAt      DateTime?
+
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String      @id
+
+  @@index([mediaDeletesAt])
 }
 
 // One row per plan a user has bought, from whichever store billed it. The

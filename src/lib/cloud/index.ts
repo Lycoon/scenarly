@@ -37,12 +37,13 @@ const worker = {
         // segments: [projectId, ...rest]
         const doPath = "/" + segments.slice(1).join("/");
 
-        // Authenticated API endpoints (saves, blacklist, allow, role-update, purge)
+        // Authenticated API endpoints (saves, blacklist, allow, role-update, lock, purge)
         const isAuthEndpoint =
             url.pathname.includes("/saves") ||
             url.pathname.endsWith("/blacklist") ||
             url.pathname.endsWith("/allow") ||
             url.pathname.endsWith("/role-update") ||
+            url.pathname.endsWith("/lock") ||
             url.pathname.endsWith("/purge");
 
         if (isAuthEndpoint && request.method !== "GET") {
@@ -118,34 +119,35 @@ const worker = {
     },
 
     /**
-     * Cron trigger (see `[triggers]` in wrangler.toml): the Community tick.
-     * The app has no scheduler of its own, so the Worker rings it every 15
-     * minutes with a one-minute JWT, the same gate the asset-GC callback uses.
-     * Failures are logged and retried on the next tick.
+     * Cron trigger (see `[triggers]` in wrangler.toml): the Community tick and
+     * the Cloud lapse tick. The app has no scheduler of its own, so the Worker
+     * rings it every 15 minutes with a one-minute JWT, the same gate the
+     * asset-GC callback uses. Failures are logged and retried on the next tick.
      */
     async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
         if (!env.API_URL) return;
-        ctx.waitUntil(
-            (async () => {
-                try {
-                    const token = await new SignJWT({ type: "community-tick" })
-                        .setProtectedHeader({ alg: "HS256" })
-                        .setExpirationTime("1m")
-                        .sign(new TextEncoder().encode(env.JWT_SECRET));
-                    const res = await fetch(`${env.API_URL}/api/internal/community-tick`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                        body: "{}",
-                    });
-                    if (!res.ok) {
-                        console.error(JSON.stringify({ event: "community_tick_failed", status: res.status }));
-                    }
-                } catch (e) {
-                    console.error(JSON.stringify({ event: "community_tick_failed", error: String(e) }));
-                }
-            })(),
-        );
+        ctx.waitUntil(Promise.all([ringTick(env, "community-tick"), ringTick(env, "cloud-lapse-tick")]));
     },
 };
+
+/** POST `/api/internal/{type}`, the route of that tick, signed with its own token type. */
+async function ringTick(env: Env, type: "community-tick" | "cloud-lapse-tick"): Promise<void> {
+    try {
+        const token = await new SignJWT({ type })
+            .setProtectedHeader({ alg: "HS256" })
+            .setExpirationTime("1m")
+            .sign(new TextEncoder().encode(env.JWT_SECRET));
+        const res = await fetch(`${env.API_URL}/api/internal/${type}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: "{}",
+        });
+        if (!res.ok) {
+            console.error(JSON.stringify({ event: `${type.replaceAll("-", "_")}_failed`, status: res.status }));
+        }
+    } catch (e) {
+        console.error(JSON.stringify({ event: `${type.replaceAll("-", "_")}_failed`, error: String(e) }));
+    }
+}
 
 export default worker;

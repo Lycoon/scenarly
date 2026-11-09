@@ -14,6 +14,7 @@ import {
     Success,
     validate,
 } from "@src/lib/utils/api-utils";
+import { requireProjectCloudPlan } from "@src/lib/utils/plan-utils";
 import { MAX_POSTER_SIZE_BYTES } from "@src/lib/utils/storage-limits";
 
 import z from "zod";
@@ -70,6 +71,7 @@ async function putPoster(req: NextRequest, { routeParams, user }: AuthApiContext
     const membership = await ProjectService.getMembership(projectId, user.id);
     if (!membership) throw new ProjectNotFoundError();
     if (!Roles.hasRoleOrGreater(membership.role, ProjectRole.EDITOR)) throw new ForbiddenError();
+    await requireProjectCloudPlan(projectId);
 
     if (req.headers.get("Content-Type") !== POSTER_MIME) {
         throw new BodyFieldError("Poster must be a JPEG image");

@@ -23,6 +23,7 @@
 import Stripe from "stripe";
 import { SubscriptionRepository } from "../repository/subscription-repository";
 import * as UserService from "./user-service";
+import * as CloudLapseService from "./cloud-lapse-service";
 import {
     googleProductId,
     isSubscriptionActive,
@@ -176,6 +177,7 @@ export async function grantPlan(userId: string, plan: Plan, expiresAt: Date) {
         expiresAt,
         cancelled: true,
     });
+    planExtended(userId);
     logger.info("[Subscription] Plan granted", { userId, plan, expiresAt });
 }
 
@@ -216,6 +218,7 @@ export async function activateStripe(userId: string, plan: Plan, subscription: S
         expiresAt: periodEnd,
         cancelled: false,
     });
+    planExtended(userId);
 
     if (isNew) await confirmStripeSubscription(userId, plan, subscription, periodEnd);
 }
@@ -267,6 +270,7 @@ export async function syncStripe(subscriptionId: string) {
         // A cancellation set from the Dashboard may name a date instead of the period end.
         cancelled: subscription.cancel_at_period_end || subscription.cancel_at !== null,
     });
+    planExtended(row.userId);
 }
 
 /** The subscription an invoice bills, if any — read fresh, whatever API version the webhook payload uses. */
@@ -482,6 +486,7 @@ export async function grantApple({ userId, plan }: Subscriber, tx: AppleTransact
         expiresAt: new Date(tx.expiresDate ?? Date.now()),
         cancelled: autoRenewOff,
     });
+    planExtended(userId);
 }
 
 /** DID_CHANGE_RENEWAL_STATUS — the user toggled auto-renew in their App Store settings. */
@@ -493,7 +498,9 @@ export async function setAppleAutoRenew(tx: AppleTransaction, renew: boolean) {
 /** DID_FAIL_TO_RENEW with a billing grace period — keep access while Apple retries. */
 export async function extendApple(tx: AppleTransaction, until: Date) {
     const row = await repository.fetchByProviderId("APPLE", tx.originalTransactionId);
-    if (row) await repository.update(row.userId, row.plan, { expiresAt: until });
+    if (!row) return;
+    await repository.update(row.userId, row.plan, { expiresAt: until });
+    planExtended(row.userId);
 }
 
 /** EXPIRED / REVOKE / REFUND — the row stays: a resubscribe from the App Store reuses its id. */
@@ -560,6 +567,7 @@ async function grantGoogle({ userId, plan }: Subscriber, purchase: GooglePurchas
         expiresAt: new Date(purchase.expiresAt ?? Date.now()),
         cancelled: !purchase.autoRenewing,
     });
+    planExtended(userId);
 
     if (!purchase.acknowledged) {
         // Left to the next notification on failure: Google allows 3 days.
@@ -618,4 +626,11 @@ async function stopLiveStripe(userId: string, plan: Plan, store: "APPLE" | "GOOG
 }
 
 /** An ended subscription keeps its natural expiry when that has passed, and is cut to now otherwise. */
+/**
+ * A plan may have just come back: reopen the owner's lapsed cloud projects now
+ * rather than on the next lapse tick. Best-effort, and never holds up the
+ * store event that caused it.
+ */
+const planExtended = (userId: string) => void CloudLapseService.restoreIfEntitled(userId);
+
 const endedNow = (expiresAt: Date) => new Date(Math.min(expiresAt.getTime(), Date.now()));

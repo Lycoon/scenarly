@@ -12,6 +12,9 @@ export default function PrivacyContent() {
 
                 <section>
                     <p className={styles.pageText}>
+                        <i>Last updated November 10, 2026</i>
+                    </p>
+                    <p className={styles.pageText}>
                         We are committed to protecting the privacy and security of the people who use our screenwriting
                         software. This Privacy Policy explains what information we collect, how we use and store it, the
                         choices available to you, and the safeguards we put in place — whether you use Scenarly® offline
@@ -84,8 +87,10 @@ export default function PrivacyContent() {
                         To create and manage your Scenarly® account and to authenticate you. To provide cloud
                         synchronization between devices when you sign in. To enable collaboration features, but only
                         where you explicitly authorize sharing. To operate, maintain and improve Scenarly®, including
-                        diagnosing and fixing errors and securing the service. To respond to your requests, support
-                        inquiries and legal obligations. We do not sell your personal data to third parties under any
+                        diagnosing and fixing errors and securing the service. To send you service notices about the
+                        projects you own or collaborate on, such as notice that a project became read-only because its
+                        owner’s Cloud plan ended, and of the date its media will be deleted. To respond to your
+                        requests, support inquiries and legal obligations. We do not sell your personal data to third parties under any
                         circumstances.
                     </p>
                 </section>
@@ -123,6 +128,14 @@ export default function PrivacyContent() {
                         limited period after account deletion to comply with legal obligations or to prevent fraud.
                         Project content stored in the cloud will be deleted upon request, subject to any backup or legal
                         hold obligations. Feel free to reach out to us through our contact form
+                    </p>
+                    <p className={styles.pageText}>
+                        From December 10, 2026, when the Cloud plan of a project’s owner ends, the images and audio
+                        recordings of the cloud projects they own are kept for 90 days and then permanently deleted
+                        from our servers. We tell the owner and the project’s collaborators by e-mail beforehand, as
+                        described in section 9 of our <a href="/terms">Terms of Service</a>. The text of those
+                        projects and their saved versions are kept until the project or the owner’s account is
+                        deleted.
                     </p>
                     <p className={styles.pageText}>
                         When an invited user uploads assets to a shared project, those assets become part of the

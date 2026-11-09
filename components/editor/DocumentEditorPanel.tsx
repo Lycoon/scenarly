@@ -7,7 +7,8 @@ import { EditorContent } from "@tiptap/react";
 import { applyElement, insertElement, SCREENPLAY_FORMATS } from "@src/lib/screenplay/editor";
 import { ScreenplayElement } from "@src/lib/utils/enums";
 import { Eye, GripVertical } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useKeepLocalCopy } from "@components/projects/useKeepLocalCopy";
+import { useFormatter, useTranslations } from "next-intl";
 import { DUAL_DIALOGUE_COLUMN } from "@src/lib/screenplay/nodes/dual-dialogue-column-node";
 import { DEFAULT_ELEMENT_MARGINS, DEFAULT_ELEMENT_STYLES } from "@src/lib/project/project-state";
 import { join } from "@src/lib/utils/misc";
@@ -72,6 +73,7 @@ const DocumentEditorPanel = ({
     const {
         isYjsReady,
         isReadOnly,
+        cloudLock,
         selectedElement,
         setSelectedElement,
         setSelectedStyles,
@@ -1186,6 +1188,8 @@ const DocumentEditorPanel = ({
         : undefined;
 
     const t = useTranslations("navbar");
+    const format = useFormatter();
+    const { keepLocalCopy, isCopying } = useKeepLocalCopy();
     const isLocalAccess = isTauri() || isLocalOnly;
     if (!isLocalAccess && (!membership || isLoading)) return <Loading />;
 
@@ -1234,10 +1238,35 @@ const DocumentEditorPanel = ({
                     <div className={join(styles.editor_shadow, isScrolled ? styles.show_shadow : "")} />
                     {isReadOnly && (
                         <div className={styles.viewOnlyBannerWrapper}>
-                            <div className={styles.viewOnlyBanner} title={t("viewOnlyHint")}>
-                                <Eye size={14} />
-                                <span>{t("viewOnly")}</span>
-                            </div>
+                            {cloudLock ? (
+                                <div
+                                    className={styles.viewOnlyBanner}
+                                    title={
+                                        cloudLock.mediaDeletesAt
+                                            ? t("cloudLockedHint", {
+                                                  date: format.dateTime(new Date(cloudLock.mediaDeletesAt), {
+                                                      dateStyle: "long",
+                                                  }),
+                                              })
+                                            : t("cloudLockedHintNoDate")
+                                    }
+                                >
+                                    <Eye size={14} />
+                                    <span>{t("cloudLocked")}</span>
+                                    <button
+                                        className={styles.viewOnlyAction}
+                                        onClick={() => void keepLocalCopy()}
+                                        disabled={isCopying}
+                                    >
+                                        {isCopying ? t("keepingLocalCopy") : t("keepLocalCopy")}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className={styles.viewOnlyBanner} title={t("viewOnlyHint")}>
+                                    <Eye size={14} />
+                                    <span>{t("viewOnly")}</span>
+                                </div>
+                            )}
                         </div>
                     )}
                     <div className={styles.page_shift} onContextMenu={onEditorContextMenu}>

@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { BASE_URL } from "../utils/constants";
 import { logger } from "../utils/logger";
 import { maskEmail } from "../utils/misc";
+import { MEDIA_RETENTION_DAYS, type NoticeProjects } from "../cloud-lapse";
 import hogan from "hogan.js";
 
 const transporter = nodemailer.createTransport({
@@ -124,7 +125,7 @@ export const sendCancellationConfirmationEmail = async (
     const { planName, at, endsOn, withdrawUntil } = details;
     const content = [
         `We received the cancellation of your Scenarly ${planName} subscription on ${at.toUTCString()}. It will not renew, and nothing more will be charged.`,
-        `${planName} stays active until ${formatDay(endsOn)}. After that, the features that need it stop working, such as creating cloud projects, uploading to cloud storage, saving named versions and inviting collaborators. Your cloud projects are not deleted and you can still export them. You can reactivate the subscription from your account settings until then.`,
+        `${planName} stays active until ${formatDay(endsOn)}. After that, the cloud projects you own become read-only for you and your collaborators: everyone can still open, export and keep a copy of them, but no one can edit them. Their images and audio recordings are kept for ${MEDIA_RETENTION_DAYS} days, then deleted; the scripts themselves are kept. You can reactivate the subscription from your account settings until then, or at any time later to edit your projects again.`,
         ...(withdrawUntil
             ? [
                   `You can also still withdraw until ${formatDay(withdrawUntil)} included: ${planName} would then end right away and the unused days would be refunded.`,
@@ -133,6 +134,68 @@ export const sendCancellationConfirmationEmail = async (
     ].join("\n\n");
 
     sendFormattedEmail(email, "Subscription cancelled", "Your cancellation is confirmed", content, "Open Scenarly", BASE_URL);
+};
+
+/** "'Pilot' and 'Draft 2'", as the lapse notices name the projects. */
+const listTitles = (titles: string[]) => {
+    const quoted = titles.map((title) => `'${title}'`);
+    return quoted.length < 2 ? quoted.join("") : `${quoted.slice(0, -1).join(", ")} and ${quoted[quoted.length - 1]}`;
+};
+
+/**
+ * The owner's Cloud plan has ended and the projects they own are now read-only
+ * (see cloud-lapse-service). Sent once, whichever store billed the plan.
+ */
+export const sendCloudLapsedOwnerEmail = async (
+    email: string,
+    { titles, mediaTitles }: NoticeProjects,
+    mediaDeletesAt: Date,
+) => {
+    const content = [
+        `Your Scenarly Cloud plan has ended, so the cloud projects you own are now read-only for you and your collaborators: ${listTitles(titles)}. Everyone can still open them, export them and keep a copy on their device, but no one can edit them.`,
+        ...(mediaTitles.length > 0
+            ? [
+                  `The images and audio recordings of ${listTitles(mediaTitles)} will be deleted on ${formatDay(mediaDeletesAt)}. The scripts themselves are kept.`,
+              ]
+            : []),
+        `To edit again, renew Cloud from your account settings. You can also hand a project to a collaborator who has Cloud, from its settings: it then stays editable for the whole team.`,
+    ].join("\n\n");
+
+    sendFormattedEmail(email, "Cloud plan ended", "Your cloud projects are now read-only", content, "Open Scenarly", BASE_URL);
+};
+
+/** A collaborator's side of the lapse: the project they work on went read-only. */
+export const sendCloudLapsedCollaboratorEmail = async (
+    email: string,
+    { titles, mediaTitles }: NoticeProjects,
+    mediaDeletesAt: Date,
+) => {
+    const content = [
+        `The owner of ${listTitles(titles)} no longer has a Scenarly Cloud plan, so ${titles.length > 1 ? "these projects are" : "this project is"} now read-only. You can still open and export ${titles.length > 1 ? "them" : "it"}.`,
+        mediaTitles.length > 0
+            ? `The images and audio recordings of ${listTitles(mediaTitles)} will be deleted on ${formatDay(mediaDeletesAt)}. To keep everything, media included, open the project and choose "Keep a local copy" before then.`
+            : `To keep a copy you can edit, open the project and choose "Keep a local copy".`,
+    ].join("\n\n");
+
+    sendFormattedEmail(email, "Project now read-only", "A project you work on is now read-only", content, "Open Scenarly", BASE_URL);
+};
+
+/** A reminder that a lapsed owner's media goes on `mediaDeletesAt`; collaborators get only the last one. */
+export const sendCloudMediaReminderEmail = async (
+    email: string,
+    titles: string[],
+    mediaDeletesAt: Date,
+    isOwner: boolean,
+) => {
+    const day = formatDay(mediaDeletesAt);
+    const content = isOwner
+        ? [
+              `Your Scenarly Cloud plan has ended, and the images and audio recordings of ${listTitles(titles)} will be deleted on ${day}. The scripts themselves are kept.`,
+              `To keep them, renew Cloud from your account settings, hand the project to a collaborator who has Cloud, or open it and choose "Keep a local copy".`,
+          ].join("\n\n")
+        : `The images and audio recordings of ${listTitles(titles)} will be deleted on ${day}, as the owner no longer has a Scenarly Cloud plan. To keep them, open the project and choose "Keep a local copy" before then.`;
+
+    sendFormattedEmail(email, "Media deletion on " + day, `Project media will be deleted on ${day}`, content, "Open Scenarly", BASE_URL);
 };
 
 /** A Stripe subscription ended with the account it belonged to. */

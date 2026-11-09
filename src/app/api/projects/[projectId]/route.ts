@@ -17,6 +17,8 @@ import {
 import z from "zod";
 import { NextRequest } from "next/server";
 import { UpdateProjectBodySchema } from "@src/lib/utils/api-bodies";
+import { requireProjectCloudPlan } from "@src/lib/utils/plan-utils";
+import * as CloudLapseService from "@src/server/service/cloud-lapse-service";
 export type { UpdateProjectBody } from "@src/lib/utils/api-bodies";
 
 const QuerySchema = z.object({
@@ -36,7 +38,8 @@ async function getProject(req: NextRequest, { routeParams, user }: AuthApiContex
         throw new ProjectNotFoundError();
     }
 
-    return Success(membership);
+    const cloudLock = await CloudLapseService.getProjectLock(projectId);
+    return Success({ ...membership, cloudLock });
 }
 
 /**
@@ -68,6 +71,7 @@ async function updateProject(req: NextRequest, { routeParams, user }: AuthApiCon
     if (!Roles.hasRoleOrGreater(member.role, ProjectRole.EDITOR)) {
         throw new ForbiddenError();
     }
+    await requireProjectCloudPlan(projectId);
 
     // `hasPoster` is deliberately left alone: the poster is owned by
     // `PUT /projects/[projectId]/poster`, and folding it in here used to reset

@@ -32,6 +32,9 @@ import {
 } from "@src/lib/tts/runtime";
 import { useLocale } from "@src/context/LocaleContext";
 
+/** Read Aloud is hidden until playback is reliable; flip to bring back its UI. */
+export const READ_ALOUD_ENABLED = false;
+
 /** Quality variants in preferred order (best first). */
 const QUALITY_ORDER: ModelQuality[] = ["high"];
 
@@ -253,7 +256,7 @@ export function ReadAloudProvider({ children }: { children: ReactNode }) {
     // pick the active model (stored choice if still installed, else the
     // recommended one if installed, else whichever is).
     useEffect(() => {
-        if (typeof window === "undefined") return;
+        if (typeof window === "undefined" || !READ_ALOUD_ENABLED) return;
         let cancelled = false;
         (async () => {
             try {
