@@ -6,13 +6,16 @@ import {
     NotFoundError,
     PaymentRequiredError,
     ProjectNotFoundError,
+    StorageQuotaExceededError,
     Success,
     validate,
 } from "@src/lib/utils/api-utils";
 import { hasActivePlan } from "@src/lib/plans";
+import { USER_STORAGE_QUOTA_BYTES } from "@src/lib/utils/storage-limits";
 
 import * as ProjectService from "@src/server/service/project-service";
 import * as UserService from "@src/server/service/user-service";
+import * as CloudLapseService from "@src/server/service/cloud-lapse-service";
 import * as CollabUtils from "@src/lib/cloud/utils";
 
 import z from "zod";
@@ -66,6 +69,14 @@ async function transferOwnership(req: NextRequest, { routeParams, user }: AuthAp
     if (!hasActivePlan(newOwner, "CLOUD")) {
         throw new PaymentRequiredError("The new owner needs an active Cloud subscription");
     }
+    // The project's media moves onto the new owner's quota with it.
+    const [newOwnerUsed, projectUsed] = await Promise.all([
+        ProjectService.getOwnerStorageUsed(newOwnerId),
+        ProjectService.getProjectStorageUsed(projectId),
+    ]);
+    if (newOwnerUsed + projectUsed > USER_STORAGE_QUOTA_BYTES) {
+        throw new StorageQuotaExceededError("The project's media does not fit in the new owner's storage");
+    }
 
     await ProjectService.transferOwnership(projectId, user.id, newOwnerId, PREVIOUS_OWNER_ROLE);
 
@@ -74,6 +85,10 @@ async function transferOwnership(req: NextRequest, { routeParams, user }: AuthAp
     // member role PATCH).
     await CollabUtils.notifyRoleChange(newOwnerId, projectId, ProjectRole.OWNER);
     await CollabUtils.notifyRoleChange(user.id, projectId, PREVIOUS_OWNER_ROLE);
+
+    // The caller may be a lapsed owner handing the project on (no plan of
+    // their own is needed for that): the new owner's Cloud reopens it.
+    await CloudLapseService.unlockProject(projectId);
 
     return Success({ ownerId: newOwnerId, previousOwnerRole: PREVIOUS_OWNER_ROLE });
 }

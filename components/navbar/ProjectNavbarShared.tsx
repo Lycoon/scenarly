@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import {
     AppWindow,
     CircleCheckBig,
@@ -31,6 +31,8 @@ import {
 import { ConnectionStatus } from "@src/lib/utils/enums";
 import { join } from "@src/lib/utils/misc";
 import type { StorageUsage } from "@src/lib/assets/cloud-asset-sync";
+import { ProjectRole } from "@src/generated/client/browser";
+import { useKeepLocalCopy } from "@components/projects/useKeepLocalCopy";
 
 import navbar from "./ProjectNavbar.module.css";
 import navBtn from "@components/utils/NavbarIconButton.module.css";
@@ -223,8 +225,11 @@ const SaveTargetsBody = ({
     onAction?: () => void;
 }) => {
     const t = useTranslations("navbar");
-    const { connectionStatus, projectTitle } = useContext(ProjectContext);
+    const format = useFormatter();
+    const { connectionStatus, projectTitle, project, cloudLock } = useContext(ProjectContext);
     const { openDashboard } = useContext(DashboardContext);
+    const { keepLocalCopy, isCopying } = useKeepLocalCopy();
+    const isLocked = hasCloud && !!cloudLock;
     const { user } = useCookieUser();
     const { hasCloudPlan } = useHasCloudPlan();
     const { status, isSupported, saveAs, locate, reveal, stopSaving, compact, reclaimable } = useFileActions(
@@ -243,7 +248,9 @@ const SaveTargetsBody = ({
     };
     const cloudTone: TargetTone = !hasCloud
         ? "idle"
-        : connectionStatus === "connected"
+        : isLocked
+          ? "warn"
+          : connectionStatus === "connected"
           ? "ok"
           : connectionStatus === "connecting"
             ? "busy"
@@ -346,9 +353,35 @@ const SaveTargetsBody = ({
                     )
                 }
                 label={t("targetCloud")}
-                value={hasCloud ? CLOUD_STATUS[connectionStatus] : t("targetCloudOff")}
+                value={
+                    isLocked ? t("targetCloudLocked") : hasCloud ? CLOUD_STATUS[connectionStatus] : t("targetCloudOff")
+                }
                 tone={cloudTone}
             />
+
+            {/* The owner's Cloud plan has ended: say what that means for this
+                project, and offer the two ways out — the owner can renew,
+                anyone can take the whole project, media included, with them. */}
+            {isLocked && (
+                <>
+                    <div className={navbar.file_problem}>
+                        {cloudLock.mediaDeletesAt
+                            ? t("cloudLockedHint", {
+                                  date: format.dateTime(new Date(cloudLock.mediaDeletesAt), { dateStyle: "long" }),
+                              })
+                            : t("cloudLockedHintNoDate")}
+                    </div>
+                    <div className={navbar.target_actions}>
+                        {project?.role === ProjectRole.OWNER && (
+                            <TargetAction label={t("cloudRenew")} onClick={upgrade} />
+                        )}
+                        <TargetAction
+                            label={isCopying ? t("keepingLocalCopy") : t("keepLocalCopy")}
+                            onClick={run(keepLocalCopy)}
+                        />
+                    </div>
+                </>
+            )}
 
             {!hasCloud && (canUploadToCloud || !hasCloudPlan) && (
                 <div className={navbar.target_actions}>

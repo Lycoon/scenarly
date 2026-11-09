@@ -49,6 +49,15 @@ export class ProjectRoom extends DurableObject {
      *  the project is fixed manually (preserves data integrity). */
     private docMigrationFailed: boolean = false;
 
+    /**
+     * Set while the owner's Cloud plan has lapsed (see cloud-lapse-service):
+     * the write gate then treats every session as a viewer. Room-wide and
+     * persisted rather than folded into each session's role, so the members
+     * keep their real roles for when the lock lifts, and a cloud token minted
+     * before the lapse cannot reopen the room.
+     */
+    locked: boolean = false;
+
     // Typed references to bound handlers — initialized in the constructor body
     // so they're guaranteed to exist before being passed to doc.on/doc.off.
     // (esbuild does not guarantee class-field arrow functions are initialized
@@ -153,6 +162,8 @@ export class ProjectRoom extends DurableObject {
         if (configRows.length > 0) {
             this.projectId = configRows[0].value as string;
         }
+        this.locked =
+            this.ctx.storage.sql.exec("SELECT value FROM config WHERE key = 'locked';").toArray()[0]?.value === "1";
 
         // Server-side migration gatekeeper: bring the doc up to
         // CURRENT_PROJECT_VERSION before any client is allowed to connect.
@@ -672,6 +683,25 @@ export class ProjectRoom extends DurableObject {
             return new Response(`User ${userId} role updated.`, { status: 200 });
         }
 
+        // Lock endpoint — the owner's Cloud plan lapsed (or came back). Every
+        // connected client is told, so the editor goes read-only with the gate.
+        if (request.method === "POST" && url.pathname === "/lock") {
+            const { locked } = (await request.json()) as { locked?: boolean };
+            if (typeof locked !== "boolean") {
+                return new Response("Missing locked", { status: 400 });
+            }
+            if (locked !== this.locked) {
+                this.locked = locked;
+                this.ctx.storage.sql.exec(
+                    "INSERT OR REPLACE INTO config (key, value) VALUES ('locked', ?);",
+                    locked ? "1" : "0",
+                );
+                for (const socket of this.sessions.keys()) this.sendLockState(socket);
+                console.log(JSON.stringify({ event: locked ? "room_locked" : "room_unlocked" }));
+            }
+            return new Response(locked ? "Locked" : "Unlocked", { status: 200 });
+        }
+
         // WebSocket upgrade
         if (request.headers.get("Upgrade") === "websocket") {
             const userId = request.headers.get("X-User-Id");
@@ -761,6 +791,10 @@ export class ProjectRoom extends DurableObject {
                 server.send(encoding.toUint8Array(awarenessEncoder));
             }
 
+            // The membership the client loaded may predate the lock; this keeps
+            // its editor from accepting edits the gate would drop.
+            if (this.locked) this.sendLockState(server);
+
             console.log(JSON.stringify({ event: "user_connected", userId, totalSessions: this.sessions.size }));
 
             // Opportunistic cleanup on connect — a new client arriving is the
@@ -778,6 +812,18 @@ export class ProjectRoom extends DurableObject {
         }
 
         return new Response("Not Found", { status: 404 });
+    }
+
+    /** Custom message type 101: the room's lock state, as 1 (locked) or 0. */
+    private sendLockState(socket: WebSocket): void {
+        try {
+            const encoder = encoding.createEncoder();
+            encoding.writeVarUint(encoder, 101);
+            encoding.writeVarUint(encoder, this.locked ? 1 : 0);
+            socket.send(encoding.toUint8Array(encoder));
+        } catch (e) {
+            console.error(JSON.stringify({ event: "lock_push_failed", error: String(e) }));
+        }
     }
 
     // ---- Asset GC support ----

@@ -7,7 +7,7 @@ import {
     SuccessCreated,
     validate,
 } from "@src/lib/utils/api-utils";
-import { requireCloudPlan } from "@src/lib/utils/plan-utils";
+import { requireProjectCloudPlan } from "@src/lib/utils/plan-utils";
 
 import * as Roles from "@src/lib/utils/roles";
 import * as ProjectService from "@src/server/service/project-service";
@@ -62,7 +62,7 @@ async function createManualSave(req: NextRequest, { routeParams, user }: AuthApi
         throw new ForbiddenError("Insufficient permissions to create saves");
     }
 
-    await requireCloudPlan(user.id);
+    await requireProjectCloudPlan(projectId);
 
     const body = await req.json();
     const res = await forwardToWorker(projectId, "POST", "/saves/manual", body);
@@ -91,6 +91,8 @@ async function renameManualSave(req: NextRequest, { routeParams, user }: AuthApi
     if (!Roles.hasRoleOrGreater(member.role, ProjectRole.ADMIN)) {
         throw new ForbiddenError("Insufficient permissions to rename saves");
     }
+
+    await requireProjectCloudPlan(projectId);
 
     const body = await req.json();
     const res = await forwardToWorker(projectId, "PATCH", "/saves/manual", body);

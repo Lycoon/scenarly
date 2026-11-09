@@ -44,6 +44,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     on(event: "session-replaced", listener: () => void): this;
     on(event: "kicked", listener: () => void): this;
     on(event: "role-changed", listener: (role: string) => void): this;
+    on(event: "lock-changed", listener: (locked: boolean) => void): this;
     on(event: Parameters<WebsocketProvider["on"]>[0], listener: Parameters<WebsocketProvider["on"]>[1]): this;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     on(event: string, listener: (...args: any[]) => void): this {
@@ -58,6 +59,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     emit(event: "session-replaced", args: []): this;
     emit(event: "kicked", args: []): this;
     emit(event: "role-changed", args: [string]): this;
+    emit(event: "lock-changed", args: [boolean]): this;
     emit(event: Parameters<WebsocketProvider["emit"]>[0], args: Parameters<WebsocketProvider["emit"]>[1]): this;
     emit(event: string, args: unknown[]): this {
         super.emit(
@@ -72,6 +74,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     off(event: "session-replaced", listener: () => void): this;
     off(event: "kicked", listener: () => void): this;
     off(event: "role-changed", listener: (role: string) => void): this;
+    off(event: "lock-changed", listener: (locked: boolean) => void): this;
     off(event: Parameters<WebsocketProvider["off"]>[0], listener: Parameters<WebsocketProvider["off"]>[1]): this;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     off(event: string, listener: (...args: any[]) => void): this {
@@ -200,6 +203,19 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
                 this.emit("role-changed", [role]);
             } catch (e) {
                 console.warn("[WS] Failed to read role-changed message:", e);
+            }
+        };
+
+        // Custom message type 101 — the room's lock state: 1 while the owner's
+        // Cloud plan has lapsed and the room drops every write, 0 once it is
+        // back. Sent on connect when locked and whenever it changes.
+        (this as unknown as WSInternals).messageHandlers[101] = (_encoder, ...rest: unknown[]) => {
+            this.lastMessageTime = Date.now();
+            const decoder = rest[0] as decoding.Decoder;
+            try {
+                this.emit("lock-changed", [decoding.readVarUint(decoder) === 1]);
+            } catch (e) {
+                console.warn("[WS] Failed to read lock-changed message:", e);
             }
         };
 
@@ -977,6 +993,22 @@ export const blacklistFromWebsocket = async (userId: string, projectId: string) 
 
 export const notifyRoleChange = async (userId: string, projectId: string, role: string) => {
     await adminAction(projectId, "/role-update", { userId, role });
+};
+
+/**
+ * Make a project's room read-only for every member, or lift that (see
+ * cloud-lapse-service). Reports failure rather than throwing, so the caller
+ * can retry it later instead of failing what it was doing.
+ */
+export const setProjectRoomLocked = async (projectId: string, locked: boolean): Promise<boolean> => {
+    try {
+        const res = await adminAction(projectId, "/lock", { locked });
+        if (!res.ok) console.error(`[cloud] Failed to set lock=${locked} on project ${projectId}: ${res.status}`);
+        return res.ok;
+    } catch (e) {
+        console.error(`[cloud] Failed to set lock=${locked} on project ${projectId}:`, e);
+        return false;
+    }
 };
 
 /**

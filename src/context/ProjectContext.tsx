@@ -18,6 +18,8 @@ import { PersistentPageMap } from "@src/lib/screenplay/page-locking";
 import { ProjectMembershipPayload } from "@src/server/repository/project-repository";
 import { ProjectRole } from "@src/generated/client/browser";
 import { useUser } from "@src/lib/utils/hooks";
+import { useSWRConfig } from "swr";
+import type { CloudLock } from "@src/lib/cloud-lapse";
 import { getCloudToken } from "@src/lib/utils/requests";
 import {
     CollaboratorInfo,
@@ -70,10 +72,15 @@ export interface ProjectContextType {
      *  is missing from it must wait for this, not for `isYjsReady`. */
     isYjsSynced: boolean;
 
-    /** True when the current user has VIEWER role on a cloud project.
+    /** True when the current user has VIEWER role on a cloud project, or
+     *  the project is locked because its owner's Cloud plan has lapsed.
      *  All edit affordances must be hidden/disabled when this is true,
      *  and the repository's writes are no-ops as a safety net. */
     isReadOnly: boolean;
+    /** Set while the owner's Cloud plan has lapsed: the project is read-only
+     *  for every member, its media kept until `mediaDeletesAt` (null when the
+     *  media is gone, or while the room's report waits for the details). */
+    cloudLock: CloudLock | null;
 
     // Connection state
     connectionStatus: ConnectionStatus;
@@ -250,6 +257,7 @@ const defaultContextValue: ProjectContextType = {
     isYjsReady: false,
     isYjsSynced: false,
     isReadOnly: false,
+    cloudLock: null,
 
     connectionStatus: "disconnected",
     users: [],
@@ -429,7 +437,16 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
     const [repository, setRepository] = useState<ProjectRepository | null>(null);
 
     const [project, setProject] = useState<ProjectMembershipPayload | null>(null);
-    const isReadOnly = !!project && project.role === ProjectRole.VIEWER;
+    // What the room last said about its lock, which outranks the membership
+    // (loaded once, possibly before the lapse) since the room is what drops
+    // the writes. Null until it says anything on the current connection.
+    const [roomLocked, setRoomLocked] = useState<boolean | null>(null);
+    const isCloudLocked = roomLocked ?? !!project?.cloudLock;
+    const cloudLock = useMemo<CloudLock | null>(
+        () => (isCloudLocked ? (project?.cloudLock ?? { mediaDeletesAt: null }) : null),
+        [isCloudLocked, project?.cloudLock],
+    );
+    const isReadOnly = !!project && (project.role === ProjectRole.VIEWER || isCloudLocked);
     const [editor, setEditor] = useState<Editor | null>(null);
     const [screenplay, setScreenplay] = useState<Screenplay>([]);
     const [characters, setCharacters] = useState<CharacterMap | undefined>(undefined);
@@ -597,6 +614,30 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             provider.off("role-changed", handler);
         };
     }, [provider, project?.project.id]);
+
+    // The room reports its lock on connect and whenever the owner's plan lapses
+    // or comes back. Flip read-only at once, then reload the membership for the
+    // lock's details (the media deletion date).
+    const { mutate: mutateSwr } = useSWRConfig();
+    useEffect(() => {
+        if (!provider) return;
+        const handler = (locked: boolean) => {
+            setRoomLocked(locked);
+            void mutateSwr(`/api/projects/${projectId}`);
+        };
+        // A room unlocked while this client was away says nothing on
+        // reconnect, so forget what it said last time and fall back to the
+        // membership until it speaks again.
+        const onStatus = ({ status }: { status: string }) => {
+            if (status !== "connected") setRoomLocked(null);
+        };
+        provider.on("lock-changed", handler);
+        provider.on("status", onStatus);
+        return () => {
+            provider.off("lock-changed", handler);
+            provider.off("status", onStatus);
+        };
+    }, [provider, projectId, mutateSwr]);
 
     const updateScreenplay = useCallback((newScreenplay: Screenplay) => {
         setScreenplay(newScreenplay);
@@ -1333,6 +1374,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             isYjsReady,
             isYjsSynced,
             isReadOnly,
+            cloudLock,
             connectionStatus,
             users,
             editor,
@@ -1449,6 +1491,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             isYjsReady,
             isYjsSynced,
             isReadOnly,
+            cloudLock,
             connectionStatus,
             users,
             editor,

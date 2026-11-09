@@ -9,7 +9,7 @@ import { UserLanguage } from "@src/lib/utils/types";
 import { useLocale } from "@src/context/LocaleContext";
 import { useSettings } from "@src/lib/utils/hooks";
 import { useSpellcheck } from "@src/context/SpellcheckContext";
-import { useReadAloud } from "@src/context/ReadAloudContext";
+import { READ_ALOUD_ENABLED, useReadAloud } from "@src/context/ReadAloudContext";
 import { ProjectContext } from "@src/context/ProjectContext";
 import {
     BUILTIN_DICTIONARY_CODE,
@@ -285,71 +285,73 @@ const LanguageSettings = () => {
                 </div>
             )}
 
-            <div className={sharedStyles.formGroup}>
-                <label className={form.label}>{t("ttsLabel")}</label>
-                <p className={sharedStyles.helpText}>{t("ttsHelpText", { count: VOICE_CATALOG.length })}</p>
-                <div className={styles.voiceList}>
-                    {MODEL_VARIANTS.map((m) => {
-                        const installed = installedModels[m.quality];
-                        const isActive = activeModel === m.quality;
-                        const isDownloading = downloadingModel === m.quality;
-                        const onRowClick = () => {
-                            if (isDownloading || gpuMissing) return;
-                            if (!installed) installModel(m.quality);
-                            else if (!isActive) setActiveModel(m.quality);
-                        };
-                        return (
-                            <div
-                                key={m.quality}
-                                className={`${styles.voiceRow} ${isActive ? styles.voiceInstalled : ""} ${gpuMissing ? styles.voiceDisabled : ""}`}
-                                onClick={onRowClick}
-                            >
-                                <span className={styles.voiceNameWrap}>
-                                    <span className={styles.voiceName}>{t(modelNameKey[m.quality])}</span>
-                                </span>
-                                <span className={styles.dictMeta}>
-                                    {isDownloading ? (
-                                        <>
-                                            {modelDownloadPct !== null && (
-                                                <span className={styles.percent}>{modelDownloadPct}%</span>
-                                            )}
-                                            <Loader2 size={14} className={styles.spinner} />
-                                        </>
-                                    ) : gpuMissing ? (
-                                        <span className={styles.size}>{formatVoiceSize(m.size)}</span>
-                                    ) : installed ? (
-                                        <>
-                                            {isActive ? (
-                                                <span className={styles.activeTag}>{t("ttsActive")}</span>
-                                            ) : (
-                                                <span className={styles.activateTag}>{t("ttsActivate")}</span>
-                                            )}
+            {READ_ALOUD_ENABLED && (
+                <div className={sharedStyles.formGroup}>
+                    <label className={form.label}>{t("ttsLabel")}</label>
+                    <p className={sharedStyles.helpText}>{t("ttsHelpText", { count: VOICE_CATALOG.length })}</p>
+                    <div className={styles.voiceList}>
+                        {MODEL_VARIANTS.map((m) => {
+                            const installed = installedModels[m.quality];
+                            const isActive = activeModel === m.quality;
+                            const isDownloading = downloadingModel === m.quality;
+                            const onRowClick = () => {
+                                if (isDownloading || gpuMissing) return;
+                                if (!installed) installModel(m.quality);
+                                else if (!isActive) setActiveModel(m.quality);
+                            };
+                            return (
+                                <div
+                                    key={m.quality}
+                                    className={`${styles.voiceRow} ${isActive ? styles.voiceInstalled : ""} ${gpuMissing ? styles.voiceDisabled : ""}`}
+                                    onClick={onRowClick}
+                                >
+                                    <span className={styles.voiceNameWrap}>
+                                        <span className={styles.voiceName}>{t(modelNameKey[m.quality])}</span>
+                                    </span>
+                                    <span className={styles.dictMeta}>
+                                        {isDownloading ? (
+                                            <>
+                                                {modelDownloadPct !== null && (
+                                                    <span className={styles.percent}>{modelDownloadPct}%</span>
+                                                )}
+                                                <Loader2 size={14} className={styles.spinner} />
+                                            </>
+                                        ) : gpuMissing ? (
                                             <span className={styles.size}>{formatVoiceSize(m.size)}</span>
-                                            <button
-                                                className={styles.voiceRemove}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    removeModel(m.quality);
-                                                }}
-                                                aria-label={t("ttsRemove")}
-                                                title={t("ttsRemove")}
-                                            >
-                                                <X size={13} />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className={styles.size}>{formatVoiceSize(m.size)}</span>
-                                            <Download size={14} className={styles.download} />
-                                        </>
-                                    )}
-                                </span>
-                            </div>
-                        );
-                    })}
+                                        ) : installed ? (
+                                            <>
+                                                {isActive ? (
+                                                    <span className={styles.activeTag}>{t("ttsActive")}</span>
+                                                ) : (
+                                                    <span className={styles.activateTag}>{t("ttsActivate")}</span>
+                                                )}
+                                                <span className={styles.size}>{formatVoiceSize(m.size)}</span>
+                                                <button
+                                                    className={styles.voiceRemove}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        removeModel(m.quality);
+                                                    }}
+                                                    aria-label={t("ttsRemove")}
+                                                    title={t("ttsRemove")}
+                                                >
+                                                    <X size={13} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className={styles.size}>{formatVoiceSize(m.size)}</span>
+                                                <Download size={14} className={styles.download} />
+                                            </>
+                                        )}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {gpuMissing && <p className={sharedStyles.helpText}>{t("ttsNoGpuHelp")}</p>}
                 </div>
-                {gpuMissing && <p className={sharedStyles.helpText}>{t("ttsNoGpuHelp")}</p>}
-            </div>
+            )}
         </div>
     );
 };

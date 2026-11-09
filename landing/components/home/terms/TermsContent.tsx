@@ -15,7 +15,14 @@ export default function TermsContent() {
 
                 <section>
                     <p className={styles.pageText}>
-                        <i>Last updated September 25, 2026</i>
+                        <i>Last updated November 10, 2026</i>
+                    </p>
+                    <p className={styles.pageText}>
+                        <i>
+                            What happens to cloud projects when a Cloud plan ends (sections 4, 5 and 9) changes on
+                            December 10, 2026. Until then, cloud projects stay editable and nothing is deleted when a
+                            plan ends.
+                        </i>
                     </p>
                     <p className={styles.pageText}>
                         These Terms of Service (the “Terms”) govern your use of Scenarly®: the web application at
@@ -143,7 +150,8 @@ export default function TermsContent() {
                     <p className={styles.pageText}>
                         <b>Cloud projects</b> are synchronized to our servers with a Cloud plan. We back them up
                         regularly and take reasonable care to keep them safe, but no system is free of failures, and
-                        we recommend that you also export important work from time to time.
+                        we recommend that you also export important work from time to time. Section 9 explains what
+                        happens to them when the owner’s Cloud plan ends.
                     </p>
                     <p className={styles.pageText}>
                         Cloud storage for images and audio has limits, shown in the app (currently 5 GB per account,
@@ -157,8 +165,8 @@ export default function TermsContent() {
                     <h2 className={styles.pageSectionTitle}>5. Collaboration</h2>
                     <p className={styles.pageText}>
                         The owner of a cloud project, who needs a Cloud plan, can invite other people and choose what
-                        each of them can do. Collaborators do not need a Cloud plan. The owner is responsible for
-                        whom they invite. Please be aware that:
+                        each of them can do. Collaborators do not need a Cloud plan: the owner’s plan covers the whole
+                        project. The owner is responsible for whom they invite. Please be aware that:
                     </p>
                     <ul>
                         <li className={styles.pageText}>
@@ -168,6 +176,11 @@ export default function TermsContent() {
                         <li className={styles.pageText}>
                             if the owner deletes the project or their account, the project is deleted for every
                             collaborator, so keep your own export of any work you care about;
+                        </li>
+                        <li className={styles.pageText}>
+                            if the owner’s Cloud plan ends, the project becomes read-only for everyone in it, and its
+                            images and audio recordings are deleted 90 days later (see section 9). Until then, any
+                            collaborator can keep a complete local copy of it, media included;
                         </li>
                         <li className={styles.pageText}>
                             the rights between co-writers (who owns what, credits, remuneration) are a matter between
@@ -294,15 +307,15 @@ export default function TermsContent() {
                             through <b>Apple</b> and are also subject to Apple’s Media Services Terms and Conditions.
                         </li>
                         <li className={styles.pageText}>
-                            In the Android App downloaded from Google Play, subscriptions cannot be purchased for now.
-                            You can subscribe and manage your subscription from the web version at scenarly.com, and a
-                            plan bought there works in the Android App once you sign in.
+                            In the Android App downloaded from Google Play, subscriptions are purchased through{" "}
+                            <b>Google Play</b> and are also subject to the Google Play Terms of Service.
                         </li>
                     </ul>
                     <p className={styles.pageText}>
-                        A plan is billed by only one of Stripe and Apple at a time. If you subscribe to a plan through
-                        Apple while it is billed by Stripe, the Stripe subscription is set to end at the close of its
-                        current period, and we do not refund that period.
+                        A plan works on every device you sign in on, whichever store it was bought from, and it is
+                        billed by only one of Stripe, Apple and Google at a time. If you subscribe to a plan through
+                        Apple or Google Play while it is billed by Stripe, the Stripe subscription is set to end at
+                        the close of its current period, and we do not refund that period.
                     </p>
                 </section>
 
@@ -319,7 +332,11 @@ export default function TermsContent() {
                         </li>
                         <li className={styles.pageText}>
                             App Store subscriptions: from your Apple ID subscription settings, at least 24 hours
-                            before the end of the current period.
+                            before the end of the current period;
+                        </li>
+                        <li className={styles.pageText}>
+                            Google Play subscriptions: from your Google Play subscriptions, in the Google Play app or
+                            at play.google.com/store/account/subscriptions.
                         </li>
                     </ul>
                     <p className={styles.pageText}>
@@ -327,13 +344,30 @@ export default function TermsContent() {
                         applies from your next renewal, and you can cancel before then.
                     </p>
                     <p className={styles.pageText}>
-                        When a Cloud plan ends, the features that need it stop working (for example creating cloud
-                        projects, uploading assets, saving named versions and inviting collaborators). Your cloud
-                        projects are not deleted because your plan ended, and you can still export them.
+                        <b>When a Cloud plan ends</b> (at the end of a period that was not renewed, or when a renewal
+                        payment fails and the store billing it suspends the plan), the cloud projects you own become
+                        read-only for you and for every collaborator. Anyone in a project can still open it, export it and keep a copy on their
+                        device, but no one can edit it, invite people or upload images and audio. A project becomes
+                        editable again as soon as you renew your plan, or if you transfer it to a collaborator who has
+                        a Cloud plan.
+                    </p>
+                    <p className={styles.pageText}>
+                        The images and audio recordings of those projects are kept for <b>90 days</b> after the plan
+                        ends, then permanently deleted. We tell you and every collaborator by e-mail when the plan
+                        ends and again 7 days before the deletion, and we remind you 30 days before it. You always get
+                        at least 7 days’ notice of the deletion date. Media deleted this way cannot be recovered from
+                        our servers, even if you renew later; copies still stored on a member’s device are uploaded
+                        again the next time they open the project once it is editable.
+                    </p>
+                    <p className={styles.pageText}>
+                        The text of your projects (screenplays, boards, notes) and their saved versions are not
+                        deleted because your plan ended. They stay available, read-only, until you delete the project
+                        or your account.
                     </p>
                     <p className={styles.pageText}>
                         Deleting your account ends a Stripe subscription immediately, and the rest of the paid period
-                        is lost. It does not end an App Store subscription: only you can cancel it, from your Apple ID
+                        is lost. It stops a Google Play subscription from renewing; the period already paid for is not
+                        refunded. It does not end an App Store subscription: only you can cancel it, from your Apple ID
                         settings, so cancel it there before deleting your account, or Apple will keep billing you.
                     </p>
                 </section>
@@ -359,6 +393,12 @@ export default function TermsContent() {
                         Purchases made through the App Store, including their right of withdrawal, are handled by
                         Apple under Apple’s Media Services Terms and Conditions, from your Apple Account purchase
                         history or reportaproblem.apple.com. We cannot issue refunds for them ourselves.
+                    </p>
+                    <p className={styles.pageText}>
+                        Purchases made through Google Play, including their right of withdrawal, are handled under the
+                        Google Play Terms of Service and refund policies: request a refund from your order history in
+                        Google Play. If Google refers your request to us, write to us at{" "}
+                        <a href="mailto:contact@scenarly.com">contact@scenarly.com</a>.
                     </p>
                     <p className={styles.pageText}>
                         Apart from these cases and those in section 17, periods already started are not refunded,
@@ -467,8 +507,8 @@ export default function TermsContent() {
                 <section>
                     <h2 className={styles.pageSectionTitle}>14. Third-party services</h2>
                     <p className={styles.pageText}>
-                        Some features rely on third parties, such as Apple and Google for signing in, Stripe and Apple
-                        for payments, and the app stores for distributing the Apps. Their own terms and privacy
+                        Some features rely on third parties, such as Apple and Google for signing in, Stripe, Apple and
+                        Google for payments, and the app stores for distributing the Apps. Their own terms and privacy
                         policies apply to what they do. The Services may also link to third-party websites, which we
                         do not control and are not responsible for.
                     </p>
