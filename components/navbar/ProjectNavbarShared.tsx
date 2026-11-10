@@ -428,7 +428,7 @@ interface SaveTargetsProps {
  * own actions.
  */
 export const SaveTargets = ({ hasCloud, canUploadToCloud, onUploadToCloud }: SaveTargetsProps) => {
-    const { connectionStatus } = useContext(ProjectContext);
+    const { connectionStatus, cloudLock } = useContext(ProjectContext);
     const projectId = useProjectIdFromUrl();
     const isTouch = useIsTouch();
     const [open, setOpen] = useState(false);
@@ -490,8 +490,10 @@ export const SaveTargets = ({ hasCloud, canUploadToCloud, onUploadToCloud }: Sav
      *  · **something is wrong → that half's own icon says so.** A broken file
      *    binding shows the disk, in warning colour and pulsing; a cloud project
      *    that is offline or reconnecting shows the connection, exactly as it
-     *    always has. Never a generic alert triangle standing in for both — the
-     *    icon that names the problem is the one worth showing.
+     *    always has, and one whose owner lost Cloud (read-only) shows the cloud
+     *    in the same warning colour as its row in the panel. Never a generic
+     *    alert triangle standing in for all of them — the icon that names the
+     *    problem is the one worth showing.
      *  · **cloud-synced and connected → the green connection icon**, unchanged.
      *  · **otherwise → a green save icon.** Everything is saved and there is
      *    nothing to chase, which is the state this thing is in nearly all the
@@ -520,6 +522,12 @@ export const SaveTargets = ({ hasCloud, canUploadToCloud, onUploadToCloud }: Sav
         }
 
         if (hasCloud) {
+            // Not pulsing like the file alert: nobody here can fix it on the
+            // spot but the owner, and a collaborator would watch it pulse for
+            // as long as they keep the project open.
+            if (cloudLock) {
+                return <Cloud style={{ color: TONE_COLOR.warn }} className={navbar.status_icon} />;
+            }
             if (connectionStatus === "connecting") {
                 return <WifiSync style={{ color: "var(--warning)" }} className={navbar.status_icon} />;
             }

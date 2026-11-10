@@ -703,6 +703,20 @@ const useProjectMembership = () => {
         }
     }, [data, isLoading, updateProject]);
 
+    // A cloud project opened without passing by the projects list (an invite
+    // link, a shared URL) has no local entry yet, and without one this device
+    // treats it as local: it never fetches its media from the cloud, so a
+    // collaborator would see empty images and keep empty copies.
+    useEffect(() => {
+        if (!data) return;
+        const { id, title, description, author, createdAt, updatedAt } = data.project;
+        void import("@src/lib/persistence/storage-provider/local-persistence").then(({ ensureCachedEntries }) =>
+            ensureCachedEntries([
+                { id, title, description, author, createdAt: new Date(createdAt), updatedAt: new Date(updatedAt) },
+            ]),
+        );
+    }, [data]);
+
     // The cloud copy is gone (e.g. owner lost Cloud and the project was demoted server-side,
     // or it was deleted from another device). Offline-first: if we still have it cached
     // locally, fall back to that copy instead of redirecting away.
