@@ -18,7 +18,11 @@ import dangerStyles from "./DangerZone.module.css";
 const ProjectSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; onDangerToggle: () => void }) => {
     const t = useTranslations("projectSettings");
     const { membership, mutate, isLocalOnly } = useProjectMembership();
-    const { setProjectTitle: setContextTitle, setProjectAuthor: setContextAuthor } = useContext(ProjectContext);
+    const {
+        setProjectTitle: setContextTitle,
+        setProjectAuthor: setContextAuthor,
+        isReadOnly,
+    } = useContext(ProjectContext);
     const projectId = useProjectIdFromUrl();
     const {
         title: localTitle,
@@ -173,7 +177,7 @@ const ProjectSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
             </div>
 
             <div className={styles.formActions}>
-                <button type="submit" className={`${styles.formBtn}`} disabled={loading || !isDirty}>
+                <button type="submit" className={`${styles.formBtn}`} disabled={loading || !isDirty || isReadOnly}>
                     <Save size={18} />
                     {t("saveChanges")}
                 </button>

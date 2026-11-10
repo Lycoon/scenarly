@@ -22,7 +22,7 @@ export function handleProtocolMessage(room: ProjectRoom, fullMessage: Uint8Array
         switch (messageType) {
             case 0: // Sync (document updates)
                 const session = room.sessions.get(sender);
-                const isReadOnly = session?.role === "VIEWER";
+                const isReadOnly = session?.role === "VIEWER" || room.locked;
 
                 const syncEncoder = encoding.createEncoder();
                 encoding.writeVarUint(syncEncoder, 0); // Message type 0 (sync)

@@ -2,6 +2,7 @@ import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import { ForbiddenError, Success, validate } from "@src/lib/utils/api-utils";
 
 import * as ProjectService from "@src/server/service/project-service";
+import * as CloudLapseService from "@src/server/service/cloud-lapse-service";
 import { CLOUD_TOKEN_TTL_MS } from "@src/lib/cloud/types";
 
 import { SignJWT } from "jose";
@@ -18,6 +19,10 @@ async function projectCloudTokenRoute(req: NextRequest, { routeParams, user }: A
     if (!member) {
         throw new ForbiddenError();
     }
+
+    // Bring the room's lock in line with the owner's plan before this member
+    // connects to it (see syncProjectLock).
+    await CloudLapseService.syncProjectLock(projectId);
 
     const payload = {
         userId: user.id,

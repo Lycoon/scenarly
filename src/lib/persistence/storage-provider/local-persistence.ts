@@ -150,6 +150,22 @@ export async function migrateToCachedProject(
     title: string,
     description?: string,
 ): Promise<CachedProject> {
+    const newProject = await copyToLocalProject(oldProjectId, title, description);
+    await discardCloudProjectData(oldProjectId);
+    return newProject;
+}
+
+/**
+ * Copy a project into a new local-only project, leaving the original as it is:
+ * the document, the assets cached on this device and the poster. A cloud
+ * project's media that this device never loaded is not copied, so fetch it
+ * first (see `cacheReferencedAssets`) while the cloud still has it.
+ */
+export async function copyToLocalProject(
+    oldProjectId: string,
+    title: string,
+    description?: string,
+): Promise<CachedProject> {
     const { Doc, applyUpdate, encodeStateAsUpdate } = await import("yjs");
     const { IndexeddbPersistence } = await import("y-indexeddb");
 
@@ -184,9 +200,6 @@ export async function migrateToCachedProject(
     await provider.copyPoster(oldProjectId, newProject.id);
     const copiedPoster = await provider.getPoster(newProject.id);
     if (copiedPoster) await provider.putPoster({ ...copiedPoster, pendingUpload: true });
-
-    // 4. Clean up old project data
-    await discardCloudProjectData(oldProjectId);
 
     return newProject;
 }

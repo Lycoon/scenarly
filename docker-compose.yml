@@ -57,6 +57,12 @@ services:
         build: .
         environment:
             - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db-staging:5432/${DB_NAME}?schema=public
+            # Runs the Cloud lapse schedule on 2-minute days, so the 90 days of a
+            # lapse take 3 hours here: the lapse notice on the first tick, the
+            # 30- and 7-day reminders about 1h and 15 min before the media goes,
+            # which is around 3h15 in (the tick runs every 15 minutes).
+            # Staging only (see cloud-lapse-service).
+            - CLOUD_LAPSE_DAY_SECONDS=120
         depends_on:
             db-staging:
                 condition: service_healthy

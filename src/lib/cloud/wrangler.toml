@@ -28,7 +28,8 @@ bucket_name = "scenarly-snapshots-local"
 # Base URL of the Next.js app for the asset-GC callback (local dev).
 API_URL = "http://127.0.0.1:3000"
 
-# Community tick (claim expiry, draft auto-send, pool retirement, R2 cleanup).
+# Community tick (claim expiry, draft auto-send, pool retirement, R2 cleanup)
+# and Cloud lapse tick (lapsed owners: read-only projects, notices, media deletion).
 # Test locally with `wrangler dev --test-scheduled` and curl /__scheduled.
 [triggers]
 crons = ["*/15 * * * *"]

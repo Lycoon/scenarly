@@ -206,6 +206,24 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* "Keep a local copy" in the banner of a project whose owner lost Cloud. */
+.viewOnlyAction {
+    margin-left: 4px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary-text);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.viewOnlyAction:disabled {
+    color: var(--secondary-text);
+    cursor: default;
+}
+
 .show_shadow {
     opacity: 1;
 }

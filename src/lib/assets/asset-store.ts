@@ -216,6 +216,34 @@ export async function listInUseAssets(projectId: string, ydoc: ProjectState): Pr
 }
 
 /**
+ * Download every asset the document references that this device has not
+ * cached yet, so a copy made from it is complete. Returns how many could not
+ * be fetched. No-op for local-only projects.
+ */
+export async function cacheReferencedAssets(projectId: string, ydoc: ProjectState): Promise<number> {
+    if (!(await isCloudSynced(projectId))) return 0;
+
+    let referenced: Set<string>;
+    try {
+        referenced = collectReferencedHashes(ydoc);
+    } catch {
+        return 0; // malformed cards — nothing we can resolve
+    }
+
+    const provider = await getStorageProvider();
+    const local = new Set(await provider.listAssetHashes(projectId));
+    const { fetchAssetFromCloud } = await import("./cloud-asset-sync");
+    let failed = 0;
+    for (const hash of referenced) {
+        if (local.has(hash)) continue;
+        const fetched = await fetchAssetFromCloud(projectId, hash);
+        if (fetched) await provider.putAsset(fetched);
+        else failed++;
+    }
+    return failed;
+}
+
+/**
  * Resolve an asset to an object URL for rendering. Reads the local IndexedDB
  * cache first; on a miss for a cloud-synced project it fetches the bytes from R2
  * and caches them locally before returning. Null if unavailable. Callers own the

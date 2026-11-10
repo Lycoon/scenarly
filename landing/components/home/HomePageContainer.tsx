@@ -33,8 +33,11 @@ import { AppleIcon, GooglePlayIcon, LinuxIcon, WindowsIcon } from "./PlatformIco
 // dev URL in .env.development and is empty in the production build.
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "";
 
-const APP_STORE_URL = "https://apps.apple.com/app/scenarly";
-const MICROSOFT_STORE_URL = "https://apps.microsoft.com/detail/9p4m1xphjks1";
+// One listing for iPhone, iPad and Mac (same bundle id). No country in the
+// path, so Apple sends each visitor to their own storefront.
+const APP_STORE_URL = "https://apps.apple.com/app/scenarly/id6805690357";
+// The product id the release pipeline publishes to (deploy-release.yaml).
+const MICROSOFT_STORE_URL = "https://apps.microsoft.com/detail/9P7BZJP9746L";
 const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=com.scenarly";
 
 const DESKTOP_STORES: StoreLink[] = [

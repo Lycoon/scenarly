@@ -127,8 +127,12 @@ function ProjectLayoutContent({ children }: { children: ReactNode }) {
         return <>{children}</>;
     }
 
+    // Keyed by project: going from one project straight to another (a local
+    // copy just made, a file opened as a new project) must start from a clean
+    // provider, or the previous project's membership, lock and repository
+    // carry over into the new one until something happens to replace them.
     return (
-        <ProjectProvider projectId={projectId}>
+        <ProjectProvider key={projectId} projectId={projectId}>
             <ProjectLayoutInner>{children}</ProjectLayoutInner>
         </ProjectProvider>
     );

@@ -19,6 +19,14 @@ export class CloudQuotaError extends Error {
     }
 }
 
+/** Thrown when the project's owner no longer has Cloud, so it takes no new media (HTTP 402). */
+export class CloudPlanRequiredError extends Error {
+    constructor(message = "The project owner's Cloud plan has ended") {
+        super(message);
+        this.name = "CloudPlanRequiredError";
+    }
+}
+
 export interface StorageUsage {
     projectUsed: number;
     ownerTotalUsed: number;
@@ -36,7 +44,8 @@ export interface ProjectAssetInfo {
 
 /**
  * Upload an asset's bytes to R2 (idempotent server-side; an already-stored hash
- * is a cheap no-op). Throws {@link CloudQuotaError} when the owner is out of room.
+ * is a cheap no-op). Throws {@link CloudQuotaError} when the owner is out of room,
+ * {@link CloudPlanRequiredError} when they no longer have Cloud.
  */
 export async function uploadAssetToCloud(projectId: string, asset: StoredAsset): Promise<void> {
     const params = new URLSearchParams({
@@ -53,6 +62,7 @@ export async function uploadAssetToCloud(projectId: string, asset: StoredAsset):
     });
 
     if (res.status === 507) throw new CloudQuotaError();
+    if (res.status === 402) throw new CloudPlanRequiredError();
     if (!res.ok) throw new Error(`Asset upload failed (${res.status})`);
 }
 

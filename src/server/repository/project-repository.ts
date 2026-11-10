@@ -3,6 +3,7 @@ import { Prisma, ProjectRole } from "../../generated/client/client";
 import prisma from "../db";
 
 import { ConflictError } from "@src/lib/utils/api-utils";
+import type { CloudLock } from "@src/lib/cloud-lapse";
 
 const projectMembershipSelect = {
     project: {
@@ -69,6 +70,12 @@ export type Project = Omit<RawProject, "_count"> & {
 export interface ProjectMembershipPayload {
     role: ProjectRole;
     project: Project;
+    /**
+     * Set when the owner's Cloud plan has lapsed: the project is read-only for
+     * every member (see cloud-lapse-service). Only `GET /projects/[projectId]`
+     * computes it; elsewhere it is left unset.
+     */
+    cloudLock?: CloudLock | null;
 }
 
 /** Flattens Prisma's `_count` into the `collaboratorCount` the client reads. */
