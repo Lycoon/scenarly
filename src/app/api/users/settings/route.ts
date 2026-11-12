@@ -3,6 +3,7 @@ import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import {
     InternalServerError,
     NotFoundError,
+    readBody,
     Success,
     SuccessNoContent,
     validate,
@@ -42,7 +43,7 @@ async function getSettings(req: NextRequest, { user }: AuthApiContext) {
  * Updates settings from authenticated user
  */
 async function updateSettings(req: NextRequest, { user }: AuthApiContext) {
-    const body = await req.json();
+    const body = await readBody(req);
     const newSettings = validate(UpdateSettingsBodySchema, body);
 
     const existing = await UserService.getUserSettings(user.id);

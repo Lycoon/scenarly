@@ -4,6 +4,7 @@ import {
     ForbiddenError,
     BodyFieldError,
     ProjectNotFoundError,
+    readBody,
     Success,
     SuccessNoContent,
     NotFoundError,
@@ -45,7 +46,7 @@ async function getProjectMember(req: NextRequest, { routeParams, user }: AuthApi
  * Updates a project member role
  */
 async function updateProjectMemberRole(req: NextRequest, { routeParams, user }: AuthApiContext) {
-    const body = await req.json();
+    const body = await readBody(req);
     const { role } = validate(UpdateRoleSchema, body);
     const { userId: userToUpdateId, projectId } = validate(QuerySchema, routeParams);
 

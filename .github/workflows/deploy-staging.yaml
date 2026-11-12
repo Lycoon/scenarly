@@ -36,6 +36,7 @@ jobs:
             version: ${{ steps.version.outputs.version }}
             short_version: ${{ steps.version.outputs.short_version }}
             commit_sha: ${{ steps.version.outputs.commit_sha }}
+            released_versions: ${{ steps.version.outputs.released_versions }}
         steps:
             - uses: actions/checkout@v6
               with:
@@ -412,6 +413,7 @@ jobs:
                       NEXT_PUBLIC_CLOUD_URL=https://cloud.staging.scenarly.com
                       NEXT_PUBLIC_COMMIT_SHA=${{ env.COMMIT_SHA }}
                       NEXT_PUBLIC_APP_VERSION=${{ needs.prepare.outputs.version }}
+                      RELEASED_VERSIONS=${{ needs.prepare.outputs.released_versions }}
 
             - name: Copy docker-compose and monitoring files to VPS
               uses: appleboy/scp-action@master

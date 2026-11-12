@@ -1,5 +1,5 @@
 import { apiHandler } from "@src/lib/utils/api-handler";
-import { SuccessNoContent, validate } from "@src/lib/utils/api-utils";
+import { readBody, SuccessNoContent, validate } from "@src/lib/utils/api-utils";
 import { sendContactEmail } from "@src/lib/mail/mail";
 import { NextRequest } from "next/server";
 import z from "zod";
@@ -11,7 +11,7 @@ const ContactBodySchema = z.object({
 });
 
 async function handleContact(req: NextRequest) {
-    const body = await req.json();
+    const body = await readBody(req);
     const { email, reason, message } = validate(ContactBodySchema, body);
 
     await sendContactEmail(email, reason, message);

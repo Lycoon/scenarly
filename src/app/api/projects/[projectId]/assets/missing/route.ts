@@ -4,7 +4,7 @@ import { ProjectRole } from "../../../../../../generated/client/client";
 import * as ProjectService from "@src/server/service/project-service";
 import * as Roles from "@src/lib/utils/roles";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
-import { ForbiddenError, ProjectNotFoundError, Success, validate } from "@src/lib/utils/api-utils";
+import { ForbiddenError, ProjectNotFoundError, readBody, Success, validate } from "@src/lib/utils/api-utils";
 
 import z from "zod";
 
@@ -30,7 +30,7 @@ async function missingAssets(req: NextRequest, { routeParams, user }: AuthApiCon
     if (!membership) throw new ProjectNotFoundError();
     if (!Roles.hasRoleOrGreater(membership.role, ProjectRole.EDITOR)) throw new ForbiddenError();
 
-    const { hashes } = validate(BodySchema, await req.json());
+    const { hashes } = validate(BodySchema, await readBody(req));
     const existing = new Set(await ProjectService.getExistingAssetHashes(projectId, hashes));
     const missing = hashes.filter((hash) => !existing.has(hash));
 

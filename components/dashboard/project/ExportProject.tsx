@@ -4,6 +4,7 @@ import { useContext, useState, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { ProjectContext } from "@src/context/ProjectContext";
 import { REVISION_COLORS } from "@src/lib/screenplay/revisions";
+import { createPageChromeResolver } from "@src/lib/screenplay/extensions/pagination-extension";
 import { useCookieUser, useCachedProjectInfo, useProjectIdFromUrl, useProjectMembership } from "@src/lib/utils/hooks";
 import { useImportAccept } from "@src/lib/import/use-import-accept";
 
@@ -88,6 +89,8 @@ const ExportProject = () => {
     // What to export — a mutually exclusive choice (radio).
     const [pageMode, setPageMode] = useState<PageMode>("all");
     const [pageRangesText, setPageRangesText] = useState<string>("");
+    // Recount the exported ranges from 1 rather than keep their script numbers.
+    const [renumberPages, setRenumberPages] = useState<boolean>(false);
     const [selectedRevisions, setSelectedRevisions] = useState<number[]>([]);
     const [enablePassword, setEnablePassword] = useState<boolean>(false);
     const [password, setPassword] = useState<string>("");
@@ -182,7 +185,8 @@ const ExportProject = () => {
             let pageSelection: PDFExportOptions["pageSelection"];
             if (pageMode === "ranges") {
                 const ranges = parsePageRanges(pageRangesText);
-                if (ranges.length > 0) pageSelection = { mode: "ranges", ranges };
+                const renumber = renumberPages && editor ? createPageChromeResolver(editor) : undefined;
+                if (ranges.length > 0) pageSelection = { mode: "ranges", ranges, renumber };
             } else if (pageMode === "revisions" && effectiveRevisions.length > 0) {
                 pageSelection = { mode: "revisions", revisions: effectiveRevisions };
             }
@@ -413,13 +417,34 @@ const ExportProject = () => {
                                 </div>
                             </div>
                             {pageMode === "ranges" && (
-                                <input
-                                    value={pageRangesText}
-                                    onChange={(e) => setPageRangesText(e.target.value)}
-                                    placeholder={t("pageRangesPlaceholder")}
-                                    className={`${sharedStyles.input} ${styles.passwordInput}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                />
+                                <>
+                                    <input
+                                        value={pageRangesText}
+                                        onChange={(e) => setPageRangesText(e.target.value)}
+                                        placeholder={t("pageRangesPlaceholder")}
+                                        className={`${sharedStyles.input} ${styles.passwordInput}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <div
+                                        className={styles.subOption}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRenumberPages(!renumberPages);
+                                        }}
+                                    >
+                                        <div
+                                            className={`${optionCard.checkbox} ${
+                                                renumberPages ? styles.subOptionChecked : ""
+                                            }`}
+                                        >
+                                            {renumberPages && <div className={optionCard.checkInner} />}
+                                        </div>
+                                        <div className={optionCard.optionInfo}>
+                                            <span className={optionCard.optionTitle}>{t("renumberPages")}</span>
+                                            <span className={optionCard.optionDesc}>{t("renumberPagesDesc")}</span>
+                                        </div>
+                                    </div>
+                                </>
                             )}
                         </div>
 

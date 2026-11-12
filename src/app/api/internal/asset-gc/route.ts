@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler } from "@src/lib/utils/api-handler";
-import { Success, UnauthorizedError, validate } from "@src/lib/utils/api-utils";
+import { readBody, Success, UnauthorizedError, validate } from "@src/lib/utils/api-utils";
 import { reconcileProjectAssets } from "@src/server/service/asset-gc-service";
 
 import { jwtVerify } from "jose";
@@ -37,7 +37,7 @@ async function internalAssetGc(req: NextRequest) {
     }
     if (type !== "asset-gc") throw new UnauthorizedError();
 
-    const { projectId, referenced, complete } = validate(BodySchema, await req.json());
+    const { projectId, referenced, complete } = validate(BodySchema, await readBody(req));
     if (tokenProjectId !== projectId) throw new UnauthorizedError();
 
     const deleted = await reconcileProjectAssets(projectId, referenced, complete);

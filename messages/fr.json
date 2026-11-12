@@ -447,7 +447,8 @@
       "lastEdited": "Dernière modif.",
       "storage": "Stockage"
     },
-    "communityBtn": "Communauté"
+    "communityBtn": "Communauté",
+    "adminBtn": "Admin"
   },
   "editorSidebar": {
     "scenes": "Scènes",
@@ -582,6 +583,8 @@
     "pageRanges": "Pages",
     "pageRangesDesc": "Exporter des plages de pages précises.",
     "pageRangesPlaceholder": "ex. 3-14,25-30",
+    "renumberPages": "Renuméroter les pages",
+    "renumberPagesDesc": "Numéroter les pages exportées à partir de 1 au lieu de conserver leur numéro dans le scénario.",
     "revisionsDesc": "Exporter uniquement les pages des couleurs de révision choisies.",
     "revisionExportLabel": "Marques de révision",
     "revisionExportOptions": {
@@ -1208,5 +1211,12 @@
       "pageOf": "Page {page} sur {count}",
       "backToWall": "Tous les scénarios"
     }
+  },
+  "updateRequired": {
+    "title": "Mise à jour requise",
+    "description": "Cette version de Scenarly n'est plus prise en charge. Mettez-la à jour pour continuer à utiliser votre compte et vos projets cloud. Vos projets sur cet appareil sont conservés.",
+    "webDescription": "Scenarly a été mis à jour. Rechargez la page pour continuer.",
+    "update": "Mettre à jour",
+    "reload": "Recharger"
   }
 }

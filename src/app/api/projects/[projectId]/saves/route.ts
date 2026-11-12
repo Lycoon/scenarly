@@ -1,6 +1,6 @@
 import { ProjectRole } from "../../../../../generated/client/client";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
-import { ForbiddenError, getCollabHttpUrl, Success, validate } from "@src/lib/utils/api-utils";
+import { ForbiddenError, getCollabHttpUrl, readBody, Success, validate } from "@src/lib/utils/api-utils";
 
 import * as Roles from "@src/lib/utils/roles";
 import * as ProjectService from "@src/server/service/project-service";
@@ -83,7 +83,7 @@ async function deleteSave(req: NextRequest, { routeParams, user }: AuthApiContex
         throw new ForbiddenError("Insufficient permissions to delete saves");
     }
 
-    const body = await req.json();
+    const body = await readBody(req);
     const res = await forwardToWorker(projectId, "DELETE", "/saves", body);
 
     if (!res.ok) {

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import * as ProjectService from "@src/server/service/project-service";
 import {
     InternalServerError,
+    readBody,
     Success,
     SuccessCreated,
     BodyFieldError,
@@ -36,7 +37,7 @@ async function getProjects(req: NextRequest, { user }: AuthApiContext) {
 async function createProject(req: NextRequest, { user }: AuthApiContext) {
     await requireCloudPlan(user.id);
 
-    const body = await req.json();
+    const body = await readBody(req);
     const { title, description, author } = validate(CreateProjectBodySchema, body);
 
     if (title.length < 1 || title.length > 256) {

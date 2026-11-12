@@ -39,7 +39,7 @@
         {
             "id": 2,
             "type": "timeseries",
-            "title": "HTTP error rate (4xx + 5xx)",
+            "title": "HTTP error rate",
             "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
             "datasource": { "type": "prometheus", "uid": "prometheus" },
             "fieldConfig": {
@@ -49,8 +49,18 @@
             "targets": [
                 {
                     "refId": "A",
-                    "expr": "sum(rate(http_requests_total{status=~\"4..|5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
-                    "legendFormat": "error rate"
+                    "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+                    "legendFormat": "5xx (server)"
+                },
+                {
+                    "refId": "B",
+                    "expr": "sum(rate(http_requests_total{status=~\"4..\", status!=\"426\"}[5m])) / sum(rate(http_requests_total[5m]))",
+                    "legendFormat": "4xx (turned down)"
+                },
+                {
+                    "refId": "C",
+                    "expr": "sum(rate(http_requests_total{status=\"426\"}[5m])) / sum(rate(http_requests_total[5m]))",
+                    "legendFormat": "426 (update required)"
                 }
             ]
         },
@@ -105,6 +115,50 @@
                     "refId": "A",
                     "expr": "1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}",
                     "legendFormat": "used"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "type": "piechart",
+            "title": "Signed-in requests by platform (selected range)",
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "fieldConfig": {
+                "defaults": { "unit": "short", "decimals": 0 },
+                "overrides": []
+            },
+            "options": {
+                "pieType": "donut",
+                "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+                "legend": { "showLegend": true, "displayMode": "table", "placement": "right", "values": ["percent", "value"] },
+                "tooltip": { "mode": "single", "sort": "none" }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "sum by (platform) (increase(http_client_requests_total[$__range]))",
+                    "instant": true,
+                    "range": false,
+                    "legendFormat": "{{platform}}"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "type": "timeseries",
+            "title": "Signed-in requests by app build (platform, version)",
+            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "fieldConfig": {
+                "defaults": { "unit": "reqps", "min": 0 },
+                "overrides": []
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "sum by (platform, version) (rate(http_client_requests_total[5m]))",
+                    "legendFormat": "{{platform}} {{version}}"
                 }
             ]
         }

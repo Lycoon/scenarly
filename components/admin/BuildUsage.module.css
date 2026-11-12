@@ -1,0 +1,150 @@
+.card {
+    margin-top: 24px;
+    background: var(--secondary);
+    border: 1px solid var(--separator);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--panel-shadow);
+}
+
+.header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin-bottom: 16px;
+}
+
+.cardTitle {
+    color: var(--primary-text);
+    font-family: var(--font-josefin), sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.hint {
+    color: var(--secondary-text);
+    font-family: var(--font-inter), sans-serif;
+    font-size: 12px;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ranges {
+    display: flex;
+    padding: 2px;
+    border: 1px solid var(--separator);
+    border-radius: 8px;
+    background: var(--primary);
+}
+
+.range {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--secondary-text);
+    font-family: var(--font-inter), sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+}
+
+.range:hover {
+    background: var(--primary-hover);
+}
+
+.rangeActive,
+.rangeActive:hover {
+    background: var(--tertiary);
+    color: var(--primary-text);
+}
+
+.grafanaLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--secondary-text);
+    font-family: var(--font-inter), sans-serif;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.grafanaLink:hover {
+    color: var(--primary-text);
+}
+
+.tables {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.table {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--separator);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.tableRow {
+    display: grid;
+    gap: 16px;
+    padding: 12px 16px;
+    font-family: var(--font-inter), sans-serif;
+    font-size: 13px;
+    color: var(--primary-text);
+    border-bottom: 1px solid var(--separator);
+    align-items: center;
+}
+
+.tableRow:last-child {
+    border-bottom: none;
+}
+
+.platformRow {
+    grid-template-columns: 2fr 1fr 1fr;
+}
+
+.versionRow {
+    grid-template-columns: 1fr 1.4fr 1fr 1fr;
+}
+
+.tableHeader {
+    background: var(--primary);
+    color: var(--secondary-text);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.number {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.muted {
+    color: var(--secondary-text);
+}
+
+.emptyRow {
+    padding: 16px;
+    text-align: center;
+    color: var(--secondary-text);
+    font-family: var(--font-inter), sans-serif;
+    font-size: 13px;
+}
+
+.error {
+    color: var(--error);
+}

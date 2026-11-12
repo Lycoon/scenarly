@@ -5,7 +5,7 @@ import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 
 import * as UserService from "@src/server/service/user-service";
 
-import { InternalServerError, Success, SuccessNoContent, validate } from "@src/lib/utils/api-utils";
+import { InternalServerError, readBody, Success, SuccessNoContent, validate } from "@src/lib/utils/api-utils";
 import { NextRequest } from "next/server";
 import { UpdateUserBodySchema } from "@src/lib/utils/api-bodies";
 export type { UpdateUserBody } from "@src/lib/utils/api-bodies";
@@ -29,7 +29,7 @@ async function getUser(req: NextRequest, { user }: AuthApiContext) {
  * Updates user info from authenticated user
  */
 async function updateUser(req: NextRequest, { user }: AuthApiContext) {
-    const body = await req.json();
+    const body = await readBody(req);
     const updatedUserInfo = validate(UpdateUserBodySchema, body);
     const updatedUser = await UserService.updateUserFromId(user.id, {
         username: updatedUserInfo.username,

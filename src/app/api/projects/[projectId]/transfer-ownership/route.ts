@@ -6,6 +6,7 @@ import {
     NotFoundError,
     PaymentRequiredError,
     ProjectNotFoundError,
+    readBody,
     StorageQuotaExceededError,
     Success,
     validate,
@@ -37,7 +38,7 @@ const QuerySchema = z.object({
  * to editor in the same transaction, so the project always has exactly one owner.
  */
 async function transferOwnership(req: NextRequest, { routeParams, user }: AuthApiContext) {
-    const body = await req.json();
+    const body = await readBody(req);
     const { userId: newOwnerId } = validate(TransferOwnershipSchema, body);
     const { projectId } = validate(QuerySchema, routeParams);
 
