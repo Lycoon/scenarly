@@ -51,7 +51,7 @@ const DesktopOAuthStart = () => {
                         <hr />
                         <p className={`${auth.info} segoe`}>
                             {invalid
-                                ? "This page should be opened from the Scenarly desktop app."
+                                ? "This page should be opened from the Scenarly app."
                                 : "Redirecting you to your provider…"}
                         </p>
                     </div>

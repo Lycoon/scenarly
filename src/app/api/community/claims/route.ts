@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 import * as ReviewService from "@src/server/service/community-review-service";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
-import { Success, SuccessCreated, validate } from "@src/lib/utils/api-utils";
+import { readBody, Success, SuccessCreated, validate } from "@src/lib/utils/api-utils";
 
 import z from "zod";
 
@@ -22,7 +22,7 @@ async function listClaims(req: NextRequest, { user, searchParams }: AuthApiConte
  * Claim one of the offered scripts. 409 `HAS_ACTIVE_CLAIM` or `NOT_OFFERED`.
  */
 async function createClaim(req: NextRequest, { user }: AuthApiContext) {
-    const { submissionId } = validate(BodySchema, await req.json());
+    const { submissionId } = validate(BodySchema, await readBody(req));
     return SuccessCreated(await ReviewService.claim(user.id, submissionId));
 }
 

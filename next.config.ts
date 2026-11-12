@@ -72,7 +72,10 @@ const config: NextConfig = {
                 headers: [
                     { key: "Access-Control-Allow-Origin", value: "*" },
                     { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, PATCH, DELETE, OPTIONS" },
-                    { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, x-client-type" },
+                    {
+                        key: "Access-Control-Allow-Headers",
+                        value: "Content-Type, Authorization, x-client-type, x-client-platform, x-client-version",
+                    },
                 ],
             },
         ];

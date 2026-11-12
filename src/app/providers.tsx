@@ -11,6 +11,8 @@ import { LocaleContextProvider, useLocale } from "@src/context/LocaleContext";
 import { SpellcheckProvider } from "@src/context/SpellcheckContext";
 import { ReadAloudProvider } from "@src/context/ReadAloudContext";
 import fetcher from "@src/lib/fetcher";
+import { UPDATE_REQUIRED_STATUS } from "@src/lib/client-version";
+import UpdateRequiredScreen from "@components/utils/UpdateRequiredScreen";
 
 /**
  * Reads locale/messages from LocaleContext and feeds NextIntlClientProvider.
@@ -64,15 +66,27 @@ export function Providers({ children }: { children: ReactNode }) {
                 onError: (err) => {
                     // 401/403 are handled by the auth flow. 404 is expected for offline-first
                     // resources (e.g. a cached project whose cloud copy no longer exists) — the
-                    // calling hook decides what to do, no need to log it as unexpected.
-                    if (err?.status !== 401 && err?.status !== 403 && err?.status !== 404) {
+                    // calling hook decides what to do, no need to log it as unexpected. 426 is
+                    // answered by UpdateRequiredScreen.
+                    if (
+                        err?.status !== 401 &&
+                        err?.status !== 403 &&
+                        err?.status !== 404 &&
+                        err?.status !== UPDATE_REQUIRED_STATUS
+                    ) {
                         console.error("[Fetcher] An unexpected error occurred: ", err);
                     }
                 },
                 shouldRetryOnError: (err) => {
-                    // Don't retry on auth errors (401, 403), missing resources (404), or
-                    // network errors (server unreachable).
-                    if (err?.status === 401 || err?.status === 403 || err?.status === 404 || err?.isNetworkError) {
+                    // Don't retry on auth errors (401, 403), missing resources (404), a
+                    // refused build (426), or network errors (server unreachable).
+                    if (
+                        err?.status === 401 ||
+                        err?.status === 403 ||
+                        err?.status === 404 ||
+                        err?.status === UPDATE_REQUIRED_STATUS ||
+                        err?.isNetworkError
+                    ) {
                         return false;
                     }
                     return true;
@@ -96,6 +110,7 @@ export function Providers({ children }: { children: ReactNode }) {
                                         <LocaleSync />
                                         <DesktopContextMenuGuard />
                                         {children}
+                                        <UpdateRequiredScreen />
                                     </ReadAloudProvider>
                                 </SpellcheckProvider>
                             </ThemeProvider>

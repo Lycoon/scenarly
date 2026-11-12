@@ -10,6 +10,8 @@
  */
 
 import { StoreOptions } from "@tauri-apps/plugin-store";
+import { clientHeaders, noteUpdateRequired } from "./api-client";
+import { UPDATE_REQUIRED_STATUS } from "./client-version";
 
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
@@ -97,7 +99,9 @@ export async function pollBridgeToken(
     while (Date.now() < deadline) {
         if (signal?.aborted) return null;
         try {
-            const res = await fetch(url, { headers: { "x-client-type": "desktop" }, signal });
+            const res = await fetch(url, { headers: clientHeaders(), signal });
+            noteUpdateRequired(res);
+            if (res.status === UPDATE_REQUIRED_STATUS) return null;
             if (res.ok) {
                 const json = (await res.json()) as { data?: { token?: string | null } };
                 const token = json.data?.token;

@@ -446,7 +446,8 @@
       "lastEdited": "Last edited",
       "storage": "Storage"
     },
-    "communityBtn": "Community"
+    "communityBtn": "Community",
+    "adminBtn": "Admin"
   },
   "editorSidebar": {
     "scenes": "Scenes",
@@ -581,6 +582,8 @@
     "pageRanges": "Pages",
     "pageRangesDesc": "Export specific page ranges.",
     "pageRangesPlaceholder": "e.g. 3-14,25-30",
+    "renumberPages": "Renumber pages",
+    "renumberPagesDesc": "Number the exported pages from 1 instead of keeping their script page numbers.",
     "revisionsDesc": "Export only pages of the chosen revision colours.",
     "revisionExportLabel": "Revision marks",
     "revisionExportOptions": {
@@ -1207,5 +1210,12 @@
       "pageOf": "Page {page} of {count}",
       "backToWall": "All scripts"
     }
+  },
+  "updateRequired": {
+    "title": "Update required",
+    "description": "This version of Scenarly is no longer supported. Update it to keep using your account and your cloud projects. Your projects on this device are kept.",
+    "webDescription": "Scenarly has been updated. Reload the page to keep working.",
+    "update": "Update",
+    "reload": "Reload"
   }
 }

@@ -4,6 +4,7 @@ import {
     ForbiddenError,
     InternalServerError,
     NotFoundError,
+    readBody,
     Success,
     SuccessCreated,
     SuccessNoContent,
@@ -44,7 +45,7 @@ async function getInvites(req: NextRequest, { routeParams }: AuthApiContext) {
  * Invites a given user to a project, creating a pending `ProjectInvitation`
  */
 async function inviteMember(req: NextRequest, { routeParams, user }: AuthApiContext) {
-    const body = await req.json();
+    const body = await readBody(req);
     const { email: emailToInvite } = validate(ProjectMemberEmailBodySchema, body);
     const { projectId } = validate(QuerySchema, routeParams);
 
@@ -88,7 +89,7 @@ async function inviteMember(req: NextRequest, { routeParams, user }: AuthApiCont
  * Deletes the invite associated to a given email address, removing its pending `ProjectInvitation`
  */
 async function deleteInvite(req: NextRequest, { routeParams, user }: AuthApiContext) {
-    const body = await req.json();
+    const body = await readBody(req);
     const { email: emailToDelete } = validate(ProjectMemberEmailBodySchema, body);
     const { projectId } = validate(QuerySchema, routeParams);
 

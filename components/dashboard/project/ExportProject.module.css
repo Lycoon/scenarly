@@ -90,6 +90,20 @@
     background: var(--primary-text);
 }
 
+/* Checkbox revealed inside an expanded radio card ("Renumber pages"). It
+ * carries its own checked state: the card's `.active` fill would tick it. */
+.subOption {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.subOptionChecked {
+    border-color: var(--primary-text);
+    background: var(--primary-text);
+}
+
 /* Multi-select revision colour chips, revealed under the "Revisions" radio. */
 .revisionChips {
     display: flex;

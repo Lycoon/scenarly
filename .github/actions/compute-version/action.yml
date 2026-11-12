@@ -17,6 +17,9 @@ outputs:
     commit_sha:
         description: Short git commit SHA.
         value: ${{ steps.compute.outputs.commit_sha }}
+    released_versions:
+        description: Every release tag, comma-separated. The server counts only these versions (and its own) in its build usage metric.
+        value: ${{ steps.compute.outputs.released_versions }}
 
 runs:
     using: composite
@@ -77,3 +80,4 @@ runs:
               echo "revision=$REVISION" >> $GITHUB_OUTPUT
               echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
               echo "commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+              echo "released_versions=$(git tag -l | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } | paste -sd, -)" >> $GITHUB_OUTPUT

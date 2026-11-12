@@ -99,7 +99,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     private readonly SOLO_USER_UPDATE_MS = 1000; // 1s when alone
     private readonly MULTI_USER_UPDATE_MS = 200; // 200ms with others
     private readonly MAX_SILENCE_DURATION_MS = 20000; // 20s max silence before ping
-    private readonly MAX_IDLE_DURATION_MS = 30 * 1000; // 30 seconds idle timeout
+    private readonly MAX_IDLE_DURATION_MS = 10 * 60 * 1000; // 10 minutes idle timeout
     private readonly FLUSH_CHECK_INTERVAL_MS = 100; // Check flush every 100ms
 
     private readonly ACTIVITY_EVENTS = ["mousedown", "mousemove", "keydown", "touchstart", "scroll"];
@@ -642,7 +642,9 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     private handleIdleTimeout(): void {
         if (this.isDestroyed) return;
 
-        console.log("[WS] User inactive for 10 minutes. Closing connection to save resources.");
+        console.log(
+            `[WS] User inactive for ${this.MAX_IDLE_DURATION_MS / 60_000} minutes. Closing connection to save resources.`,
+        );
 
         // Mark as idle-disconnected so we don't auto-reconnect
         this.isIdleDisconnected = true;

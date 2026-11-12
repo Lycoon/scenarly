@@ -1,6 +1,6 @@
 import { ProjectRole } from "../../../../../../generated/client/client";
 import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
-import { ForbiddenError, getCollabHttpUrl, Success, validate } from "@src/lib/utils/api-utils";
+import { ForbiddenError, getCollabHttpUrl, readBody, Success, validate } from "@src/lib/utils/api-utils";
 
 import { requireProjectCloudPlan } from "@src/lib/utils/plan-utils";
 import * as Roles from "@src/lib/utils/roles";
@@ -58,7 +58,7 @@ async function restoreSave(req: NextRequest, { routeParams, user }: AuthApiConte
 
     await requireProjectCloudPlan(projectId);
 
-    const body = await req.json();
+    const body = await readBody(req);
     const res = await forwardToWorker(projectId, "POST", "/saves/restore", body);
 
     if (!res.ok) {

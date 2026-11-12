@@ -112,6 +112,18 @@ export function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
 }
 
 /**
+ * The request's JSON body. A body that is missing or does not parse is the
+ * caller's mistake, so it is answered with a 400 rather than as a server error.
+ */
+export async function readBody(req: Request): Promise<unknown> {
+    try {
+        return await req.json();
+    } catch {
+        throw new MissingBodyError("Missing or invalid JSON body");
+    }
+}
+
+/**
  * Converts a WebSocket URL (ws:// or wss://) to an HTTP URL (http:// or https://).
  * Useful for calling REST endpoints on the collaboration Worker from the Next.js server.
  */

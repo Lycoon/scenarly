@@ -3,6 +3,7 @@ import { apiHandler, AuthApiContext } from "@src/lib/utils/api-handler";
 import {
     ForbiddenError,
     getCollabHttpUrl,
+    readBody,
     Success,
     SuccessCreated,
     validate,
@@ -64,7 +65,7 @@ async function createManualSave(req: NextRequest, { routeParams, user }: AuthApi
 
     await requireProjectCloudPlan(projectId);
 
-    const body = await req.json();
+    const body = await readBody(req);
     const res = await forwardToWorker(projectId, "POST", "/saves/manual", body);
 
     if (!res.ok) {
@@ -94,7 +95,7 @@ async function renameManualSave(req: NextRequest, { routeParams, user }: AuthApi
 
     await requireProjectCloudPlan(projectId);
 
-    const body = await req.json();
+    const body = await readBody(req);
     const res = await forwardToWorker(projectId, "PATCH", "/saves/manual", body);
 
     if (!res.ok) {

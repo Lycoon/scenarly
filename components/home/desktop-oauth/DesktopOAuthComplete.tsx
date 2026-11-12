@@ -49,8 +49,8 @@ const DesktopOAuthComplete = () => {
         status === "working"
             ? "Finishing sign-in…"
             : status === "done"
-              ? "You're signed in. You can return to the Scenarly desktop app."
-              : "Sign-in could not be completed. Please retry from the desktop app.";
+              ? "You're signed in. You can return to the Scenarly app."
+              : "Sign-in could not be completed. Please retry from the Scenarly app.";
 
     return (
         <div className={layout.center_middle}>

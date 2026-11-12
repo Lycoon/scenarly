@@ -446,7 +446,8 @@
       "lastEdited": "最終編集",
       "storage": "保存先"
     },
-    "communityBtn": "コミュニティ"
+    "communityBtn": "コミュニティ",
+    "adminBtn": "管理"
   },
   "editorSidebar": {
     "scenes": "シーン",
@@ -581,6 +582,8 @@
     "pageRanges": "ページ",
     "pageRangesDesc": "特定のページ範囲をエクスポートします。",
     "pageRangesPlaceholder": "例: 3-14,25-30",
+    "renumberPages": "ページ番号を振り直す",
+    "renumberPagesDesc": "脚本でのページ番号を使わず、エクスポートしたページに1から番号を振り直します。",
     "revisionsDesc": "選択した改訂色のページのみをエクスポートします。",
     "revisionExportLabel": "改訂マーク",
     "revisionExportOptions": {
@@ -1207,5 +1210,12 @@
       "pageOf": "{page} / {count} ページ",
       "backToWall": "すべての脚本"
     }
+  },
+  "updateRequired": {
+    "title": "アップデートが必要です",
+    "description": "このバージョンのScenarlyはサポートが終了しました。アカウントとクラウドプロジェクトを引き続き使うには、アップデートしてください。このデバイス上のプロジェクトはそのまま残ります。",
+    "webDescription": "Scenarlyが更新されました。作業を続けるにはページを再読み込みしてください。",
+    "update": "アップデート",
+    "reload": "再読み込み"
   }
 }

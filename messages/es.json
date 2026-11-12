@@ -446,7 +446,8 @@
       "lastEdited": "Última edición",
       "storage": "Almacenamiento"
     },
-    "communityBtn": "Comunidad"
+    "communityBtn": "Comunidad",
+    "adminBtn": "Admin"
   },
   "editorSidebar": {
     "scenes": "Escenas",
@@ -581,6 +582,8 @@
     "pageRanges": "Páginas",
     "pageRangesDesc": "Exportar intervalos de páginas específicos.",
     "pageRangesPlaceholder": "ej. 3-14,25-30",
+    "renumberPages": "Renumerar páginas",
+    "renumberPagesDesc": "Numerar las páginas exportadas desde 1 en lugar de conservar su número en el guion.",
     "revisionsDesc": "Exportar solo las páginas de los colores de revisión elegidos.",
     "revisionExportLabel": "Marcas de revisión",
     "revisionExportOptions": {
@@ -1207,5 +1210,12 @@
       "pageOf": "Página {page} de {count}",
       "backToWall": "Todos los guiones"
     }
+  },
+  "updateRequired": {
+    "title": "Actualización necesaria",
+    "description": "Esta versión de Scenarly ya no es compatible. Actualízala para seguir usando tu cuenta y tus proyectos en la nube. Tus proyectos en este dispositivo se conservan.",
+    "webDescription": "Scenarly se ha actualizado. Recarga la página para seguir trabajando.",
+    "update": "Actualizar",
+    "reload": "Recargar"
   }
 }

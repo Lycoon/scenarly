@@ -8,6 +8,7 @@ import {
     ForbiddenError,
     InternalServerError,
     ProjectNotFoundError,
+    readBody,
     Success,
     BodyFieldError,
     validate,
@@ -55,7 +56,7 @@ async function updateProject(req: NextRequest, { routeParams, user }: AuthApiCon
         throw new ProjectNotFoundError();
     }
 
-    const body = await req.json();
+    const body = await readBody(req);
     const { title, description, author } = validate(UpdateProjectBodySchema, body);
 
     if (title && (title.length < 1 || title.length > 256)) {

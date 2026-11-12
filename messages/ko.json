@@ -446,7 +446,8 @@
       "lastEdited": "마지막 편집",
       "storage": "저장 위치"
     },
-    "communityBtn": "커뮤니티"
+    "communityBtn": "커뮤니티",
+    "adminBtn": "관리자"
   },
   "editorSidebar": {
     "scenes": "장면",
@@ -581,6 +582,8 @@
     "pageRanges": "페이지",
     "pageRangesDesc": "특정 페이지 범위를 내보냅니다.",
     "pageRangesPlaceholder": "예: 3-14,25-30",
+    "renumberPages": "페이지 번호 다시 매기기",
+    "renumberPagesDesc": "대본의 페이지 번호 대신 내보낸 페이지에 1부터 번호를 다시 매깁니다.",
     "revisionsDesc": "선택한 리비전 색상의 페이지만 내보냅니다.",
     "revisionExportLabel": "리비전 표시",
     "revisionExportOptions": {
@@ -1207,5 +1210,12 @@
       "pageOf": "{page} / {count}페이지",
       "backToWall": "모든 시나리오"
     }
+  },
+  "updateRequired": {
+    "title": "업데이트 필요",
+    "description": "이 버전의 Scenarly는 더 이상 지원되지 않습니다. 계정과 클라우드 프로젝트를 계속 사용하려면 업데이트하세요. 이 기기의 프로젝트는 그대로 유지됩니다.",
+    "webDescription": "Scenarly가 업데이트되었습니다. 계속 작업하려면 페이지를 새로고침하세요.",
+    "update": "업데이트",
+    "reload": "새로고침"
   }
 }
