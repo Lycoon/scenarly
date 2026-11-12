@@ -1110,7 +1110,7 @@ export class ProjectRoom extends DurableObject {
      *
      * What survives is a tombstone and an alarm. Closing the live sockets only
      * reaches clients that happen to be connected, and the client disconnects
-     * itself after 30s idle while its cloud token stays valid for an hour, so
+     * itself after 10 minutes idle while its cloud token stays valid for an hour, so
      * for that hour a reconnect could still land here and re-upload the project
      * we just deleted. The tombstone refuses those; the alarm then deletes the
      * tombstone once no valid token can exist anymore, leaving nothing behind.

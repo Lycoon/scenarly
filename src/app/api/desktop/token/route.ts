@@ -3,7 +3,7 @@ import z from "zod";
 
 import { auth } from "@src/auth";
 import { apiHandler } from "@src/lib/utils/api-handler";
-import { ForbiddenError, Success, validate } from "@src/lib/utils/api-utils";
+import { ForbiddenError, readBody, Success, validate } from "@src/lib/utils/api-utils";
 import { putBridgeToken } from "@src/lib/desktop-bridge";
 import { encodeDesktopBearer } from "@src/lib/auth-tokens";
 import { logger } from "@src/lib/utils/logger";
@@ -21,7 +21,7 @@ const BodySchema = z.object({
  * client (which never sees this token in the URL) then polls for it.
  */
 async function desktopTokenRoute(req: NextRequest) {
-    const body = await req.json();
+    const body = await readBody(req);
     const { nonce } = validate(BodySchema, body);
 
     logger.debug("[Desktop token] Minting token for nonce", { nonce: nonce.slice(0, 8) + "…" });

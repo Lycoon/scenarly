@@ -14,10 +14,11 @@ import { createProjectShell, importFileAsProject } from "@src/lib/import/import-
 import { useImportAccept } from "@src/lib/import/use-import-accept";
 import { useAppNavigation } from "@src/lib/utils/navigation";
 import { isFileBindingSupported } from "@src/lib/persistence/file-binding";
-import { FileDown, FolderOpen, Plus, Users } from "lucide-react";
+import { FileDown, FolderOpen, Plus, ShieldCheck, Users } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
 import { openExternal } from "@src/lib/utils/open-external";
 import { COMMUNITY_WEB_URL } from "@src/lib/community/constants";
+import { UserRole } from "../../src/generated/client/browser";
 import { useTranslations } from "next-intl";
 
 import NewProjectPage from "./CreateProjectPage";
@@ -28,6 +29,8 @@ import Loading from "../utils/Loading";
 import LibrarySidebar from "./LibrarySidebar";
 
 import page from "./ProjectPageContainer.module.css";
+
+const ADMIN_WEB_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "https://scenarly.com"}/admin`;
 
 interface ProjectPageContainerProps {
     // Sidebar drawer state is owned by the page so the navbar burger can open it.
@@ -234,9 +237,18 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
                         {importError}
                     </p>
                 )}
-                {/* Community lives on the web app only: the Tauri shells open it
-                    in the browser, the web app navigates. */}
+                {/* Community and admin live on the web app only: the Tauri shells
+                    open them in the browser, the web app navigates. */}
                 <div className={page.sidebar_footer}>
+                    {user?.role === UserRole.ADMIN && (
+                        <button
+                            className={page.action_btn}
+                            onClick={() => (isTauri() ? openExternal(ADMIN_WEB_URL) : router.push("/admin"))}
+                        >
+                            <ShieldCheck size={16} />
+                            <span>{t("adminBtn")}</span>
+                        </button>
+                    )}
                     <button
                         className={page.action_btn}
                         onClick={() => (isTauri() ? openExternal(`${COMMUNITY_WEB_URL}/showcase`) : router.push("/community/showcase"))}

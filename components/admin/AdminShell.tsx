@@ -1,10 +1,10 @@
 "use client";
 
 import { ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Users, FolderOpen, LogOut } from "lucide-react";
+import ScenarlyLogo from "@public/images/scenarly.svg";
 import styles from "./AdminShell.module.css";
 
 type NavLink = { href: string; label: string; icon: ReactNode };
@@ -29,13 +29,7 @@ export default function AdminShell({ email, title, subtitle, children }: Props) 
         <div className={styles.wrapper}>
             <aside className={styles.sidebar}>
                 <div className={styles.brand}>
-                    <Image
-                        src="/images/scenarly.svg"
-                        alt="Scenarly"
-                        width={100}
-                        height={28}
-                        className={styles.brandLogo}
-                    />
+                    <ScenarlyLogo className={styles.brandLogo} role="img" aria-label="Scenarly" />
                     <span className={styles.brandBadge}>Admin</span>
                 </div>
                 <span className={styles.brandEmail} title={email}>{email}</span>

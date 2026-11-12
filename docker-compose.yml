@@ -8,6 +8,8 @@ services:
         build: .
         environment:
             - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db-prod:5432/${DB_NAME}?schema=public
+            # Read back by /admin for the build usage the dashboard also shows.
+            - PROMETHEUS_URL=http://prometheus:9090
         depends_on:
             db-prod:
                 condition: service_healthy

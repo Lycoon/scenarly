@@ -445,6 +445,31 @@ function computePageRevisions(doc: Node, breaks: PageBreakInfo[]): number[] {
     return pageRev;
 }
 
+/** A header or footer's three columns, placeholders expanded. */
+export interface AreaColumns {
+    left: string;
+    middle: string;
+    right: string;
+}
+
+function expandHeader(options: PaginationOptions, pagenum: number, label: string, revision: number): AreaColumns {
+    const custom = options.customHeader[pagenum];
+    return {
+        left: expandHeaderTemplate(custom?.headerLeft ?? options.headerLeft, label, revision),
+        middle: expandHeaderTemplate(custom?.headerMiddle ?? options.headerMiddle, label, revision),
+        right: expandHeaderTemplate(custom?.headerRight ?? options.headerRight, label, revision),
+    };
+}
+
+function expandFooter(options: PaginationOptions, pagenum: number, label: string): AreaColumns {
+    const custom = options.customFooter[pagenum];
+    return {
+        left: expandHeaderTemplate(custom?.footerLeft ?? options.footerLeft, label, 0),
+        middle: expandHeaderTemplate(custom?.footerMiddle ?? options.footerMiddle, label, 0),
+        right: expandHeaderTemplate(custom?.footerRight ?? options.footerRight, label, 0),
+    };
+}
+
 function fillHeader(
     area: HTMLElement,
     pagenum: number,
@@ -452,18 +477,12 @@ function fillHeader(
     options: PaginationOptions,
     revision: number,
 ): void {
-    const custom = options.customHeader[pagenum];
-    const left = expandHeaderTemplate(custom?.headerLeft ?? options.headerLeft, label, revision);
-    const middle = expandHeaderTemplate(custom?.headerMiddle ?? options.headerMiddle, label, revision);
-    const right = expandHeaderTemplate(custom?.headerRight ?? options.headerRight, label, revision);
+    const { left, middle, right } = expandHeader(options, pagenum, label, revision);
     appendAreaSpans(area, "header", left, middle, right);
 }
 
 function fillFooter(area: HTMLElement, pagenum: number, label: string, options: PaginationOptions): void {
-    const custom = options.customFooter[pagenum];
-    const left = expandHeaderTemplate(custom?.footerLeft ?? options.footerLeft, label, 0);
-    const middle = expandHeaderTemplate(custom?.footerMiddle ?? options.footerMiddle, label, 0);
-    const right = expandHeaderTemplate(custom?.footerRight ?? options.footerRight, label, 0);
+    const { left, middle, right } = expandFooter(options, pagenum, label);
     appendAreaSpans(area, "footer", left, middle, right);
 }
 
@@ -2677,6 +2696,41 @@ export function getPageLabelForPos(editor: Editor, pos: number): string {
         label = b.label ?? String(b.pagenum);
     }
     return label;
+}
+
+/** A page's header and footer, as its widgets render them. */
+export interface PageChrome {
+    header: AreaColumns;
+    footer: AreaColumns;
+}
+
+/**
+ * Header and footer for page `pagenum`, numbered plainly (no page-lock label)
+ * and holding the content of page `sourcePage` — whose revision still fills the
+ * `*` placeholder. Both are 1-based.
+ */
+export type PageChromeResolver = (pagenum: number, sourcePage: number) => PageChrome;
+
+/**
+ * Expand the editor's live header/footer templates for pages numbered
+ * differently from the editor — the PDF export renumbering an excerpt from 1.
+ * The page widgets only carry their own page's text, already expanded, so a
+ * new number has to go back through the templates. Page 1 keeps its override,
+ * so a renumbered excerpt opens unnumbered unless the first-page header or
+ * footer is shown, like the script itself.
+ */
+export function createPageChromeResolver(editor: Editor): PageChromeResolver | undefined {
+    const live = (editor.storage as unknown as Record<string, { live?: PaginationOptions } | undefined>).Pagination
+        ?.live;
+    if (!live) return undefined;
+    const pageRevisions = (paginationKey.getState(editor.state) as PaginationState | undefined)?.pageRevisions ?? [];
+    return (pagenum, sourcePage) => {
+        const label = String(pagenum);
+        return {
+            header: expandHeader(live, pagenum, label, pageRevisions[sourcePage - 1] ?? 0),
+            footer: expandFooter(live, pagenum, label),
+        };
+    };
 }
 
 /**

@@ -446,7 +446,8 @@
       "lastEdited": "最后编辑",
       "storage": "存储"
     },
-    "communityBtn": "社区"
+    "communityBtn": "社区",
+    "adminBtn": "管理"
   },
   "editorSidebar": {
     "scenes": "场景",
@@ -581,6 +582,8 @@
     "pageRanges": "页面",
     "pageRangesDesc": "导出指定的页面范围。",
     "pageRangesPlaceholder": "例如 3-14,25-30",
+    "renumberPages": "重新编排页码",
+    "renumberPagesDesc": "将导出的页面从 1 开始重新编号，而不保留其在剧本中的页码。",
     "revisionsDesc": "仅导出所选修订颜色的页面。",
     "revisionExportLabel": "修订标记",
     "revisionExportOptions": {
@@ -1207,5 +1210,12 @@
       "pageOf": "第 {page} 页，共 {count} 页",
       "backToWall": "全部剧本"
     }
+  },
+  "updateRequired": {
+    "title": "需要更新",
+    "description": "此版本的 Scenarly 已不再受支持。请更新以继续使用您的账户和云端项目。此设备上的项目会保留。",
+    "webDescription": "Scenarly 已更新。请刷新页面以继续工作。",
+    "update": "更新",
+    "reload": "刷新"
   }
 }

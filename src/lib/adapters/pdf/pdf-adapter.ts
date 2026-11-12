@@ -5,7 +5,7 @@ import { ExportFormat, PageFormat } from "@src/lib/utils/enums";
 import { getFontForCodePoint, ScriptFont } from "./pdf-utils";
 import type { TextRun } from "./pdf.worker";
 import { BASE_URL } from "@src/lib/utils/constants";
-import { PAGE_SIZES } from "@src/lib/screenplay/extensions/pagination-extension";
+import { PAGE_SIZES, type PageChromeResolver } from "@src/lib/screenplay/extensions/pagination-extension";
 import { revisionColor } from "@src/lib/screenplay/revisions";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -32,13 +32,16 @@ export type PDFExportOptions = BaseExportOptions & {
     revisionExport?: RevisionExportMode;
     /** Which pages to export. Absent (or omitted) means every page.
      *  - `ranges`: keep pages whose 1-based ordinal falls in any [start, end].
+     *     With `renumber`, the kept pages are recounted from 1 instead of
+     *     keeping their original numbers.
      *  - `revisions`: keep pages that carry a change stamped with one of the
-     *     given revision indices (a production "revised pages" distribution). */
+     *     given revision indices (a production "revised pages" distribution,
+     *     slotted back into the script — so they always keep their numbers). */
     pageSelection?: PageSelection;
 };
 
 export type PageSelection =
-    | { mode: "ranges"; ranges: Array<[number, number]> }
+    | { mode: "ranges"; ranges: Array<[number, number]>; renumber?: PageChromeResolver }
     | { mode: "revisions"; revisions: number[] };
 
 /**
@@ -179,19 +182,23 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
             };
         });
 
-        const { titlePageLines, titlePageLeftPx, screenplayLeftPx, screenplayFirstHeader, pageMarginLeft, pageMarginRight } =
-            measured;
+        const { titlePageLines, titlePageLeftPx, screenplayLeftPx, pageMarginLeft, pageMarginRight } = measured;
         let screenplayLines = measured.screenplayLines;
+        let screenplayFirstHeader = measured.screenplayFirstHeader;
         let screenplayLastFooter = measured.screenplayLastFooter;
 
         // Page selection: keep only the chosen pages (by range or by revision).
         const sel = options.pageSelection;
         if (sel?.mode === "ranges" && sel.ranges.length > 0) {
-            const kept = this.keepPages(screenplayLines, screenplayLastFooter, (_page, ordinal) =>
-                sel.ranges.some(([start, end]) => ordinal >= start && ordinal <= end),
+            const kept = this.keepPages(
+                screenplayLines,
+                screenplayLastFooter,
+                (_page, ordinal) => sel.ranges.some(([start, end]) => ordinal >= start && ordinal <= end),
+                sel.renumber,
             );
             screenplayLines = kept.lines;
             screenplayLastFooter = kept.lastFooter;
+            if (kept.firstHeader) screenplayFirstHeader = kept.firstHeader;
         } else if (sel?.mode === "revisions" && sel.revisions.length > 0) {
             const wanted = new Set(sel.revisions);
             const kept = this.keepPages(screenplayLines, screenplayLastFooter, (page) => {
@@ -1018,12 +1025,18 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
      * pages leave gaps. The first kept page keeps no leading sentinel when it is
      * the original page 1 (which has no header); otherwise its label is emitted
      * as a leading sentinel that the worker draws in place (see renderLines).
+     *
+     * With `renumber`, the surviving pages are recounted from 1 instead: each
+     * gets the header and footer of its new number, and the first one becomes
+     * page 1 outright — no leading sentinel, its header returned as
+     * `firstHeader` for the worker's first-page pass.
      */
     private keepPages(
         lines: VisualLine[],
         lastPageFooter: PageFooter | undefined,
         keep: (page: { lines: VisualLine[]; revisions: Set<number> }, ordinal: number) => boolean,
-    ): { lines: VisualLine[]; lastFooter: PageFooter | undefined } {
+        renumber?: PageChromeResolver,
+    ): { lines: VisualLine[]; lastFooter: PageFooter | undefined; firstHeader?: PageHeader } {
         type Page = {
             label?: string;
             header?: PageHeader;
@@ -1054,10 +1067,20 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
         // of that page just before the break that begins the current one.
         let prevKeptFooter: PageFooter | undefined = undefined;
         let lastFooter: PageFooter | undefined = undefined;
+        let firstHeader: PageHeader | undefined = undefined;
+        let keptCount = 0;
         pages.forEach((page, idx) => {
             if (!keep(page, idx + 1)) return;
+            keptCount++;
+            if (renumber) {
+                const chrome = renumber(keptCount, idx + 1);
+                page.label = keptCount === 1 ? undefined : String(keptCount);
+                page.header = chrome.header;
+                page.footer = chrome.footer;
+                if (keptCount === 1) firstHeader = chrome.header;
+            }
             // A break sentinel before every kept page except an original-page-1
-            // first page (it renders as page 1 with no header).
+            // (or renumbered) first page, which renders as page 1.
             if (!first || page.label !== undefined) {
                 out.push({
                     runs: [],
@@ -1073,6 +1096,6 @@ export class PDFAdapter extends ProjectAdapter<PDFExportOptions> {
             lastFooter = page.footer;
             first = false;
         });
-        return { lines: out, lastFooter };
+        return { lines: out, lastFooter, firstHeader };
     }
 }

@@ -447,7 +447,8 @@
       "lastEdited": "Zuletzt bearbeitet",
       "storage": "Speicher"
     },
-    "communityBtn": "Community"
+    "communityBtn": "Community",
+    "adminBtn": "Admin"
   },
   "editorSidebar": {
     "scenes": "Szenen",
@@ -582,6 +583,8 @@
     "pageRanges": "Seiten",
     "pageRangesDesc": "Bestimmte Seitenbereiche exportieren.",
     "pageRangesPlaceholder": "z. B. 3-14,25-30",
+    "renumberPages": "Seiten neu nummerieren",
+    "renumberPagesDesc": "Die exportierten Seiten ab 1 nummerieren, statt ihre Seitenzahlen im Drehbuch beizubehalten.",
     "revisionsDesc": "Nur Seiten der gewählten Revisionsfarben exportieren.",
     "revisionExportLabel": "Revisionsmarken",
     "revisionExportOptions": {
@@ -1208,5 +1211,12 @@
       "pageOf": "Seite {page} von {count}",
       "backToWall": "Alle Drehbücher"
     }
+  },
+  "updateRequired": {
+    "title": "Aktualisierung erforderlich",
+    "description": "Diese Version von Scenarly wird nicht mehr unterstützt. Aktualisieren Sie sie, um Ihr Konto und Ihre Cloud-Projekte weiter zu nutzen. Ihre Projekte auf diesem Gerät bleiben erhalten.",
+    "webDescription": "Scenarly wurde aktualisiert. Laden Sie die Seite neu, um weiterzuarbeiten.",
+    "update": "Aktualisieren",
+    "reload": "Neu laden"
   }
 }

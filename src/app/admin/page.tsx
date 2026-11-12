@@ -1,6 +1,7 @@
 import { auth } from "@src/auth";
 import AdminShell from "@components/admin/AdminShell";
 import StatsCards from "@components/admin/StatsCards";
+import BuildUsage from "@components/admin/BuildUsage";
 
 export default async function AdminHomePage() {
     const session = await auth();
@@ -9,6 +10,7 @@ export default async function AdminHomePage() {
     return (
         <AdminShell email={email} title="Overview" subtitle="Platform-wide metrics">
             <StatsCards />
+            <BuildUsage />
         </AdminShell>
     );
 }
