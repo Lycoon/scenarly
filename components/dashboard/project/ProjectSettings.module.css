@@ -4,6 +4,12 @@
     gap: 20px;
 }
 
+/* A tab's second view (see DangerZoneToggle): the Back button, then its content. */
+.dangerView {
+    display: flex;
+    flex-direction: column;
+}
+
 .formGroup {
     display: flex;
     flex-direction: column;

@@ -95,6 +95,36 @@
     white-space: nowrap;
 }
 
+/* Phones: title + members on the first line, ID + date below. */
+@media (max-width: 767px) {
+    .resultRow {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "title members"
+            "id date";
+        gap: 6px 12px;
+        padding: 12px 14px;
+    }
+
+    .title {
+        grid-area: title;
+    }
+
+    .id {
+        grid-area: id;
+    }
+
+    .members {
+        grid-area: members;
+        justify-self: end;
+    }
+
+    .date {
+        grid-area: date;
+        justify-self: end;
+    }
+}
+
 .empty {
     color: var(--secondary-text);
     font-family: var(--font-inter), sans-serif;

@@ -2,6 +2,7 @@
     display: flex;
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     background: var(--main-bg);
 }
 
@@ -118,8 +119,10 @@
 
 .header {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
+    gap: 4px 16px;
     margin-bottom: 24px;
 }
 
@@ -134,4 +137,69 @@
     color: var(--secondary-text);
     font-family: var(--font-inter), sans-serif;
     font-size: 13px;
+}
+
+/* Phones: the sidebar becomes a top bar — brand and "Back to app" on the
+ * first line, the nav as full-width tabs below — and the page scrolls under it. */
+@media (max-width: 767px) {
+    .wrapper {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: calc(12px + var(--safe-top)) calc(16px + var(--safe-right)) 8px calc(16px + var(--safe-left));
+        border-right: none;
+        border-bottom: 1px solid var(--separator);
+    }
+
+    .brand {
+        padding: 0;
+    }
+
+    .brandLogo {
+        height: 22px;
+    }
+
+    .brandEmail,
+    .navGroupLabel {
+        display: none;
+    }
+
+    .nav {
+        order: 1;
+        width: 100%;
+        flex-direction: row;
+        gap: 4px;
+    }
+
+    .nav .navItem {
+        flex: 1;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px;
+        font-size: 13px;
+    }
+
+    .footer {
+        margin: 0 0 0 auto;
+        padding: 0;
+        border-top: none;
+    }
+
+    .main {
+        padding: 20px calc(16px + var(--safe-right)) calc(24px + var(--safe-bottom)) calc(16px + var(--safe-left));
+    }
+
+    .header {
+        margin-bottom: 16px;
+    }
+
+    .title {
+        font-size: 22px;
+    }
 }

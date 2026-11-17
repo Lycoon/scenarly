@@ -127,6 +127,41 @@ export class UserRepository {
         return prisma.user.findUnique({ where: { id: userId } });
     }
 
+    /** The user a provider identity (`apple` + Apple's `sub`) signs in as. */
+    async fetchUserByAccount(provider: string, providerAccountId: string) {
+        const account = await prisma.account.findUnique({
+            where: { provider_providerAccountId: { provider, providerAccountId } },
+            select: { user: { select: USER_SELECT } },
+        });
+        return account?.user ?? null;
+    }
+
+    /** Link a provider identity to a user, as the Auth.js adapter does for a web sign-in. */
+    createAccount(userId: string, provider: string, providerAccountId: string) {
+        return prisma.account.create({
+            data: { userId, provider, providerAccountId, type: "oidc" },
+        });
+    }
+
+    updateAccountTokens(
+        provider: string,
+        providerAccountId: string,
+        tokens: { refresh_token: string; id_token: string | null },
+    ) {
+        return prisma.account.update({
+            where: { provider_providerAccountId: { provider, providerAccountId } },
+            data: tokens,
+        });
+    }
+
+    /** The provider tokens held for a user, for revoking them when the account goes. */
+    fetchAccountTokens(userId: string, provider: string) {
+        return prisma.account.findMany({
+            where: { userId, provider, refresh_token: { not: null } },
+            select: { refresh_token: true, id_token: true },
+        });
+    }
+
     fetchUserSettings(userId: string) {
         return prisma.user.findUnique({
             where: { id: userId },

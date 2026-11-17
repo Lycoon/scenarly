@@ -32,8 +32,9 @@
 
 .actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
+    gap: 12px 16px;
 }
 
 .ranges {
@@ -83,7 +84,7 @@
 
 .tables {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 16px;
     align-items: start;
 }
@@ -109,6 +110,11 @@
 
 .tableRow:last-child {
     border-bottom: none;
+}
+
+.tableRow > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .platformRow {
@@ -147,4 +153,20 @@
 
 .error {
     color: var(--error);
+}
+
+@media (max-width: 767px) {
+    .card {
+        padding: 16px;
+    }
+
+    .tableRow {
+        gap: 10px;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .tableHeader {
+        font-size: 10px;
+    }
 }

@@ -8,6 +8,10 @@
  *   4. Desktop OAuth       — browser OAuth here, then /api/desktop/token mints
  *                            a fresh JWE for Tauri to pick up via the bridge.
  *
+ * A fifth goes around it: in the macOS and iOS apps, Sign in with Apple runs in
+ * the system sheet and /api/auth/apple/native mints the JWE from Apple's signed
+ * credential (apple-sign-in-service). It writes the same Account rows as flow 2.
+ *
  * The desktop bearer JWEs all use `DESKTOP_BEARER_SALT` (lib/auth-tokens.ts)
  * so lib/session.ts can decrypt them in middleware. The web cookie uses Auth.js's
  * default salt (= cookie name) and is never encoded by us directly except in the
