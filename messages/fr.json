@@ -319,6 +319,7 @@
     "errorSaving": "Une erreur est survenue lors de l'enregistrement",
     "saving": "Enregistrement...",
     "dangerZoneTitle": "Zone dangereuse",
+    "accountAndData": "Compte et données",
     "exportData": "Exporter mes données",
     "exportDataDesc": "Demandez une copie de vos données personnelles : informations du compte, paramètres, abonnements et participations aux projets. Elle reste téléchargeable ici pendant 7 jours.",
     "exportBtn": "Demander l'export",

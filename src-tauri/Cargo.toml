@@ -44,3 +44,36 @@ tauri-plugin-persisted-scope = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))'.dependencies]
 tauri-plugin-iap = "0.9"
+
+# Sign-in sheets that stay inside the app, which App Review requires on the
+# Apple platforms (see src/apple_auth.rs). Everything but the
+# AuthenticationServices bindings is already in the tree through tauri, at
+# these versions.
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+objc2 = "0.6"
+block2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = [
+    "std",
+    "NSArray",
+    "NSData",
+    "NSError",
+    "NSString",
+    "NSURL",
+] }
+objc2-authentication-services = { version = "0.3", default-features = false, features = [
+    "std",
+    "block2",
+    "ASFoundation",
+    "ASAuthorization",
+    "ASAuthorizationAppleIDCredential",
+    "ASAuthorizationAppleIDProvider",
+    "ASAuthorizationAppleIDRequest",
+    "ASAuthorizationController",
+    "ASAuthorizationCredential",
+    "ASAuthorizationError",
+    "ASAuthorizationOpenIDRequest",
+    "ASAuthorizationProvider",
+    "ASAuthorizationRequest",
+    "ASWebAuthenticationSession",
+] }
+tokio = { version = "1", features = ["sync"] }

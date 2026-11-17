@@ -15,10 +15,12 @@
  *  4. Community files and caches the cascade cannot reach (R2 objects of their
  *     submissions, a claim in flight, unsent drafts, upvote counts, Showcase
  *     pages) — see community-account-service.
- *  5. the User row itself, which cascades Account, Session, the remaining
+ *  5. the Sign in with Apple authorizations held for them, revoked with Apple
+ *     as it requires of an app that deletes an account.
+ *  6. the User row itself, which cascades Account, Session, the remaining
  *     ProjectMember rows and every Community row.
  *
- * External cleanup (Cloudflare, Stripe) is best-effort: it is logged on
+ * External cleanup (Cloudflare, Stripe, Apple) is best-effort: it is logged on
  * failure but never blocks the deletion, otherwise a Worker outage would leave
  * the user unable to delete their account at all.
  */
@@ -30,6 +32,7 @@ import * as SignInCodeService from "@src/server/service/sign-in-code-service";
 import * as ProjectService from "@src/server/service/project-service";
 import * as UserService from "@src/server/service/user-service";
 import * as SubscriptionService from "@src/server/service/subscription-service";
+import * as AppleSignInService from "@src/server/service/apple-sign-in-service";
 import { destroyProjectCompletely } from "@src/server/service/project-teardown-service";
 import { ProjectRole } from "@src/generated/client/client";
 import { logger } from "@src/lib/utils/logger";
@@ -70,6 +73,14 @@ export async function deleteAccount(userId: string): Promise<boolean> {
         await CommunityAccountService.prepareAccountDeletion(userId);
     } catch (e) {
         logger.error("[AccountDeletion] Community cleanup failed", { userId, error: e });
+    }
+
+    // Last before the row goes: the refresh tokens to revoke live on Account,
+    // which the deletion below cascades away.
+    try {
+        await AppleSignInService.revokeAllForDeletion(userId);
+    } catch (e) {
+        logger.error("[AccountDeletion] Failed to revoke Sign in with Apple tokens", { userId, error: e });
     }
 
     await UserService.deleteUserFromId(userId);

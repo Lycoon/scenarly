@@ -318,6 +318,7 @@
     "errorSaving": "Ocurrió un error al guardar",
     "saving": "Guardando...",
     "dangerZoneTitle": "Zona de peligro",
+    "accountAndData": "Cuenta y datos",
     "exportData": "Exportar mis datos",
     "exportDataDesc": "Solicita una copia de tus datos personales: información de la cuenta, configuración, suscripciones y membresías de proyectos. Estará disponible para descargar aquí durante 7 días.",
     "exportBtn": "Solicitar exportación",

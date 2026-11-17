@@ -318,6 +318,7 @@
     "errorSaving": "保存时出错",
     "saving": "正在保存...",
     "dangerZoneTitle": "危险区域",
+    "accountAndData": "账户与数据",
     "exportData": "导出我的数据",
     "exportDataDesc": "申请获取您的个人数据副本：账户信息、设置、订阅及项目成员资格。可在此处下载，有效期 7 天。",
     "exportBtn": "申请导出",

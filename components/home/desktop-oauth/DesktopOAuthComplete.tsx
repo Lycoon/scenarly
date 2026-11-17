@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { submitDesktopToken } from "@src/lib/utils/requests";
+import { NATIVE_OAUTH_CALLBACK_URL } from "@src/lib/desktop-auth";
 
 import ScenarlyLogo from "@public/images/scenarly.svg";
 import layout from "../../utils/Layout.module.css";
@@ -38,10 +39,19 @@ const DesktopOAuthComplete = () => {
             return;
         }
 
+        // Set by DesktopOAuthStart when the macOS or iOS app opened it in its own web sign-in sheet.
+        const native = sessionStorage.getItem("desktop-oauth-native") === "1";
+
         sessionStorage.removeItem("desktop-oauth-nonce");
+        sessionStorage.removeItem("desktop-oauth-native");
 
         submitDesktopToken(nonce)
-            .then(res => setStatus(res.ok ? "done" : "error"))
+            .then(res => {
+                setStatus(res.ok ? "done" : "error");
+                // The sheet closes itself when it sees this navigation, and only then: the
+                // app is already polling for the token that was just stowed.
+                if (res.ok && native) window.location.replace(NATIVE_OAUTH_CALLBACK_URL);
+            })
             .catch(() => setStatus("error"));
     }, [urlNonce, router]);
 

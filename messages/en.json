@@ -318,6 +318,7 @@
     "errorSaving": "An error occurred while saving",
     "saving": "Saving...",
     "dangerZoneTitle": "Danger zone",
+    "accountAndData": "Account & data",
     "exportData": "Export my data",
     "exportDataDesc": "Request a copy of your personal data: account information, settings, subscriptions and project memberships. It stays available to download here for 7 days.",
     "exportBtn": "Request export",

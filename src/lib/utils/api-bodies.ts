@@ -29,6 +29,14 @@ export const VerifySignInCodeBodySchema = z.object({
 });
 export type VerifySignInCodeBody = z.input<typeof VerifySignInCodeBodySchema>;
 
+/** What the native Sign in with Apple sheet handed the app, plus the nonce its request was bound to. */
+export const AppleNativeSignInBodySchema = z.object({
+    identityToken: z.string().min(1),
+    authorizationCode: z.string().min(1),
+    nonce: z.string().min(16),
+});
+export type AppleNativeSignInBody = z.infer<typeof AppleNativeSignInBodySchema>;
+
 export const CreateProjectBodySchema = z.object({
     title: z.string(),
     description: z.string().optional(),

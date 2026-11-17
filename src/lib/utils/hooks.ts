@@ -855,22 +855,31 @@ const useDesktopBridgeAuth = () => {
         return () => { pollAbortRef.current?.abort(); };
     }, []);
 
+    /** Sign the app in with a bearer token the server just issued. */
+    const acceptDesktopToken = useCallback(async (token: string) => {
+        const { setDesktopToken } = await import("@src/lib/desktop-auth");
+        await setDesktopToken(token);
+        await mutate("/api/users/cookie");
+        await mutate("/api/users");
+    }, [mutate]);
+
     const completeBridgeAuth = useCallback(async (nonce: string): Promise<"success" | "timeout" | "aborted"> => {
         pollAbortRef.current?.abort();
         const controller = new AbortController();
         pollAbortRef.current = controller;
 
-        const { pollBridgeToken, setDesktopToken } = await import("@src/lib/desktop-auth");
+        const { pollBridgeToken } = await import("@src/lib/desktop-auth");
         const token = await pollBridgeToken(nonce, { signal: controller.signal });
         if (!token) return controller.signal.aborted ? "aborted" : "timeout";
 
-        await setDesktopToken(token);
-        await mutate("/api/users/cookie");
-        await mutate("/api/users");
+        await acceptDesktopToken(token);
         return "success";
-    }, [mutate]);
+    }, [acceptDesktopToken]);
 
-    return { completeBridgeAuth };
+    /** Stop waiting on the bridge: the sign-in it was polling for has been given up. */
+    const cancelBridgeAuth = useCallback(() => pollAbortRef.current?.abort(), []);
+
+    return { completeBridgeAuth, cancelBridgeAuth, acceptDesktopToken };
 };
 
 const useFormatTimestamp = () => {
