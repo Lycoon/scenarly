@@ -1,30 +1,30 @@
 "use client";
 
 import { ReactNode } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { BarChart3, Users, FolderOpen, LogOut } from "lucide-react";
 import ScenarlyLogo from "@public/images/scenarly.svg";
+import { AdminSection } from "@src/lib/admin-route";
+import AdminLink from "./AdminLink";
 import styles from "./AdminShell.module.css";
 
-type NavLink = { href: string; label: string; icon: ReactNode };
+type NavLink = { section: AdminSection; label: string; icon: ReactNode };
 
 const NAV_LINKS: NavLink[] = [
-    { href: "/admin", label: "Overview", icon: <BarChart3 size={16} /> },
-    { href: "/admin/users", label: "Users", icon: <Users size={16} /> },
-    { href: "/admin/projects", label: "Projects", icon: <FolderOpen size={16} /> },
+    { section: "overview", label: "Overview", icon: <BarChart3 size={16} /> },
+    { section: "users", label: "Users", icon: <Users size={16} /> },
+    { section: "projects", label: "Projects", icon: <FolderOpen size={16} /> },
 ];
 
 type Props = {
     email: string;
+    /** The nav entry to highlight. */
+    section: AdminSection;
     title: string;
     subtitle?: string;
     children: ReactNode;
 };
 
-export default function AdminShell({ email, title, subtitle, children }: Props) {
-    const pathname = usePathname() ?? "";
-
+export default function AdminShell({ email, section, title, subtitle, children }: Props) {
     return (
         <div className={styles.wrapper}>
             <aside className={styles.sidebar}>
@@ -35,28 +35,22 @@ export default function AdminShell({ email, title, subtitle, children }: Props) 
                 <span className={styles.brandEmail} title={email}>{email}</span>
                 <nav className={styles.nav}>
                     <div className={styles.navGroupLabel}>Monitoring</div>
-                    {NAV_LINKS.map((link) => {
-                        const active =
-                            link.href === "/admin"
-                                ? pathname === "/admin"
-                                : pathname.startsWith(link.href);
-                        return (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}
-                            >
-                                {link.icon}
-                                {link.label}
-                            </Link>
-                        );
-                    })}
+                    {NAV_LINKS.map((link) => (
+                        <AdminLink
+                            key={link.section}
+                            to={{ section: link.section }}
+                            className={`${styles.navItem} ${link.section === section ? styles.navItemActive : ""}`}
+                        >
+                            {link.icon}
+                            {link.label}
+                        </AdminLink>
+                    ))}
                 </nav>
                 <div className={styles.footer}>
-                    <Link href="/" className={styles.navItem} style={{ padding: "8px 0" }}>
+                    <AdminLink to="app" className={styles.navItem} style={{ padding: "8px 0" }}>
                         <LogOut size={14} />
                         Back to app
-                    </Link>
+                    </AdminLink>
                 </div>
             </aside>
             <main className={styles.main}>

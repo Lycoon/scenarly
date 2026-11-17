@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import Link from "next/link";
+import AdminLink from "./AdminLink";
 import { Search } from "lucide-react";
 import styles from "./ProjectSearch.module.css";
 
@@ -68,7 +68,7 @@ export default function ProjectSearch() {
             {data && data.projects.length > 0 && (
                 <div className={styles.resultList}>
                     {data.projects.map((p) => (
-                        <Link key={p.id} href={`/admin/projects/${p.id}`} className={styles.resultRow}>
+                        <AdminLink key={p.id} to={{ section: "projects", id: p.id }} className={styles.resultRow}>
                             <span className={styles.title}>{p.title}</span>
                             <span className={styles.id}>{p.id}</span>
                             <span className={styles.members}>
@@ -77,7 +77,7 @@ export default function ProjectSearch() {
                             <span className={styles.date}>
                                 Updated {formatDate(p.updatedAt)}
                             </span>
-                        </Link>
+                        </AdminLink>
                     ))}
                 </div>
             )}

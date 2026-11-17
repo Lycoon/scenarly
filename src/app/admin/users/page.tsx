@@ -7,7 +7,7 @@ export default async function AdminUsersPage() {
     const email = session?.user?.email ?? "";
 
     return (
-        <AdminShell email={email} title="Users" subtitle="Search by email or user ID">
+        <AdminShell email={email} section="users" title="Users" subtitle="Search by email or user ID">
             <UserSearch />
         </AdminShell>
     );
