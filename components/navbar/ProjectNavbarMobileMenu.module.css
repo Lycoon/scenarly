@@ -117,6 +117,13 @@
     cursor: pointer;
 }
 
+/* The label sits in a <span>, which globals.css paints --primary-text directly,
+ * so it would ignore the row's colour above (the dashboard's .navItem has a bare
+ * text node and inherits it). */
+.item span {
+    color: inherit;
+}
+
 /* Group heading above a run of dashboard tabs (Project / Preferences / Account).
  * margin-top is .groupLabel's 14px less the drawer's 4px flex gap. */
 .group_label {
