@@ -7,6 +7,8 @@ import ProjectPageContainer from "@components/projects/ProjectPageContainer";
 import HomeNavbar from "@components/navbar/HomeNavbar";
 import DashboardModal from "@components/dashboard/DashboardModal";
 import Loading from "@components/utils/Loading";
+import AdminApp from "@components/admin/AdminApp";
+import { parseAdminSearch } from "@src/lib/admin-route";
 import { DashboardContext } from "@src/context/DashboardContext";
 import { useAppNavigation } from "@src/lib/utils/navigation";
 
@@ -35,6 +37,10 @@ function ProjectsPageContent() {
             openDashboard("Subscription");
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // The Tauri shells carry the admin area here (see admin-route.ts).
+    const adminRoute = parseAdminSearch(params);
+    if (adminRoute) return <AdminApp route={adminRoute} />;
 
     if (!projectId) {
         return (

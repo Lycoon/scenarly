@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import AdminLink from "./AdminLink";
+import ExternalAnchor from "./ExternalAnchor";
 import useSWR from "swr";
 import { ArrowLeft } from "lucide-react";
 import { UserRole, ProjectRole, Plan, SubscriptionProvider } from "../../src/generated/client/browser";
@@ -148,9 +149,9 @@ export default function UserDetail({ userId }: Props) {
 
     return (
         <div className={styles.container}>
-            <Link href="/admin/users" className={styles.backLink}>
+            <AdminLink to={{ section: "users" }} className={styles.backLink}>
                 <ArrowLeft size={14} /> Back to search
-            </Link>
+            </AdminLink>
 
             {isLoading && <p className={styles.message}>Loading user…</p>}
             {error && <p className={`${styles.message} ${styles.error}`}>User not found.</p>}
@@ -211,14 +212,12 @@ export default function UserDetail({ userId }: Props) {
                             <div className={styles.field}>
                                 <span className={styles.fieldLabel}>Stripe customer</span>
                                 {data.user.stripeCustomerUrl ? (
-                                    <a
+                                    <ExternalAnchor
                                         href={data.user.stripeCustomerUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
                                         className={`${styles.fieldValue} ${styles.idValue} ${styles.externalLink}`}
                                     >
                                         {data.user.stripeCustomerId}
-                                    </a>
+                                    </ExternalAnchor>
                                 ) : (
                                     <span className={styles.fieldValue}>—</span>
                                 )}
@@ -264,14 +263,12 @@ export default function UserDetail({ userId }: Props) {
                                                     : "Stripe subscription"}
                                         </span>
                                         {sub?.providerUrl ? (
-                                            <a
+                                            <ExternalAnchor
                                                 href={sub.providerUrl}
-                                                target="_blank"
-                                                rel="noreferrer"
                                                 className={`${styles.fieldValue} ${styles.idValue} ${styles.externalLink}`}
                                             >
                                                 {sub.providerId}
-                                            </a>
+                                            </ExternalAnchor>
                                         ) : (
                                             <span className={`${styles.fieldValue} ${styles.idValue}`}>{sub?.providerId ?? "—"}</span>
                                         )}
@@ -308,9 +305,9 @@ export default function UserDetail({ userId }: Props) {
                                 </div>
                             )}
                             {memberships?.map((m) => (
-                                <Link
+                                <AdminLink
                                     key={m.project.id}
-                                    href={`/admin/projects/${m.project.id}`}
+                                    to={{ section: "projects", id: m.project.id }}
                                     className={`${styles.tableRow} ${styles.tableRowLink}`}
                                 >
                                     <span>{m.project.title}</span>
@@ -318,7 +315,7 @@ export default function UserDetail({ userId }: Props) {
                                     <span className={styles.tableCellMuted}>
                                         {formatDateTime(m.project.updatedAt)}
                                     </span>
-                                </Link>
+                                </AdminLink>
                             ))}
                         </div>
                     </section>

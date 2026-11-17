@@ -9,7 +9,7 @@ export default async function AdminProjectDetailPage({ params }: Props) {
     const email = session?.user?.email ?? "";
 
     return (
-        <AdminShell email={email} title="Project detail">
+        <AdminShell email={email} section="projects" title="Project detail">
             <ProjectDetail projectId={projectId} />
         </AdminShell>
     );

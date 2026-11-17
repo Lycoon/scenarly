@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { ExternalLink } from "lucide-react";
 import { compareVersions, isVersion, OTHER_VERSIONS, UNVERSIONED } from "@src/lib/client-version";
+import ExternalAnchor from "./ExternalAnchor";
 import styles from "./BuildUsage.module.css";
 
 type Range = "24h" | "7d" | "30d";
@@ -95,10 +96,10 @@ export default function BuildUsage() {
                             </button>
                         ))}
                     </div>
-                    <a href={GRAFANA_URL} target="_blank" rel="noreferrer" className={styles.grafanaLink}>
+                    <ExternalAnchor href={GRAFANA_URL} className={styles.grafanaLink}>
                         Grafana
                         <ExternalLink size={13} />
-                    </a>
+                    </ExternalAnchor>
                 </div>
             </div>
 

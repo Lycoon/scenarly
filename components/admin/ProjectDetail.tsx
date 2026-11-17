@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AdminLink from "./AdminLink";
 import useSWR from "swr";
 import { ArrowLeft } from "lucide-react";
 import { ProjectRole } from "../../src/generated/client/browser";
@@ -51,9 +51,9 @@ export default function ProjectDetail({ projectId }: Props) {
 
     return (
         <div className={styles.container}>
-            <Link href="/admin/projects" className={styles.backLink}>
+            <AdminLink to={{ section: "projects" }} className={styles.backLink}>
                 <ArrowLeft size={14} /> Back to search
-            </Link>
+            </AdminLink>
 
             {isLoading && <p className={styles.message}>Loading project…</p>}
             {error && <p className={`${styles.message} ${styles.error}`}>Project not found.</p>}
@@ -112,14 +112,14 @@ export default function ProjectDetail({ projectId }: Props) {
                                 <div className={styles.emptyRow}>No members.</div>
                             )}
                             {members?.map((m) => (
-                                <Link
+                                <AdminLink
                                     key={m.user.id}
-                                    href={`/admin/users/${m.user.id}`}
+                                    to={{ section: "users", id: m.user.id }}
                                     className={`${styles.tableRow} ${styles.tableRowLink}`}
                                 >
                                     <span>{m.user.email}</span>
                                     <span className={styles.tableCellMuted}>{m.role}</span>
-                                </Link>
+                                </AdminLink>
                             ))}
                         </div>
                     </section>

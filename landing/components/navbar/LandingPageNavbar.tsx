@@ -74,8 +74,17 @@ export default function LandingPageNavbar() {
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") setOpen(false);
         };
+        // Tapping anywhere outside the navbar (burger + menu) dismisses the menu.
+        const onPointerDown = (e: PointerEvent) => {
+            if (e.target instanceof Node && navRef.current?.contains(e.target)) return;
+            setOpen(false);
+        };
         window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
+        document.addEventListener("pointerdown", onPointerDown);
+        return () => {
+            window.removeEventListener("keydown", onKey);
+            document.removeEventListener("pointerdown", onPointerDown);
+        };
     }, [open]);
 
     if (!page) return null;

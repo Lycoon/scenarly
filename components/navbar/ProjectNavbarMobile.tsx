@@ -407,36 +407,36 @@ const ProjectNavbarMobile = () => {
                     {/* Set the sign in/out + About actions apart from the dashboard
                         tab groups above, so they don't read as part of Preferences
                         (mirrors the DashboardModal sidebar's footer separation). */}
-                    <div className={mobileMenu.separator} />
+                    <div className={mobileMenu.footer}>
+                        {isSignedIn ? (
+                            <button
+                                className={mobileMenu.item}
+                                onClick={() => {
+                                    setMobileMenuOpen(false);
+                                    onSignOut();
+                                }}
+                            >
+                                <LogOut size={18} />
+                                <span>{tSidebar("logOut")}</span>
+                            </button>
+                        ) : (
+                            <button
+                                className={mobileMenu.item}
+                                onClick={() => swapDrawerScreen("dashboard", "Auth")}
+                            >
+                                <LogIn size={18} />
+                                <span>{tSidebar("auth")}</span>
+                            </button>
+                        )}
 
-                    {isSignedIn ? (
                         <button
                             className={mobileMenu.item}
-                            onClick={() => {
-                                setMobileMenuOpen(false);
-                                onSignOut();
-                            }}
+                            onClick={() => swapDrawerScreen("dashboard", "About")}
                         >
-                            <LogOut size={18} />
-                            <span>{tSidebar("logOut")}</span>
+                            <Info size={18} />
+                            <span>{tModal("tabs.About")}</span>
                         </button>
-                    ) : (
-                        <button
-                            className={mobileMenu.item}
-                            onClick={() => swapDrawerScreen("dashboard", "Auth")}
-                        >
-                            <LogIn size={18} />
-                            <span>{tSidebar("auth")}</span>
-                        </button>
-                    )}
-
-                    <button
-                        className={mobileMenu.item}
-                        onClick={() => swapDrawerScreen("dashboard", "About")}
-                    >
-                        <Info size={18} />
-                        <span>{tModal("tabs.About")}</span>
-                    </button>
+                    </div>
                 </ProjectNavbarMobileMenu>
             )}
 
