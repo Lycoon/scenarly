@@ -119,6 +119,36 @@
     white-space: nowrap;
 }
 
+/* Phones: email + plan on the first line, ID + date below. */
+@media (max-width: 767px) {
+    .resultRow {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "email badge"
+            "id date";
+        gap: 6px 12px;
+        padding: 12px 14px;
+    }
+
+    .email {
+        grid-area: email;
+    }
+
+    .id {
+        grid-area: id;
+    }
+
+    .badge {
+        grid-area: badge;
+        justify-self: end;
+    }
+
+    .date {
+        grid-area: date;
+        justify-self: end;
+    }
+}
+
 .empty {
     color: var(--secondary-text);
     font-family: var(--font-inter), sans-serif;
