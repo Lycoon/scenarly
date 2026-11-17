@@ -2,6 +2,9 @@ use std::sync::Mutex;
 
 use tauri::{Emitter, Manager};
 
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+mod apple_auth;
+
 /// Event carrying a `.scenarly` path the OS asked us to open. The frontend
 /// listens for it and routes the path into the merge-aware open flow.
 const OPEN_FILE_EVENT: &str = "scenarly://open-file";
@@ -278,7 +281,11 @@ pub fn run() {
             take_pending_open_files,
             allow_scratch_file,
             read_file_range,
-            write_file_at
+            write_file_at,
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
+            apple_auth::sign_in_with_apple,
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
+            apple_auth::start_web_auth_session
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

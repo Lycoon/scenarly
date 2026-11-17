@@ -9,9 +9,6 @@ import {
     Check,
     ChevronRight,
     History,
-    Info,
-    LogIn,
-    LogOut,
     Lock,
     Menu,
     Mic,
@@ -31,6 +28,7 @@ import SavesPanel from "./SavesPanel";
 import ProductionPanel from "./ProductionPanel";
 import ScreenplaySearch from "./ScreenplaySearch";
 import AnalyticsModal from "@components/analytics/AnalyticsModal";
+import DashboardNavList from "@components/dashboard/DashboardNavList";
 
 import navbar from "./ProjectNavbar.module.css";
 import mobileMenu from "./ProjectNavbarMobileMenu.module.css";
@@ -48,8 +46,6 @@ const emptySubscribe = () => () => {};
  */
 const ProjectNavbarMobile = () => {
     const t = useTranslations("navbar");
-    const tModal = useTranslations("modal");
-    const tSidebar = useTranslations("sidebar");
 
     const {
         closeDashboard,
@@ -61,7 +57,6 @@ const ProjectNavbarMobile = () => {
         userCtx,
         canUploadToCloud,
         dashboardMenu,
-        isSignedIn,
         projectId,
         isInProject,
         hasCloudPlan,
@@ -69,7 +64,7 @@ const ProjectNavbarMobile = () => {
         onTitleChange,
         onTitleBlur,
         backToProjects,
-        onSignOut,
+        onSignedOut,
     } = useProjectNavbar();
 
     const { setLeftSidebarOpen, setRightSidebarOpen, chromeHidden, mobileEditMode, setMobileEditMode } =
@@ -384,59 +379,20 @@ const ProjectNavbarMobile = () => {
                     <div className={mobileMenu.separator} />
 
                     {/* Dashboard settings — the modal drops its sidebar on phone, so
-                        this menu *is* its sections list; each row swaps the dashboard
-                        drawer in for this one on that tab, this drawer sliding out as
-                        that one slides in, the way the home dashboard slides between
-                        its own list and a section (see [DashboardContext].swapDrawerScreen). */}
-                    {dashboardMenu.map((section) => (
-                        <div key={section.group} className={mobileMenu.section}>
-                            <div className={mobileMenu.group_label}>{section.group}</div>
-                            {section.items.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    className={mobileMenu.item}
-                                    onClick={() => swapDrawerScreen("dashboard", tab.id)}
-                                >
-                                    {tab.icon}
-                                    <span>{tab.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    ))}
-
-                    {/* Set the sign in/out + About actions apart from the dashboard
-                        tab groups above, so they don't read as part of Preferences
-                        (mirrors the DashboardModal sidebar's footer separation). */}
-                    <div className={mobileMenu.separator} />
-
-                    {isSignedIn ? (
-                        <button
-                            className={mobileMenu.item}
-                            onClick={() => {
-                                setMobileMenuOpen(false);
-                                onSignOut();
-                            }}
-                        >
-                            <LogOut size={18} />
-                            <span>{tSidebar("logOut")}</span>
-                        </button>
-                    ) : (
-                        <button
-                            className={mobileMenu.item}
-                            onClick={() => swapDrawerScreen("dashboard", "Auth")}
-                        >
-                            <LogIn size={18} />
-                            <span>{tSidebar("auth")}</span>
-                        </button>
-                    )}
-
-                    <button
-                        className={mobileMenu.item}
-                        onClick={() => swapDrawerScreen("dashboard", "About")}
-                    >
-                        <Info size={18} />
-                        <span>{tModal("tabs.About")}</span>
-                    </button>
+                        this menu *is* its sections list, and renders the very same
+                        component; each row swaps the dashboard drawer in for this one
+                        on that tab, this drawer sliding out as that one slides in, the
+                        way the home dashboard slides between its own list and a
+                        section (see [DashboardContext].swapDrawerScreen). Wrapped so
+                        the drawer's flex gap doesn't land between the list and its
+                        footer, keeping the spacing identical to the dashboard's. */}
+                    <div>
+                        <DashboardNavList
+                            structure={dashboardMenu}
+                            onSelect={(tab) => swapDrawerScreen("dashboard", tab)}
+                            onSignedOut={onSignedOut}
+                        />
+                    </div>
                 </ProjectNavbarMobileMenu>
             )}
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import Link from "next/link";
+import AdminLink from "./AdminLink";
 import { Search } from "lucide-react";
 import { UserRole } from "../../src/generated/client/browser";
 import { Plan, PLAN_NAMES } from "@src/lib/plans";
@@ -73,7 +73,7 @@ export default function UserSearch() {
             {data && data.users.length > 0 && (
                 <div className={styles.resultList}>
                     {data.users.map((u) => (
-                        <Link key={u.id} href={`/admin/users/${u.id}`} className={styles.resultRow}>
+                        <AdminLink key={u.id} to={{ section: "users", id: u.id }} className={styles.resultRow}>
                             <span className={styles.email}>{u.email}</span>
                             <span className={styles.id}>{u.id}</span>
                             <span
@@ -88,7 +88,7 @@ export default function UserSearch() {
                                 {u.role === UserRole.ADMIN ? "Admin" : planLabel(u.subscriptions)}
                             </span>
                             <span className={styles.date}>{formatDate(u.createdAt)}</span>
-                        </Link>
+                        </AdminLink>
                     ))}
                 </div>
             )}

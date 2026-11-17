@@ -92,47 +92,6 @@
     color: var(--primary-text);
 }
 
-/* One tappable row in the menu. Its position:relative anchors the dropdown panels
- * (saves/production/read-aloud) that render inside it. */
-.item {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 14px;
-    width: 100%;
-    padding: 9px 12px;
-    border: none;
-    border-radius: 10px;
-    background: none;
-    color: var(--primary-text);
-    font-size: 0.95rem;
-    text-align: left;
-    cursor: pointer;
-}
-
-.item:hover,
-.item_active {
-    background-color: var(--secondary-hover);
-}
-
-/* Group heading above a run of dashboard tabs (Project / Preferences / Account). */
-.group_label {
-    padding: 10px 12px 2px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--secondary-text);
-    opacity: 0.7;
-}
-
-/* Anchors the dropdown panels (saves/production/read-aloud) rendered as siblings
- * of their trigger row. */
-.section {
-    position: relative;
-}
-
 .separator {
     height: 1px;
     background-color: var(--separator);

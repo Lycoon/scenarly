@@ -38,7 +38,7 @@
 
 .fields {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     gap: 16px 24px;
 }
 
@@ -94,6 +94,11 @@
     border-bottom: none;
 }
 
+.tableRow > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .tableHeader {
     background: var(--primary);
     color: var(--secondary-text);
@@ -134,4 +139,28 @@
 
 .error {
     color: var(--error);
+}
+
+@media (max-width: 767px) {
+    .container {
+        gap: 16px;
+    }
+
+    .card {
+        padding: 16px;
+    }
+
+    .cardTitle {
+        margin-bottom: 12px;
+    }
+
+    .tableRow {
+        gap: 10px;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .tableHeader {
+        font-size: 10px;
+    }
 }

@@ -38,7 +38,7 @@
 
 .fields {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     gap: 16px 24px;
 }
 
@@ -134,6 +134,11 @@
 
 .tableRow:last-child {
     border-bottom: none;
+}
+
+.tableRow > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .tableHeader {
@@ -235,4 +240,43 @@
 
 .actionBtnDanger {
     color: var(--error);
+}
+
+@media (max-width: 767px) {
+    .container {
+        gap: 16px;
+    }
+
+    .card {
+        padding: 16px;
+    }
+
+    .cardTitle {
+        margin-bottom: 12px;
+    }
+
+    .tableRow {
+        grid-template-columns: 1.4fr 1fr 1fr;
+        gap: 10px;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .tableHeader {
+        font-size: 10px;
+    }
+
+    /* Date and buttons share the full width instead of wrapping one per line. */
+    .grantRow > .field {
+        flex: 1 1 100%;
+    }
+
+    .dateInput {
+        width: 100%;
+    }
+
+    .actionBtn {
+        flex: 1;
+        padding: 10px 14px;
+    }
 }

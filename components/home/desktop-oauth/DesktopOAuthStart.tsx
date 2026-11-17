@@ -17,14 +17,22 @@ const ALLOWED_PROVIDERS = new Set(["google", "apple"]);
  * The desktop client opens this URL in the user's default browser with `?provider=...&nonce=...`.
  * We immediately hand off to NextAuth, asking it to redirect to /desktop-oauth/complete (carrying
  * the nonce) once the OAuth dance succeeds.
+ *
+ * The macOS and iOS apps open it in their own web sign-in sheet instead and add `&native=1`,
+ * which /desktop-oauth/complete reads back to know it has a sheet to close.
  */
 const DesktopOAuthStart = () => {
     const searchParams = useSearchParams();
     const provider = searchParams.get("provider");
     const nonce = searchParams.get("nonce");
+    const native = searchParams.get("native") === "1";
 
     useEffect(() => {
         if (!provider || !nonce || !ALLOWED_PROVIDERS.has(provider)) return;
+        // Kept in sessionStorage like the nonce below, and for the same reason. Cleared
+        // otherwise, so a browser tab reused after a sheet does not inherit its flag.
+        if (native) sessionStorage.setItem("desktop-oauth-native", "1");
+        else sessionStorage.removeItem("desktop-oauth-native");
         // Drop any pre-existing browser session before starting OAuth. If the browser
         // was previously signed in as user A and the OAuth account being linked here
         // resolves to user B, handle-login.ts throws OAuthAccountNotLinked because
@@ -37,7 +45,7 @@ const DesktopOAuthStart = () => {
             await signOut({ redirect: false });
             await signIn(provider, { callbackUrl });
         })();
-    }, [provider, nonce]);
+    }, [provider, nonce, native]);
 
     const invalid = !provider || !nonce || !ALLOWED_PROVIDERS.has(provider);
 

@@ -9,9 +9,11 @@
  * - Linux: ~/.local/share/com.tauri.dev/
  */
 
+import { invoke } from "@tauri-apps/api/core";
 import { StoreOptions } from "@tauri-apps/plugin-store";
 import { clientHeaders, noteUpdateRequired } from "./api-client";
 import { UPDATE_REQUIRED_STATUS } from "./client-version";
+import type { AppleNativeSignInBody } from "./utils/api-bodies";
 
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
@@ -69,15 +71,67 @@ export async function getCachedDesktopUser(): Promise<CachedDesktopUser | null> 
     return user ?? null;
 }
 
+const toHex = (bytes: Uint8Array) => Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+
+const randomNonce = () => toHex(crypto.getRandomValues(new Uint8Array(24)));
+
 /**
  * Generate a cryptographically random nonce for the OAuth bridge handshake.
  * The nonce identifies a single sign-in attempt across the desktop client and the
  * temporary in-memory bridge on the server.
  */
 export function generateBridgeNonce(): string {
-    const bytes = new Uint8Array(24);
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return randomNonce();
+}
+
+/** What the sign-in sheets of the Apple apps reject with when the user closes them (src-tauri/src/apple_auth.rs). */
+const SHEET_CANCELED = "canceled";
+
+/**
+ * Where /desktop-oauth/complete sends the in-app web sign-in sheet once the
+ * session is in the bridge. Nothing serves this URL: the sheet watches for
+ * its scheme and closes itself on the navigation.
+ */
+const NATIVE_OAUTH_CALLBACK_SCHEME = "scenarly";
+export const NATIVE_OAUTH_CALLBACK_URL = `${NATIVE_OAUTH_CALLBACK_SCHEME}://oauth-complete`;
+
+/**
+ * Run the system's Sign in with Apple sheet (macOS and iOS apps) and return
+ * what the server needs to check the outcome, or null when the user closed it.
+ *
+ * The nonce here is Apple's replay protection, unrelated to the bridge nonce
+ * above: Apple is given its SHA-256 and copies that into the identity token,
+ * and the server is given the nonce itself, so the token is only worth
+ * anything to whoever started this very sign-in.
+ */
+export async function requestAppleCredential(): Promise<AppleNativeSignInBody | null> {
+    const nonce = randomNonce();
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(nonce));
+
+    try {
+        const credential = await invoke<Omit<AppleNativeSignInBody, "nonce">>("sign_in_with_apple", {
+            nonceHash: toHex(new Uint8Array(digest)),
+        });
+        return { ...credential, nonce };
+    } catch (err) {
+        if (err === SHEET_CANCELED) return null;
+        throw err;
+    }
+}
+
+/**
+ * Open a page of the website in the app's own web sign-in sheet
+ * (ASWebAuthenticationSession, macOS and iOS apps). Resolves true once the page
+ * navigated to the callback URL, false when the user closed the sheet.
+ */
+export async function openWebAuthSession(url: string): Promise<boolean> {
+    try {
+        await invoke("start_web_auth_session", { url, callbackScheme: NATIVE_OAUTH_CALLBACK_SCHEME });
+        return true;
+    } catch (err) {
+        if (err === SHEET_CANCELED) return false;
+        throw err;
+    }
 }
 
 /**

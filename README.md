@@ -18,7 +18,7 @@
 
 - **Cloud Synchronization**
 - **Real-time Collaboration**
-- **Cross-platform** (Windows, MacOS, browser)
+- **Cross-platform** (Windows/macOS, Android/iOS, browser)
 - **Offline-first** (no account needed)
 - **Industry Formatting** (customizable layout, page breaks, dual dialogue)
 - **Compatibility Formats** (PDF, Fountain, Final Draft)

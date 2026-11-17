@@ -10,10 +10,10 @@ import { usePosterUrl } from "@src/lib/posters/use-poster-url";
 import { ProjectContext } from "@src/context/ProjectContext";
 import UploadButton from "@components/projects/UploadButton";
 import DangerZone from "./DangerZone";
-import { ArrowRight, Save } from "lucide-react";
+import { DangerZoneBack, DangerZoneOpen } from "../DangerZoneToggle";
+import { Save } from "lucide-react";
 import form from "./../../utils/Form.module.css";
 import styles from "./ProjectSettings.module.css";
-import dangerStyles from "./DangerZone.module.css";
 
 const ProjectSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; onDangerToggle: () => void }) => {
     const t = useTranslations("projectSettings");
@@ -115,7 +115,12 @@ const ProjectSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
     if (isLocalOnly && localLoading) return null;
 
     if (dangerOpen) {
-        return <DangerZone projectId={projectId} isLocalOnly={isLocalOnly} isOpen={true} />;
+        return (
+            <div className={styles.dangerView}>
+                <DangerZoneBack onClick={onDangerToggle} />
+                <DangerZone projectId={projectId} isLocalOnly={isLocalOnly} isOpen={true} />
+            </div>
+        );
     }
 
     return (
@@ -177,17 +182,10 @@ const ProjectSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
             </div>
 
             <div className={styles.formActions}>
+                <DangerZoneOpen label={t("dangerZoneTitle")} onClick={onDangerToggle} />
                 <button type="submit" className={`${styles.formBtn}`} disabled={loading || !isDirty || isReadOnly}>
                     <Save size={18} />
                     {t("saveChanges")}
-                </button>
-                <button
-                    type="button"
-                    className={dangerStyles.arrowBtn}
-                    onClick={onDangerToggle}
-                    title={t("dangerZoneTitle")}
-                >
-                    <ArrowRight size={16} />
                 </button>
             </div>
         </form>

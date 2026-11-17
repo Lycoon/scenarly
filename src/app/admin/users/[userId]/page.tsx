@@ -10,7 +10,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
     const { userId } = await params;
 
     return (
-        <AdminShell email={email} title="User detail">
+        <AdminShell email={email} section="users" title="User detail">
             <UserDetail userId={userId} />
         </AdminShell>
     );

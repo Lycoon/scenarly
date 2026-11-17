@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminRoute, adminSearch } from "@src/lib/admin-route";
+
 /**
  * Client-side navigation between the projects list (`/projects`) and an open
  * project (`/projects?projectId=…`). Both are the same route, differing only by
@@ -30,6 +32,8 @@ const replaceSearch = (search: string) => {
 const navigation = {
     goToProjects: () => replaceSearch(""),
     goToProject: (projectId: string) => replaceSearch(`?projectId=${projectId}`),
+    // In-app admin (Tauri shells only, see admin-route.ts).
+    goToAdmin: (route: AdminRoute) => replaceSearch(adminSearch(route)),
 };
 
 export const useAppNavigation = () => navigation;

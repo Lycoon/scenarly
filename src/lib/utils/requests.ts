@@ -1,6 +1,7 @@
 import { UserLanguage, UserSettings } from "./types";
 import { ApiResponse } from "./api-utils";
 import {
+    AppleNativeSignInBody,
     CreateProjectBody,
     UpdateProjectBody,
     UpdateRoleBody,
@@ -141,6 +142,14 @@ export const verifySignInCode = (body: VerifySignInCodeBody) => {
 
 export const submitDesktopToken = (nonce: string) => {
     return request(`/api/desktop/token`, "POST", { nonce });
+};
+
+/** The session token for a credential from the native Sign in with Apple sheet; null when the server refused it. */
+export const signInWithAppleCredential = async (body: AppleNativeSignInBody): Promise<string | null> => {
+    const res = await request(`/api/auth/apple/native`, "POST", body);
+    if (!res.ok) return null;
+    const { data } = (await res.json()) as ApiResponse<{ token: string }>;
+    return data?.token ?? null;
 };
 
 /* Subscription */

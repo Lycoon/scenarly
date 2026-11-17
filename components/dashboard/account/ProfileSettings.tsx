@@ -6,7 +6,7 @@ import { editUserInfo, deleteUser, requestDataExport, downloadDataExport } from 
 import { signOut } from "next-auth/react";
 import { isTauri } from "@tauri-apps/api/core";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Download, Trash2, Save, TriangleAlert } from "lucide-react";
+import { Download, Trash2, Save, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import form from "./../../utils/Form.module.css";
@@ -19,6 +19,7 @@ import { useDataExport, useUser } from "@src/lib/utils/hooks";
 import { isSubscriptionActive, UserSubscription } from "@src/lib/plans";
 import { saveBlob } from "@src/lib/utils/save-file";
 import { useLocale } from "@src/context/LocaleContext";
+import { DangerZoneBack, DangerZoneOpen } from "../DangerZoneToggle";
 
 const PRESET_COLORS = [
     "#ef4444", // red
@@ -208,133 +209,7 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
         }
     };
 
-    if (dangerOpen) {
-        return (
-            <>
-                <div className={styles.exportSection}>
-                    <div className={styles.exportContainer}>
-                        <div className={dangerStyles.dangerItem}>
-                            <div>
-                                <p className={form.label}>{t("exportData")}</p>
-                                <p className={dangerStyles.dangerDescription}>{t("exportDataDesc")}</p>
-                            </div>
-                            <button
-                                className={styles.exportBtn}
-                                onClick={handleRequestExport}
-                                disabled={isExportBlocked}
-                            >
-                                {exportLoading ? t("exportRequesting") : t("exportBtn")}
-                            </button>
-                        </div>
-                        {dataExport && dataExport.status !== "NONE" && (
-                            <div className={styles.exportStatus}>
-                                <span className={styles.exportStatusText}>
-                                    {dataExport.status === "PENDING" && t("exportStatePreparing")}
-                                    {dataExport.status === "READY" &&
-                                        t("exportStateReady", { date: exportExpiryDate })}
-                                    {dataExport.status === "EXPIRED" && t("exportStateExpired")}
-                                </span>
-                                {dataExport.status === "READY" && (
-                                    <button
-                                        className={styles.exportDownloadBtn}
-                                        onClick={handleDownloadExport}
-                                        disabled={downloadLoading}
-                                    >
-                                        <Download size={16} />
-                                        {downloadLoading ? t("exportDownloading") : t("exportDownload")}
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                    {exportMessage && (
-                        <div className={`${styles.message} ${styles[exportMessage.type]}`}>
-                            {exportMessage.text}
-                        </div>
-                    )}
-                </div>
-
-                <div className={dangerStyles.dangerContainer}>
-                    <div className={dangerStyles.dangerItem}>
-                        <div>
-                            <p className={`${form.label} ${dangerStyles.dangerLabel}`}>{t("deleteAccount")}</p>
-                            <p className={dangerStyles.dangerDescription}>{t("deleteAccountDesc")}</p>
-                        </div>
-                        <button className={dangerStyles.dangerBtn} onClick={() => setShowDeleteDialog(true)}>
-                            {t("deleteBtn")}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Portaled to <body> like the dashboard's other confirm dialogs, so the
-                    overlay isn't confined to .modal (see DashboardSidebar). */}
-                {showDeleteDialog &&
-                    createPortal(
-                        <div className={dangerStyles.overlay}>
-                            <div className={dangerStyles.modal}>
-                                <h2 className={dangerStyles.modalTitle}>{t("deleteModalTitle")}</h2>
-                                <p className={dangerStyles.modalDescription}>{t("deleteModalDesc")}</p>
-                                {hasLiveSubscription && (
-                                    <div className={styles.subscriptionWarning}>
-                                        <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
-                                        <span>{t("deleteSubscriptionWarning", { date: cloudExpiryDate })}</span>
-                                    </div>
-                                )}
-                                {hasLiveAppleSubscription && (
-                                    <div className={styles.subscriptionWarning}>
-                                        <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
-                                        <span>{t("deleteSubscriptionWarningApple")}</span>
-                                    </div>
-                                )}
-                                <label
-                                    htmlFor="delete-confirm"
-                                    className={dangerStyles.modalDescription}
-                                    style={{ display: "block" }}
-                                >
-                                    {t("deleteConfirmLabel")}
-                                    <strong style={{ display: "block", marginTop: 6 }}>{confirmPhrase}</strong>
-                                </label>
-                                <input
-                                    id="delete-confirm"
-                                    type="text"
-                                    className={`${sharedStyles.input} ${dangerStyles.modalInput}`}
-                                    value={deleteConfirmInput}
-                                    onChange={(e) => setDeleteConfirmInput(e.target.value)}
-                                    autoComplete="off"
-                                />
-                                {deleteError && (
-                                    <div className={`${styles.message} ${styles.error}`}>{deleteError}</div>
-                                )}
-                                <div className={dangerStyles.modalActions}>
-                                    <button
-                                        className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
-                                        onClick={handleDeleteAccount}
-                                        disabled={deleteLoading || deleteConfirmInput !== confirmPhrase}
-                                    >
-                                        <Trash2 size={16} color="#ffffff" />
-                                        {deleteLoading ? t("deleting") : t("deleteAccountBtn")}
-                                    </button>
-                                    <button
-                                        className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
-                                        onClick={() => {
-                                            setShowDeleteDialog(false);
-                                            setDeleteConfirmInput("");
-                                            setDeleteError(null);
-                                        }}
-                                        disabled={deleteLoading}
-                                    >
-                                        {tCommon("cancel")}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>,
-                        document.body,
-                    )}
-            </>
-        );
-    }
-
-    return (
+    const profileForm = (
         <div className={sharedStyles.settingsForm}>
             {/* Email */}
             <div className={sharedStyles.formGroup}>
@@ -409,19 +284,136 @@ const ProfileSettings = ({ dangerOpen, onDangerToggle }: { dangerOpen: boolean; 
             {message && <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>}
 
             <div className={sharedStyles.formActions}>
+                <DangerZoneOpen label={t("accountAndData")} onClick={onDangerToggle} />
                 <button onClick={handleSave} className={`${sharedStyles.formBtn}`} disabled={loading || !isDirty}>
                     <Save size={18} />
                     {loading ? t("saving") : tCommon("save")}
                 </button>
-                <button
-                    type="button"
-                    className={dangerStyles.arrowBtn}
-                    onClick={onDangerToggle}
-                    title={t("dangerZoneTitle")}
-                >
-                    <ArrowRight size={16} />
-                </button>
             </div>
+        </div>
+    );
+
+    if (!dangerOpen) return profileForm;
+
+    // The tab's second view: what someone can do with the account itself rather
+    // than the profile, which is to take their data away or to delete it all.
+    return (
+        <div className={sharedStyles.dangerView}>
+            <DangerZoneBack onClick={onDangerToggle} />
+
+            <div className={styles.accountCard}>
+                <div className={styles.accountRow}>
+                    <div>
+                        <p className={form.label}>{t("exportData")}</p>
+                        <p className={styles.accountDescription}>{t("exportDataDesc")}</p>
+                    </div>
+                    <button className={styles.accountBtn} onClick={handleRequestExport} disabled={isExportBlocked}>
+                        {exportLoading ? t("exportRequesting") : t("exportBtn")}
+                    </button>
+                </div>
+                {dataExport && dataExport.status !== "NONE" && (
+                    <div className={styles.exportStatus}>
+                        <span className={styles.exportStatusText}>
+                            {dataExport.status === "PENDING" && t("exportStatePreparing")}
+                            {dataExport.status === "READY" && t("exportStateReady", { date: exportExpiryDate })}
+                            {dataExport.status === "EXPIRED" && t("exportStateExpired")}
+                        </span>
+                        {dataExport.status === "READY" && (
+                            <button
+                                className={styles.exportDownloadBtn}
+                                onClick={handleDownloadExport}
+                                disabled={downloadLoading}
+                            >
+                                <Download size={16} />
+                                {downloadLoading ? t("exportDownloading") : t("exportDownload")}
+                            </button>
+                        )}
+                    </div>
+                )}
+                {exportMessage && (
+                    <div className={`${styles.message} ${styles[exportMessage.type]} ${styles.accountMessage}`}>
+                        {exportMessage.text}
+                    </div>
+                )}
+
+                <div className={styles.accountRow}>
+                    <div>
+                        <p className={`${form.label} ${dangerStyles.dangerLabel}`}>{t("deleteAccount")}</p>
+                        <p className={styles.accountDescription}>{t("deleteAccountDesc")}</p>
+                    </div>
+                    <button
+                        className={`${styles.accountBtn} ${styles.accountBtnDanger}`}
+                        onClick={() => setShowDeleteDialog(true)}
+                    >
+                        {t("deleteAccount")}
+                    </button>
+                </div>
+            </div>
+
+            {/* Portaled to <body> like the dashboard's other confirm dialogs, so the
+                overlay isn't confined to .modal (see DashboardSidebar). */}
+            {showDeleteDialog &&
+                createPortal(
+                    <div className={dangerStyles.overlay}>
+                        <div className={dangerStyles.modal}>
+                            <h2 className={dangerStyles.modalTitle}>{t("deleteModalTitle")}</h2>
+                            <p className={dangerStyles.modalDescription}>{t("deleteModalDesc")}</p>
+                            {hasLiveSubscription && (
+                                <div className={styles.subscriptionWarning}>
+                                    <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
+                                    <span>{t("deleteSubscriptionWarning", { date: cloudExpiryDate })}</span>
+                                </div>
+                            )}
+                            {hasLiveAppleSubscription && (
+                                <div className={styles.subscriptionWarning}>
+                                    <TriangleAlert size={16} className={styles.subscriptionWarningIcon} />
+                                    <span>{t("deleteSubscriptionWarningApple")}</span>
+                                </div>
+                            )}
+                            <label
+                                htmlFor="delete-confirm"
+                                className={dangerStyles.modalDescription}
+                                style={{ display: "block" }}
+                            >
+                                {t("deleteConfirmLabel")}
+                                <strong style={{ display: "block", marginTop: 6 }}>{confirmPhrase}</strong>
+                            </label>
+                            <input
+                                id="delete-confirm"
+                                type="text"
+                                className={`${sharedStyles.input} ${dangerStyles.modalInput}`}
+                                value={deleteConfirmInput}
+                                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                                autoComplete="off"
+                            />
+                            {deleteError && (
+                                <div className={`${styles.message} ${styles.error}`}>{deleteError}</div>
+                            )}
+                            <div className={dangerStyles.modalActions}>
+                                <button
+                                    className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
+                                    onClick={handleDeleteAccount}
+                                    disabled={deleteLoading || deleteConfirmInput !== confirmPhrase}
+                                >
+                                    <Trash2 size={16} color="#ffffff" />
+                                    {deleteLoading ? t("deleting") : t("deleteAccountBtn")}
+                                </button>
+                                <button
+                                    className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
+                                    onClick={() => {
+                                        setShowDeleteDialog(false);
+                                        setDeleteConfirmInput("");
+                                        setDeleteError(null);
+                                    }}
+                                    disabled={deleteLoading}
+                                >
+                                    {tCommon("cancel")}
+                                </button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body,
+                )}
         </div>
     );
 };

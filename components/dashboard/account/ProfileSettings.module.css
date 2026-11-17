@@ -119,49 +119,97 @@
     border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-/* GDPR data export — sits above the danger zone with the same row geometry,
-   but neutral colors: requesting a copy of your data is not a danger action. */
-.exportSection {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-.exportContainer {
-    border: 2px dashed var(--separator);
+/* The account card, the Profile tab's second view: data export and account
+   deletion as two rows of one box. Drawn like the form's inputs (same fill,
+   border and radius) so it reads as part of the tab, and both rows share one
+   layout — label and description on the left, one pill on the right — so that
+   the only thing setting deletion apart is its color. */
+.accountCard {
+    border: 1px solid var(--separator);
     border-radius: 8px;
+    background-color: var(--secondary);
     overflow: hidden;
 }
 
-.exportBtn {
-    display: inline-flex;
+.accountRow {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background-color: var(--primary-text);
-    color: var(--main-bg);
-    border: none;
-    padding: 8px 16px;
+    gap: 24px;
+    padding: 16px;
+}
+
+.accountRow:not(:first-child) {
+    border-top: 1px solid var(--separator);
+}
+
+.accountDescription {
+    margin: 4px 0 0 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--secondary-text);
+}
+
+/* One width for both pills, so their left edges line up down the card, and no
+   wrapping: a label broken over two lines is what made the row look crowded. */
+.accountBtn {
+    flex-shrink: 0;
+    min-width: 150px;
+    min-height: 36px;
+    padding: 8px 18px;
+    border: 2px solid var(--tertiary);
     border-radius: 40px;
-    cursor: pointer;
+    background-color: transparent;
+    color: var(--primary-text);
     font-weight: 600;
-    transition: opacity 0.2s;
-    min-width: 110px;
-    margin-left: 30px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
-.exportBtn:hover {
-    opacity: 0.85;
+.accountBtn:hover {
+    background-color: var(--secondary-hover);
 }
 
-.exportBtn:disabled {
+.accountBtn:disabled {
     opacity: 0.5;
     cursor: default;
 }
 
+.accountBtn:disabled:hover {
+    background-color: transparent;
+}
+
+.accountBtnDanger {
+    border-color: var(--error);
+    color: var(--error);
+}
+
+.accountBtnDanger:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* The outcome of an export request, tucked under the export row. */
+.accountMessage {
+    margin: 0 16px 16px;
+}
+
+.exportStatus + .accountMessage {
+    margin-top: 16px;
+}
+
+/* Phone: the drawer is too narrow for text and a pill side by side, so the
+   pill drops under its description and takes the row's width. */
+@media (max-width: 767px) {
+    .accountRow {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+}
+
 /* Where the export currently stands: preparing, ready to download, or lapsed.
-   Sits under the request row, inside the same dashed container. */
+   Sits under the request row, inside the account card. */
 .exportStatus {
     display: flex;
     justify-content: space-between;

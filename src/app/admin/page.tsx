@@ -8,7 +8,7 @@ export default async function AdminHomePage() {
     const email = session?.user?.email ?? "";
 
     return (
-        <AdminShell email={email} title="Overview" subtitle="Platform-wide metrics">
+        <AdminShell email={email} section="overview" title="Overview" subtitle="Platform-wide metrics">
             <StatsCards />
             <BuildUsage />
         </AdminShell>

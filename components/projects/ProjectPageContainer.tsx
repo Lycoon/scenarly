@@ -30,8 +30,6 @@ import LibrarySidebar from "./LibrarySidebar";
 
 import page from "./ProjectPageContainer.module.css";
 
-const ADMIN_WEB_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "https://scenarly.com"}/admin`;
-
 interface ProjectPageContainerProps {
     // Sidebar drawer state is owned by the page so the navbar burger can open it.
     // Desktop: a permanent column (open). Phone: an overlay drawer toggled here.
@@ -44,7 +42,7 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
     const isPhone = useIsPhone();
     const { hasCloudPlan, isLoading: isPlanLoading } = useHasCloudPlan();
     const { projects, isLoading, mutate } = useProjectMemberships();
-    const { goToProject, goToProjects } = useAppNavigation();
+    const { goToProject, goToProjects, goToAdmin } = useAppNavigation();
     const router = useRouter();
     const params = useSearchParams();
     const importAccept = useImportAccept();
@@ -237,13 +235,14 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
                         {importError}
                     </p>
                 )}
-                {/* Community and admin live on the web app only: the Tauri shells
-                    open them in the browser, the web app navigates. */}
+                {/* Community lives on the web app only: the Tauri shells open it in
+                    the browser, the web app navigates. Admin is rendered in-app by
+                    the projects page on the shells (see admin-route.ts). */}
                 <div className={page.sidebar_footer}>
                     {user?.role === UserRole.ADMIN && (
                         <button
                             className={page.action_btn}
-                            onClick={() => (isTauri() ? openExternal(ADMIN_WEB_URL) : router.push("/admin"))}
+                            onClick={() => (isTauri() ? goToAdmin({ section: "overview" }) : router.push("/admin"))}
                         >
                             <ShieldCheck size={16} />
                             <span>{t("adminBtn")}</span>
