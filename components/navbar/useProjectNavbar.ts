@@ -10,7 +10,6 @@ import { useCookieUser, useHasCloudPlan, useProjectIdFromUrl } from "@src/lib/ut
 import { useDashboardMenu } from "@components/dashboard/useDashboardMenu";
 import { editProject } from "@src/lib/utils/requests";
 import { useAppNavigation } from "@src/lib/utils/navigation";
-import { signOutAccount } from "@src/lib/utils/auth-actions";
 import { APP_TITLE } from "@src/lib/utils/constants";
 
 /**
@@ -34,7 +33,7 @@ export const useProjectNavbar = () => {
     const { hasCloudPlan } = useHasCloudPlan();
     const { user } = useCookieUser();
     const projectId = useProjectIdFromUrl();
-    const { structure: dashboardMenu, isSignedIn } = useDashboardMenu();
+    const { structure: dashboardMenu } = useDashboardMenu();
     const { goToProjects } = useAppNavigation();
 
     const [projectTitle, setProjectTitle] = useState<string>("");
@@ -144,9 +143,10 @@ export const useProjectNavbar = () => {
         goToProjects();
     };
 
-    // Sign out via the shared flow, then land on the home/landing screen.
-    const onSignOut = async () => {
-        await signOutAccount();
+    // After a sign-out confirmed in the burger menu ([DashboardNavList] runs the
+    // shared flow), close the menu and land on the home/landing screen.
+    const onSignedOut = () => {
+        setMobileMenuOpen(false);
         goToProjects();
     };
 
@@ -165,11 +165,10 @@ export const useProjectNavbar = () => {
         isInProject,
         canUploadToCloud,
         dashboardMenu,
-        isSignedIn,
         projectTitle,
         onTitleChange,
         onTitleBlur,
         backToProjects,
-        onSignOut,
+        onSignedOut,
     };
 };

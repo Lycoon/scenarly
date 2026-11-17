@@ -92,69 +92,10 @@
     color: var(--primary-text);
 }
 
-/* One tappable row in the menu. Its position:relative anchors the dropdown panels
- * (saves/production/read-aloud) that render inside it.
- *
- * Row, group-label and footer styling mirror the dashboard drawer's sections list
- * (DashboardModal .navItem / .groupLabel / .navMenuFooter): on a project this menu
- * *is* that list, and outside a project the dashboard renders its own, so the two
- * must look identical. No hover state, same as .navItem — on touch a :hover sticks
- * to the last tapped row and reads as a selection. */
-.item {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--secondary-text);
-    font-size: 0.9rem;
-    text-align: left;
-    cursor: pointer;
-}
-
-/* The label sits in a <span>, which globals.css paints --primary-text directly,
- * so it would ignore the row's colour above (the dashboard's .navItem has a bare
- * text node and inherits it). */
-.item span {
-    color: inherit;
-}
-
-/* Group heading above a run of dashboard tabs (Project / Preferences / Account).
- * margin-top is .groupLabel's 14px less the drawer's 4px flex gap. */
-.group_label {
-    font-family: var(--font-inter);
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: var(--secondary-text);
-    opacity: 0.6;
-    margin: 10px 0 5px;
-    padding: 0 12px;
-}
-
-/* Anchors the dropdown panels (saves/production/read-aloud) rendered as siblings
- * of their trigger row. */
-.section {
-    position: relative;
-}
-
 .separator {
     height: 1px;
     background-color: var(--separator);
     margin: 8px 0;
-}
-
-/* Sign in/out + About, set apart from the tab groups the same way as the
- * dashboard drawer's footer (margin-top is its 24px less the 4px flex gap). */
-.footer {
-    margin-top: 20px;
-    padding-top: 12px;
-    border-top: 1px solid var(--separator);
 }
 
 /* Editable title row at the top of the menu. The field is the row's only child —
