@@ -1,16 +1,12 @@
 "use client";
 
-import { ReactNode, useContext, useState } from "react";
-import { createPortal } from "react-dom";
+import { ReactNode, useContext } from "react";
 import { DashboardContext } from "@src/context/DashboardContext";
-import { Info, LogIn, LogOut, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import styles from "./DashboardModal.module.css";
-import dangerStyles from "./project/DangerZone.module.css";
-import modal from "../utils/ModalBtn.module.css";
-import { signOutAccount } from "@src/lib/utils/auth-actions";
-import { useCookieUser } from "@src/lib/utils/hooks";
+import DashboardNavList from "./DashboardNavList";
 
 export type Category =
     | "General"
@@ -47,104 +43,26 @@ interface SidebarMenuProps {
 
 const SidebarMenu = ({ structure, activeTab, onTabChange }: SidebarMenuProps) => {
     const { closeDashboard } = useContext(DashboardContext);
-    const { user, isLoading: isUserLoading } = useCookieUser();
     const t = useTranslations("sidebar");
-    const tModal = useTranslations("modal");
     const tNav = useTranslations("navbar");
-    const [showLogOutConfirm, setShowLogOutConfirm] = useState(false);
-
-    const onLogOut = async () => {
-        await signOutAccount();
-        closeDashboard();
-    };
 
     return (
-        <>
-            {/* Portal to <body>: .modal's will-change: transform makes it the containing
-                block for fixed descendants, which would confine this overlay to the
-                drawer on phone. Only ever open after a click, so `document` exists. */}
-            {showLogOutConfirm &&
-                createPortal(
-                    <div className={dangerStyles.overlay} onClick={() => setShowLogOutConfirm(false)}>
-                        <div className={dangerStyles.modal} onClick={(e) => e.stopPropagation()}>
-                            <h2 className={dangerStyles.modalTitle}>{t("logOutConfirmTitle")}</h2>
-                            <p className={dangerStyles.modalDescription}>{t("logOutConfirmDesc")}</p>
-                            <div className={dangerStyles.modalActions}>
-                                <button
-                                    className={`${modal.modalBtn} ${modal.modalBtnDanger}`}
-                                    onClick={onLogOut}
-                                >
-                                    {t("logOutConfirmBtn")}
-                                </button>
-                                <button
-                                    className={`${modal.modalBtn} ${modal.modalBtnCancel}`}
-                                    onClick={() => setShowLogOutConfirm(false)}
-                                >
-                                    {t("logOutCancelBtn")}
-                                </button>
-                            </div>
-                        </div>
-                    </div>,
-                    document.body,
-                )}
-            <aside className={styles.sidebar}>
-                {/* The close button only shows on phone, where this list is a
-                    full-drawer screen with no content header to close from. */}
-                <div className={styles.sidebarHeader}>
-                    <h2 className={styles.sidebarTitle}>{t("title")}</h2>
-                    <button
-                        className={styles.sidebarClose}
-                        onClick={closeDashboard}
-                        aria-label={tNav("close")}
-                    >
-                        <X size={18} />
-                    </button>
-                </div>
-                <nav className={styles.navMenu}>
-                    {structure.map((section) => (
-                        <div key={section.group}>
-                            <h4 className={styles.groupLabel}>{section.group}</h4>
-                            {section.items.map((item) => (
-                                <button
-                                    key={item.id}
-                                    className={`${styles.navItem} ${activeTab === item.id ? styles.active : ""}`}
-                                    onClick={() => onTabChange(item.id)}
-                                >
-                                    <span className={styles.iconWrapper}>{item.icon}</span>
-                                    {item.label}
-                                </button>
-                            ))}
-                        </div>
-                    ))}
-                </nav>
-                <div className={`${styles.navMenu} ${styles.navMenuFooter}`}>
-                    {/* While the user query is in flight, leave the slot empty rather than
-                        rendering a "Sign in" button against an unknown auth state — clicking
-                        it during loading races the SWR resolution and ends up on Profile. */}
-                    {isUserLoading ? null : user ? (
-                        <button className={styles.navItem} onClick={() => setShowLogOutConfirm(true)}>
-                            <LogOut size={18} />
-                            {t("logOut")}
-                        </button>
-                    ) : (
-                        <button
-                            className={`${styles.navItem} ${activeTab === "Auth" ? styles.active : ""}`}
-                            onClick={() => onTabChange("Auth")}
-                        >
-                            <LogIn size={18} />
-                            {t("auth")}
-                        </button>
-                    )}
-                    <button
-                        className={`${styles.navItem} ${activeTab === "About" ? styles.active : ""}`}
-                        onClick={() => onTabChange("About")}
-                    >
-                        <Info size={18} />
-                        {tModal("tabs.About")}
-                    </button>
-                </div>
-            </aside>
-        </>
+        <aside className={styles.sidebar}>
+            {/* The close button only shows on phone, where this list is a
+                full-drawer screen with no content header to close from. */}
+            <div className={styles.sidebarHeader}>
+                <h2 className={styles.sidebarTitle}>{t("title")}</h2>
+                <button className={styles.sidebarClose} onClick={closeDashboard} aria-label={tNav("close")}>
+                    <X size={18} />
+                </button>
+            </div>
+            <DashboardNavList
+                structure={structure}
+                activeTab={activeTab}
+                onSelect={onTabChange}
+                onSignedOut={closeDashboard}
+            />
+        </aside>
     );
 };
 
