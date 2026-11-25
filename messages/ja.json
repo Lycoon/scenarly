@@ -45,6 +45,8 @@
     "titlePage": "タイトルページ",
     "synced": "同期済み",
     "noConnection": "接続なし",
+    "openElsewhere": "別のデバイスで開いています",
+    "openElsewhereHint": "クリックまたは入力するとここで続行できます",
     "reconnecting": "再接続中...",
     "syncToCloud": "同期",
     "storageProject": "このプロジェクト",

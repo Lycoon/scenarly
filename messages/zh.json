@@ -45,6 +45,8 @@
     "titlePage": "扉页",
     "synced": "已同步",
     "noConnection": "无连接",
+    "openElsewhere": "已在其他设备上打开",
+    "openElsewhereHint": "点击或输入即可在此继续",
     "reconnecting": "正在重新连接...",
     "syncToCloud": "同步",
     "storageProject": "本项目",

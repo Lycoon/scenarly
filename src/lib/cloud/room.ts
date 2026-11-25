@@ -181,13 +181,16 @@ export class ProjectRoom extends DurableObject {
         // clean up, and broadcastAwarenessRequest counts wrongly.
         const hibernatedSockets = this.ctx.getWebSockets();
         for (const ws of hibernatedSockets) {
+            // A socket still finishing its close is not a session anymore.
+            if (ws.readyState !== 1) continue;
             const attachment = ws.deserializeAttachment() as
-                | { userId: string; role?: string; clientIds: number[] }
+                | { userId: string; connectionId?: string; role?: string; clientIds: number[] }
                 | null;
             if (!attachment) continue;
             this.sessions.set(ws, {
                 clientIds: new Set(attachment.clientIds),
                 userId: attachment.userId,
+                connectionId: attachment.connectionId,
                 // Older attachments may not have a role; default to VIEWER
                 // (read-only) to fail safe — the client will reconnect with a
                 // fresh JWT carrying the correct role on the next message.
@@ -262,9 +265,38 @@ export class ProjectRoom extends DurableObject {
         if (!session) return;
         ws.serializeAttachment({
             userId: session.userId,
+            connectionId: session.connectionId,
             role: session.role,
             clientIds: Array.from(session.clientIds),
         });
+    }
+
+    /**
+     * Forget sockets that are gone or about to be closed, and tell the rest of
+     * the room their users left. A no-op for sockets already forgotten, so every
+     * path that ends a connection can call it.
+     */
+    private dropSessions(sockets: WebSocket[]): void {
+        const clientIds: number[] = [];
+        for (const socket of sockets) {
+            const session = this.sessions.get(socket);
+            if (!session) continue;
+            clientIds.push(...session.clientIds);
+            this.sessions.delete(socket);
+            // Only if it is still the user's active entry, not a newer one
+            if (this.userConnections.get(session.userId) === socket) {
+                this.userConnections.delete(session.userId);
+            }
+            try {
+                // Its attachment must not bring the session back after hibernation
+                socket.serializeAttachment(null);
+            } catch {
+                // Socket might already be closed
+            }
+        }
+        if (clientIds.length === 0) return;
+        awarenessProtocol.removeAwarenessStates(this.awareness, clientIds, null);
+        this.broadcastAwarenessRemoval(clientIds);
     }
 
     /**
@@ -451,7 +483,6 @@ export class ProjectRoom extends DurableObject {
      */
     private cleanupStaleAwareness(): void {
         const now = Date.now();
-        const staleClientIds: number[] = [];
         const staleSockets: WebSocket[] = [];
 
         this.sessions.forEach((session, socket) => {
@@ -459,56 +490,26 @@ export class ProjectRoom extends DurableObject {
 
             if (timeSinceActivity > STALE_AWARENESS_TIMEOUT_MS) {
                 console.log(JSON.stringify({ event: "stale_session", userId: session.userId, timeSinceActivity }));
-                staleClientIds.push(...session.clientIds);
                 staleSockets.push(socket);
             }
         });
 
-        if (staleClientIds.length > 0) {
-            // Step 1: Remove stale sessions from both maps FIRST so that:
-            //   a) The subsequent broadcast only reaches genuinely active clients.
-            //   b) When socket.close() triggers webSocketClose(), sessions.get(ws)
-            //      returns undefined and the handler becomes a safe no-op — no
-            //      double-removal of awareness states or duplicate broadcasts.
-            for (const socket of staleSockets) {
-                const session = this.sessions.get(socket);
-                if (session) {
-                    // Only delete from userConnections if this is the active entry
-                    if (this.userConnections.get(session.userId) === socket) {
-                        this.userConnections.delete(session.userId);
-                    }
+        if (staleSockets.length === 0) return;
+
+        // Drop them before closing, so the broadcast only reaches live clients
+        // and webSocketClose finds nothing left to do.
+        this.dropSessions(staleSockets);
+        for (const socket of staleSockets) {
+            try {
+                if (socket.readyState === 1) {
+                    socket.close(4000, "Connection stale");
                 }
-                this.sessions.delete(socket);
+            } catch {
+                // Socket might already be closed
             }
-
-            // Step 2: Remove stale awareness states from the server-side doc.
-            awarenessProtocol.removeAwarenessStates(this.awareness, staleClientIds, null);
-
-            // Step 3: Broadcast removal only to remaining active clients
-            // (stale sockets are already gone from this.sessions, so broadcast
-            //  won't try to send to them).
-            const encoder = encoding.createEncoder();
-            encoding.writeVarUint(encoder, 1);
-            encoding.writeVarUint8Array(
-                encoder,
-                awarenessProtocol.encodeAwarenessUpdate(this.awareness, staleClientIds),
-            );
-            this.broadcast(encoding.toUint8Array(encoder), undefined);
-
-            // Step 4: Close the stale sockets last — webSocketClose will find
-            // no session entry and exit immediately.
-            for (const socket of staleSockets) {
-                try {
-                    if (socket.readyState === 1) {
-                        socket.close(4000, "Connection stale");
-                    }
-                } catch {
-                    // Socket might already be closed
-                }
-            }
-
-            console.log(JSON.stringify({ event: "cleaned_stale_awareness", count: staleClientIds.length }));
         }
+
+        console.log(JSON.stringify({ event: "cleaned_stale_awareness", count: staleSockets.length }));
     }
 
     /**
@@ -528,7 +529,7 @@ export class ProjectRoom extends DurableObject {
         // to storage (`persistProjectId` would). This is the whole point of the
         // tombstone: cloud tokens stay valid for an hour after the project row
         // is deleted, and the WebSocket gate only checks the token — so a client
-        // that happened to be idle-disconnected during the purge would otherwise
+        // that happened to be paused during the purge would otherwise
         // reconnect, find a blank room, and re-upload its local copy of the
         // project into storage that nothing can ever reach or reclaim again.
         if (this.purgedAt !== null) {
@@ -613,19 +614,8 @@ export class ProjectRoom extends DurableObject {
             // Close existing connection for this user
             const socket = this.userConnections.get(userId);
             if (socket) {
-                // Clean up awareness before closing
-                const session = this.sessions.get(socket);
-                if (session && session.clientIds.size > 0) {
-                    const clientIds = Array.from(session.clientIds);
-                    awarenessProtocol.removeAwarenessStates(this.awareness, clientIds, null);
-                    this.broadcastAwarenessRemoval(clientIds, socket);
-                }
-
+                this.dropSessions([socket]);
                 socket.close(4003, "You have been removed from this project.");
-                if (this.userConnections.get(userId) === socket) {
-                    this.userConnections.delete(userId);
-                }
-                this.sessions.delete(socket);
             }
 
             this.ctx.storage.sql.exec("INSERT OR IGNORE INTO blacklist (user_id) VALUES (?);", userId);
@@ -721,17 +711,48 @@ export class ProjectRoom extends DurableObject {
                 return new Response("Project temporarily unavailable", { status: 503 });
             }
 
-            // Clean up any existing connection for this user (e.g., stale tab).
-            // This ensures awareness states don't duplicate for the same user.
+            const pair = new WebSocketPair();
+            const [client, server] = Object.values(pair);
+
+            // Refuse with a close code, which the client can tell apart. Accepted
+            // the plain way: a hibernatable socket closed before this response
+            // is sent never delivers the close, and its client would believe
+            // itself connected.
+            const refuse = (code: number, reason: string): Response => {
+                server.accept();
+                server.close(code, reason);
+                return new Response(null, { status: 101, webSocket: client });
+            };
+
+            // Stale-client gate: reject clients whose bundle is older than
+            // the doc's schema version. Sending sync to them would let them
+            // write back the pre-migration shape and corrupt the doc.
+            const clientVersionParam = url.searchParams.get("clientVersion");
+            const clientVersion = clientVersionParam !== null ? Number(clientVersionParam) : NaN;
+            if (Number.isFinite(clientVersion) && clientVersion < this.docVersion) {
+                console.warn(JSON.stringify({ event: "client_rejected_stale", clientVersion, docVersion: this.docVersion }));
+                return refuse(4006, `Stale client: update to access v${this.docVersion}`);
+            }
+
+            // One live connection per user and project: the device used last wins.
+            // A client only reconnecting on its own (`resume`) was not just used,
+            // so it yields to another device that is. It takes the project over
+            // once its user acts there.
+            const connectionId = url.searchParams.get("clientId") ?? undefined;
             const existingSocket = this.userConnections.get(userId);
-            if (existingSocket) {
-                const existingSession = this.sessions.get(existingSocket);
-                if (existingSession && existingSession.clientIds.size > 0) {
-                    const clientIds = Array.from(existingSession.clientIds);
-                    awarenessProtocol.removeAwarenessStates(this.awareness, clientIds, null);
-                    this.broadcastAwarenessRemoval(clientIds, existingSocket);
+            const existingSession = existingSocket && this.sessions.get(existingSocket);
+            if (existingSocket && existingSession) {
+                const isOtherDevice =
+                    existingSession.connectionId !== undefined && existingSession.connectionId !== connectionId;
+                const isLive =
+                    existingSocket.readyState === 1 &&
+                    Date.now() - existingSession.lastActivity <= STALE_AWARENESS_TIMEOUT_MS;
+                if (url.searchParams.get("resume") === "1" && isOtherDevice && isLive) {
+                    console.log(JSON.stringify({ event: "resume_yielded", userId }));
+                    return refuse(4001, "Open on another device");
                 }
-                this.sessions.delete(existingSocket);
+
+                this.dropSessions([existingSocket]);
                 try {
                     if (existingSocket.readyState === 1) {
                         existingSocket.close(4001, "Session replaced by new connection");
@@ -741,28 +762,13 @@ export class ProjectRoom extends DurableObject {
                 }
             }
 
-            const pair = new WebSocketPair();
-            const [client, server] = Object.values(pair);
-
             this.ctx.acceptWebSocket(server);
-
-            // Stale-client gate: reject clients whose bundle is older than
-            // the doc's schema version. Sending sync to them would let them
-            // write back the pre-migration shape and corrupt the doc.
-            const clientVersionParam = url.searchParams.get("clientVersion");
-            const clientVersion = clientVersionParam !== null ? Number(clientVersionParam) : NaN;
-            if (Number.isFinite(clientVersion) && clientVersion < this.docVersion) {
-                console.warn(JSON.stringify({ event: "client_rejected_stale", clientVersion, docVersion: this.docVersion }));
-                try {
-                    server.close(4006, `Stale client: update to access v${this.docVersion}`);
-                } catch {}
-                return new Response(null, { status: 101, webSocket: client });
-            }
 
             // Initialize session
             this.sessions.set(server, {
                 clientIds: new Set(),
                 userId,
+                connectionId,
                 role,
                 lastActivity: Date.now(),
             });
@@ -1110,7 +1116,7 @@ export class ProjectRoom extends DurableObject {
      *
      * What survives is a tombstone and an alarm. Closing the live sockets only
      * reaches clients that happen to be connected, and the client disconnects
-     * itself after 10 minutes idle while its cloud token stays valid for an hour, so
+     * itself after 10 minutes hidden while its cloud token stays valid for an hour, so
      * for that hour a reconnect could still land here and re-upload the project
      * we just deleted. The tombstone refuses those; the alarm then deletes the
      * tombstone once no valid token can exist anymore, leaving nothing behind.
@@ -1243,6 +1249,10 @@ export class ProjectRoom extends DurableObject {
             return;
         }
 
+        // Replaced, refused or cleaned up: whatever is still in flight comes from
+        // a socket with no session, hence no role to hold its writes against.
+        if (!this.sessions.has(ws)) return;
+
         if (!(message instanceof ArrayBuffer)) return;
 
         const fullMessage = new Uint8Array(message);
@@ -1274,30 +1284,19 @@ export class ProjectRoom extends DurableObject {
     }
 
     async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
-        const session = this.sessions.get(ws);
-
-        if (session) {
-            console.log(JSON.stringify({ event: "websocket_close", userId: session.userId }));
-
-            if (session.clientIds.size > 0) {
-                const clientIds = Array.from(session.clientIds);
-
-                // Remove awareness states
-                awarenessProtocol.removeAwarenessStates(this.awareness, clientIds, null);
-
-                // Broadcast removal to remaining clients
-                this.broadcastAwarenessRemoval(clientIds, ws);
-
-                console.log(JSON.stringify({ event: "awareness_removed", clientIds }));
-            }
-
-            // Only delete from userConnections if this is the active entry
-            if (this.userConnections.get(session.userId) === ws) {
-                this.userConnections.delete(session.userId);
-            }
+        // Answer the close: at this compatibility date the runtime doesn't, and
+        // the client would wait for it, then report an abnormal closure (1006).
+        // Codes such as 1005 and 1006 describe a closure and can't be sent.
+        try {
+            const canSend = code === 1000 || (code >= 3000 && code <= 4999);
+            ws.close(canSend ? code : 1000, reason);
+        } catch {
+            // Socket might already be closed
         }
 
-        this.sessions.delete(ws);
+        const session = this.sessions.get(ws);
+        if (session) console.log(JSON.stringify({ event: "websocket_close", userId: session.userId }));
+        this.dropSessions([ws]);
         console.log(JSON.stringify({ event: "session_count_update", count: this.sessions.size }));
     }
 
@@ -1316,17 +1315,24 @@ export class ProjectRoom extends DurableObject {
                 error: errStr
             }));
         }
-        // The close handler will clean up
+        // A failed socket may never reach webSocketClose
+        this.dropSessions([ws]);
     }
 
     /**
-     * Broadcast awareness removal for specific client IDs
+     * Broadcast awareness removal for specific client IDs.
+     *
+     * A room woken from hibernation has an empty awareness, and a removal can't
+     * be encoded for a client it knows no clock for. Those are left out: the
+     * other clients expire them by themselves after 30 seconds.
      */
-    private broadcastAwarenessRemoval(clientIds: number[], excludeSocket?: WebSocket): void {
+    private broadcastAwarenessRemoval(clientIds: number[]): void {
+        const known = clientIds.filter((id) => this.awareness.meta.has(id));
+        if (known.length === 0) return;
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, 1);
-        encoding.writeVarUint8Array(encoder, awarenessProtocol.encodeAwarenessUpdate(this.awareness, clientIds));
-        this.broadcast(encoding.toUint8Array(encoder), excludeSocket);
+        encoding.writeVarUint8Array(encoder, awarenessProtocol.encodeAwarenessUpdate(this.awareness, known));
+        this.broadcast(encoding.toUint8Array(encoder), undefined);
     }
 
     /**

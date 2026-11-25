@@ -26,6 +26,9 @@ type WebsocketProviderOptions = {
     disableBc?: boolean;
 };
 
+/** A fresh cloud token; `forbidden` when the user no longer has access to the project. */
+export type CloudTokenFetcher = () => Promise<{ token: string | null; forbidden: boolean }>;
+
 type WSInternals = {
     _updateHandler: (update: Uint8Array, origin: unknown) => void;
     _awarenessUpdateHandler: (
@@ -36,6 +39,7 @@ type WSInternals = {
     ws: WebSocket | null;
     bcconnected: boolean;
     bcChannel: string;
+    wsUnsuccessfulReconnects: number;
 };
 
 export class ThrottledWebsocketProvider extends WebsocketProvider {
@@ -88,7 +92,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     private flushInterval: ReturnType<typeof setInterval> | null = null;
     private lastFlushTime: number = 0; // Milliseconds (Date.now())
     private lastMessageTime: number = 0; // Milliseconds (Date.now())
-    private userIdleTimer: ReturnType<typeof setTimeout> | null = null;
+    private hiddenTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Cap the queue so a long disconnect can't grow it without bound. The
     // local Yjs doc is the source of truth — on reconnect, syncStep1/2 will
@@ -99,27 +103,27 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     private readonly SOLO_USER_UPDATE_MS = 1000; // 1s when alone
     private readonly MULTI_USER_UPDATE_MS = 200; // 200ms with others
     private readonly MAX_SILENCE_DURATION_MS = 20000; // 20s max silence before ping
-    private readonly MAX_IDLE_DURATION_MS = 10 * 60 * 1000; // 10 minutes idle timeout
+    private readonly MAX_HIDDEN_DURATION_MS = 10 * 60 * 1000; // Disconnect after 10 minutes hidden
+    private readonly TOKEN_REFRESH_TIMEOUT_MS = 5000; // How long a returning user waits for a fresh token
     private readonly FLUSH_CHECK_INTERVAL_MS = 100; // Check flush every 100ms
 
-    private readonly ACTIVITY_EVENTS = ["mousedown", "mousemove", "keydown", "touchstart", "scroll"];
-
-    // Reconnection state
-    private reconnectAttempts: number = 0;
-    private readonly MAX_RECONNECT_ATTEMPTS: number = 10;
-    private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     private isDestroyed: boolean = false;
 
     // Track our own state
     private readonly localClientId: number;
-    private isIdleDisconnected: boolean = false;
+    private isPaused: boolean = false;
+    private isResuming: boolean = false;
     private isSessionReplaced: boolean = false;
     private isStaleClient: boolean = false;
     private isKicked: boolean = false;
+    private isDocumentRestored: boolean = false;
     private lastKnownUserCount: number = 1;
 
     // Store userInfo so we can restore it on reconnection
     private userInfo: { name: string; color: string; userId?: string } | null = null;
+
+    private readonly fetchToken: CloudTokenFetcher | null;
+    private pendingTokenRefresh: Promise<boolean> | null = null;
 
     // Close codes from server
     private readonly CLOSE_CODE_SESSION_REPLACED = 4001;
@@ -128,7 +132,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     private readonly CLOSE_CODE_STALE_CLIENT_VERSION = 4006;
 
     // Bound event handlers for proper cleanup
-    private boundResetIdleTimer: () => void;
+    private boundHandleUserInput: (event: Event) => void;
     private boundHandleVisibility: () => void;
     private boundHandleOnline: () => void;
 
@@ -136,7 +140,10 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
         serverUrl: string,
         room: string,
         doc: Y.Doc,
-        options: WebsocketProviderOptions & { userInfo?: { name: string; color: string; userId?: string } },
+        options: WebsocketProviderOptions & {
+            userInfo?: { name: string; color: string; userId?: string };
+            fetchToken?: CloudTokenFetcher;
+        },
     ) {
         // Pass connect: false to prevent immediate connection
         // We'll connect after setting up user info.
@@ -147,14 +154,17 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
             ...(options.params ?? {}),
             clientVersion: String(CURRENT_PROJECT_VERSION),
         };
-        super(serverUrl, room, doc, { ...options, params, connect: false } as unknown as ConstructorParameters<
+        // A visible client retries for as long as it is open, so let the backoff
+        // grow well past y-websocket's 2.5s: an outage must not be hammered.
+        super(serverUrl, room, doc, { maxBackoffTime: 30_000, ...options, params, connect: false } as unknown as ConstructorParameters<
             typeof WebsocketProvider
         >[3]);
 
         this.localClientId = doc.clientID;
-        this.boundResetIdleTimer = this.resetUserIdleTimer.bind(this);
+        this.fetchToken = options.fetchToken ?? null;
+        this.boundHandleUserInput = this.handleUserInput.bind(this);
         this.boundHandleVisibility = this.handleVisibilityChange.bind(this);
-        this.boundHandleOnline = this.handleWakeUp.bind(this, "online");
+        this.boundHandleOnline = this.handleOnline.bind(this);
         this.lastFlushTime = Date.now();
         this.lastMessageTime = Date.now();
 
@@ -221,10 +231,11 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
 
         // Handle connection status changes
         this.on("status", this.onStatusChange);
+        this.on("connection-error", this.onConnectionError);
 
         // Start background processes
         this.startFlushLoop();
-        this.setupIdleListeners();
+        this.setupPresenceListeners();
 
         // Hook into WebSocket close events to detect session replacement
         this.setupCloseHandler();
@@ -240,18 +251,15 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
      */
     private onStatusChange = (event: { status: string }) => {
         if (event.status === "connected") {
-            this.reconnectAttempts = 0;
-            this.isIdleDisconnected = false;
-            this.isSessionReplaced = false;
             this.lastMessageTime = Date.now();
 
-            // Restore user info if it was lost during reconnection
-            // y-websocket may clear awareness state internally during reconnect
-            const localState = this.awareness.getLocalState();
-            if (this.userInfo && !localState?.user) {
-                const currentState = localState || {};
-                this.awareness.setLocalState({ ...currentState, user: this.userInfo });
-            }
+            // Until its user acts, any later reconnection is this client's own doing
+            this.setAutomaticReconnect(true);
+
+            // Set our state again even if it survived the disconnect: the room may
+            // have removed it meanwhile, and only takes it back with a newer clock.
+            const localState = this.awareness.getLocalState() ?? {};
+            this.awareness.setLocalState(this.userInfo ? { ...localState, user: this.userInfo } : localState);
 
             // Queue and send our awareness update
             this.awarenessQueue.add(this.localClientId);
@@ -269,27 +277,26 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
         let currentWs: WebSocket | null = null;
 
         const checkAndHookWs = () => {
-            // Don't hook if session was already replaced, rejected as stale, or kicked
-            if (this.isSessionReplaced || this.isStaleClient || this.isKicked) return;
-
             const ws = (this as unknown as WSInternals).ws;
             if (ws && ws !== currentWs) {
                 currentWs = ws;
                 const originalClose = ws.onclose;
                 ws.onclose = (event: CloseEvent) => {
-                    if (event.code === this.CLOSE_CODE_SESSION_REPLACED) {
+                    // A socket we already moved on from says nothing about the current one
+                    const isCurrent = (this as unknown as WSInternals).ws === ws;
+                    if (isCurrent && event.code === this.CLOSE_CODE_SESSION_REPLACED) {
                         this.handleSessionReplaced();
                         return;
                     }
-                    if (event.code === this.CLOSE_CODE_KICKED) {
+                    if (isCurrent && event.code === this.CLOSE_CODE_KICKED) {
                         this.handleKicked();
                         return;
                     }
-                    if (event.code === this.CLOSE_CODE_DOCUMENT_RESTORED) {
+                    if (isCurrent && event.code === this.CLOSE_CODE_DOCUMENT_RESTORED) {
                         this.handleDocumentRestored();
                         return;
                     }
-                    if (event.code === this.CLOSE_CODE_STALE_CLIENT_VERSION) {
+                    if (isCurrent && event.code === this.CLOSE_CODE_STALE_CLIENT_VERSION) {
                         this.handleStaleClientVersion();
                         return;
                     }
@@ -302,13 +309,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
 
         // Hook into new WebSocket connections when status changes
         this.on("status", (event: { status: string }) => {
-            // Only hook when connecting, not when already replaced, stale-rejected, or kicked
-            if (
-                event.status === "connecting" &&
-                !this.isSessionReplaced &&
-                !this.isStaleClient &&
-                !this.isKicked
-            ) {
+            if (event.status === "connecting") {
                 setTimeout(checkAndHookWs, 0);
             }
         });
@@ -318,16 +319,13 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     }
 
     /**
-     * Handle session replacement - stop all reconnection attempts
+     * Handle session replacement: the user opened the project on another device
+     * (or tab), which holds their one connection now. Stop reconnecting until
+     * they act here again (see handleUserInput and handleVisibilityChange).
      */
     private handleSessionReplaced(): void {
         console.log("[WS] Session was replaced by another connection. Stopping reconnection.");
         this.isSessionReplaced = true;
-
-        if (this.reconnectTimeout) {
-            clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = null;
-        }
 
         this.shouldConnect = false;
         this.disconnect();
@@ -340,11 +338,8 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
      */
     private handleDocumentRestored(): void {
         console.log("[WS] Document was restored. Notifying consumer to reload.");
-
-        if (this.reconnectTimeout) {
-            clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = null;
-        }
+        // Reconnecting before the reload would push the pre-restore document back
+        this.isDocumentRestored = true;
 
         this.shouldConnect = false;
         this.disconnect();
@@ -359,11 +354,6 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     private handleKicked(): void {
         console.log("[WS] User was kicked from the project. Stopping reconnection.");
         this.isKicked = true;
-
-        if (this.reconnectTimeout) {
-            clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = null;
-        }
 
         this.shouldConnect = false;
         this.disconnect();
@@ -382,11 +372,6 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     private handleStaleClientVersion(): void {
         console.warn("[WS] Client version is stale. Notifying consumer to prompt update.");
         this.isStaleClient = true;
-
-        if (this.reconnectTimeout) {
-            clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = null;
-        }
 
         this.shouldConnect = false;
         this.disconnect();
@@ -436,287 +421,197 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
         this.awareness.setLocalState({ ...currentState, user: userInfo });
     }
 
+    /** Use a newer token from the next connection on. */
+    public updateToken(newToken: string): void {
+        this.params = { ...this.params, token: newToken };
+    }
+
+    /** Whether nothing holds this client back from being connected. */
+    private get mayConnect(): boolean {
+        return (
+            !this.isDestroyed &&
+            !this.isPaused &&
+            !this.isSessionReplaced &&
+            !this.isKicked &&
+            !this.isStaleClient &&
+            !this.isDocumentRestored
+        );
+    }
+
     /**
-     * Update the authentication token.
-     * @param newToken The new JWT token
-     * @param forceReconnect Whether to immediately disconnect and reconnect using the new token (default: true)
+     * Tell the room whether the next connection is the client's own doing. Such
+     * a connection yields to a live one on another of the user's devices, while
+     * one the user caused takes over from it.
      */
-    public async updateToken(newToken: string, forceReconnect: boolean = true): Promise<void> {
-        if (this.isDestroyed) {
-            console.warn("[WS] Cannot update token on destroyed provider");
-            return;
-        }
+    private setAutomaticReconnect(isAutomatic: boolean): void {
+        const params = { ...this.params };
+        delete params.resume;
+        this.params = isAutomatic ? { ...params, resume: "1" } : params;
+    }
 
-        if (this.isSessionReplaced) {
-            console.warn("[WS] Cannot update token - session was replaced");
-            return;
-        }
-
-        // Snapshot current params so we can roll back if reconnect fails.
-        const previousParams = { ...this.params };
-
-        // Update params with new token
-        this.params = {
-            ...this.params,
-            token: newToken,
-        };
-
-        if (forceReconnect) {
-            console.log("[WS] Updating token and reconnecting...");
+    /**
+     * Fetch a new token and use it from the next connection on. One at a time:
+     * concurrent callers share the request.
+     *
+     * @returns whether connecting is still worth trying: false once the user
+     * has lost access. A failed request keeps the current token.
+     */
+    private refreshToken(): Promise<boolean> {
+        const { fetchToken } = this;
+        if (!fetchToken) return Promise.resolve(true);
+        this.pendingTokenRefresh ??= (async () => {
             try {
-                await this.reconnect();
+                const { token, forbidden } = await fetchToken();
+                if (this.isDestroyed) return false;
+                if (forbidden) {
+                    this.handleKicked();
+                    return false;
+                }
+                if (token) this.updateToken(token);
             } catch (e) {
-                // Restore original params — the old token stays in effect so that
-                // a future updateToken() call or reconnect attempt can succeed.
-                this.params = previousParams;
-                console.warn("[WS] Failed to update token, params restored to previous state", e);
-                throw e;
+                console.warn("[WS] Failed to refresh token:", e);
+            } finally {
+                this.pendingTokenRefresh = null;
             }
-        }
+            return true;
+        })();
+        return this.pendingTokenRefresh;
     }
 
     /**
-     * Reconnect the WebSocket without destroying the provider.
-     * Uses the current params (including any updated token).
+     * A connection attempt failed, possibly over an expired token. y-websocket
+     * keeps retrying by itself and picks the new token up.
      */
-    public reconnect(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            if (this.isDestroyed) {
-                reject(new Error("Provider is destroyed"));
-                return;
-            }
+    private onConnectionError = (): void => {
+        // Closing a socket that is still connecting errors too, so this also
+        // runs right after we stopped on purpose.
+        if (!this.mayConnect || !this.shouldConnect) return;
+        void this.refreshToken();
+    };
 
-            if (this.isSessionReplaced) {
-                reject(new Error("Session was replaced by another connection"));
-                return;
-            }
-
-            try {
-                // Clean up awareness before disconnecting (notifies other clients we're leaving)
-                this.cleanupLocalAwareness();
-
-                // Disconnect existing connection if any
-                if (this.wsconnected) {
-                    this.disconnect();
-                }
-
-                // Restore user info after cleanup (it will also be restored in onStatusChange)
-                if (this.userInfo) {
-                    const currentState = this.awareness.getLocalState() || {};
-                    this.awareness.setLocalState({ ...currentState, user: this.userInfo });
-                }
-
-                // Clear any pending reconnect
-                if (this.reconnectTimeout) {
-                    clearTimeout(this.reconnectTimeout);
-                    this.reconnectTimeout = null;
-                }
-
-                // Set up connection listeners
-                const cleanup = () => {
-                    this.off("status", statusHandler);
-                    this.off("connection-error", onError);
-                };
-
-                const statusHandler = (e: { status: string }) => {
-                    if (e.status === "connected") {
-                        // Clear the timeout only here — on actual success — so that
-                        // an intermediate "connecting" event doesn't silently disarm
-                        // the timeout and leave the promise permanently unresolved.
-                        clearTimeout(timeoutId);
-                        cleanup();
-                        resolve();
-                    }
-                };
-
-                const onError = (err: unknown) => {
-                    clearTimeout(timeoutId);
-                    cleanup();
-                    reject(err);
-                };
-
-                this.on("status", statusHandler);
-                this.on("connection-error", onError);
-
-                // Timeout after 10 seconds; only disarmed by success/error above.
-                const timeoutId = setTimeout(() => {
-                    cleanup();
-                    reject(new Error("Connection timeout"));
-                }, 10000);
-
-                // Attempt to connect
-                this.connect();
-            } catch (e) {
-                console.warn("[WS] Failed to reconnect provider", e);
-                reject(e);
-            }
-        });
+    /** Drop the current connection or attempt, if any, and connect again now. */
+    private reconnect(): void {
+        if (!this.mayConnect) return;
+        // Plain connect() is a no-op while an attempt is pending, even a hung one.
+        this.disconnect();
+        (this as unknown as WSInternals).wsUnsuccessfulReconnects = 0;
+        this.connect();
     }
 
     /**
-     * Attempt to reconnect with exponential backoff.
-     * Called automatically on connection errors.
+     * Connect after a pause or a replacement, now that the user is back.
+     *
+     * The token is renewed first: it may have expired, and it carries the role
+     * the user had when it was issued, while role changes are only pushed to
+     * connected clients.
      */
-    public scheduleReconnect(): void {
-        if (this.isDestroyed || this.reconnectTimeout || this.isIdleDisconnected || this.isSessionReplaced) {
+    private async resume(): Promise<void> {
+        if (this.isResuming || this.isDestroyed || this.isKicked || this.isStaleClient || this.isDocumentRestored) {
             return;
         }
-
-        if (this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
-            console.error("[WS] Max reconnection attempts reached");
-            return;
+        this.isResuming = true;
+        try {
+            const canConnect = await Promise.race([
+                this.refreshToken(),
+                new Promise<boolean>((resolve) => setTimeout(() => resolve(true), this.TOKEN_REFRESH_TIMEOUT_MS)),
+            ]);
+            if (!canConnect) return;
+            this.isPaused = false;
+            this.isSessionReplaced = false;
+            this.setAutomaticReconnect(false);
+            this.reconnect();
+        } finally {
+            this.isResuming = false;
         }
-
-        // Exponential backoff: 1s, 2s, 4s, 8s, up to 30s max
-        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-        this.reconnectAttempts++;
-
-        console.log(`[WS] Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
-
-        this.reconnectTimeout = setTimeout(() => {
-            this.reconnectTimeout = null;
-            if (!this.isDestroyed && !this.isIdleDisconnected && !this.isSessionReplaced) {
-                this.connect();
-            }
-        }, delay);
     }
 
     /**
-     * Set up activity listeners for idle detection
+     * Follow whether the user is there: the page being shown or hidden, the
+     * network coming back, and input (to take over from another device).
      */
-    private setupIdleListeners(): void {
+    private setupPresenceListeners(): void {
         if (typeof window === "undefined") return;
 
-        this.ACTIVITY_EVENTS.forEach((event) => {
-            window.addEventListener(event, this.boundResetIdleTimer, { passive: true });
-        });
-
+        // Capturing, so that no component can keep the event from us.
+        window.addEventListener("pointerdown", this.boundHandleUserInput, { passive: true, capture: true });
+        window.addEventListener("keydown", this.boundHandleUserInput, { passive: true, capture: true });
         document.addEventListener("visibilitychange", this.boundHandleVisibility);
         window.addEventListener("online", this.boundHandleOnline);
 
-        // Start the idle timer
-        this.resetUserIdleTimer();
+        if (document.visibilityState === "hidden") this.startHiddenTimer();
+    }
+
+    private startHiddenTimer(): void {
+        this.stopHiddenTimer();
+        this.hiddenTimer = setTimeout(() => this.pause(), this.MAX_HIDDEN_DURATION_MS);
+    }
+
+    private stopHiddenTimer(): void {
+        if (!this.hiddenTimer) return;
+        clearTimeout(this.hiddenTimer);
+        this.hiddenTimer = null;
     }
 
     /**
-     * Reset the idle timer on user activity
-     * If we were idle-disconnected, attempt to reconnect
+     * Disconnect because the page has been hidden for long. A visible page stays
+     * connected for as long as it is open, whether its user types or just reads.
      */
-    private resetUserIdleTimer(): void {
-        if (this.isDestroyed || this.isSessionReplaced) return;
+    private pause(): void {
+        this.hiddenTimer = null;
+        // A suspended app runs its timers late, once it is back on screen.
+        if (document.visibilityState !== "hidden" || !this.mayConnect) return;
 
-        // If we were idle-disconnected and user is now active, reconnect
-        if (this.isIdleDisconnected) {
-            this.isIdleDisconnected = false;
-            if (!this.wsconnected) {
-                console.log("[WS] User active again after idle disconnect. Reconnecting...");
-                this.reconnectAttempts = 0;
-                // Use reconnect() which properly tears down any lingering WebSocket
-                // before creating a new one. Plain connect() is a no-op when
-                // the old ws is still in CLOSING state.
-                this.reconnect().catch((err) => {
-                    console.warn("[WS] Failed to reconnect after idle:", err);
-                    this.scheduleReconnect();
-                });
-            }
-        }
-
-        // Clear existing timer
-        if (this.userIdleTimer) {
-            clearTimeout(this.userIdleTimer);
-            this.userIdleTimer = null;
-        }
-
-        // Set new idle timer
-        this.userIdleTimer = setTimeout(() => {
-            this.handleIdleTimeout();
-        }, this.MAX_IDLE_DURATION_MS);
-    }
-
-    /**
-     * Handle idle timeout - disconnect to save resources.
-     * Must also handle the case where the connection was already lost
-     * (e.g. server stale-cleanup closed it) — otherwise isIdleDisconnected
-     * is never set and y-websocket keeps retrying in the background.
-     */
-    private handleIdleTimeout(): void {
-        if (this.isDestroyed) return;
-
-        console.log(
-            `[WS] User inactive for ${this.MAX_IDLE_DURATION_MS / 60_000} minutes. Closing connection to save resources.`,
-        );
-
-        // Mark as idle-disconnected so we don't auto-reconnect
-        this.isIdleDisconnected = true;
-
-        // Cancel any pending reconnects first
-        if (this.reconnectTimeout) {
-            clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = null;
-        }
+        console.log("[WS] Hidden for too long. Closing connection to save resources.");
+        this.isPaused = true;
 
         if (this.wsconnected) {
-            // Clean up awareness state before disconnecting
+            // Both reach the server: a socket sends what it holds before closing
             this.cleanupLocalAwareness();
-            // Flush any pending updates
             this.flush();
         }
 
-        // disconnect() sets shouldConnect = false, which stops y-websocket's
-        // built-in reconnect loop even if we're already disconnected.
+        // Also stops y-websocket's own reconnect loop, when already disconnected
         this.disconnect();
     }
 
-    /**
-     * Force a reconnect when the page becomes visible again after being hidden.
-     */
     private handleVisibilityChange(): void {
-        if (document.visibilityState !== "visible") return;
-        this.handleWakeUp("visibility");
-    }
+        if (this.isDestroyed) return;
+        if (document.visibilityState === "hidden") {
+            // The page may be suspended or killed before the flush loop runs again
+            if (this.wsconnected) this.flush();
+            this.startHiddenTimer();
+            return;
+        }
 
-    /**
-     * Reconnect after wake (visibility restored or network online).
-     *
-     * Visibility/online return is a strong "user is back" signal — strong
-     * enough that we treat it the same as user input and reset the idle
-     * state. Previously we bailed out for idle-disconnected sessions, which
-     * left the user offline (no presence, no incoming updates) until they
-     * happened to type or move the mouse.
-     */
-    private handleWakeUp(source: string): void {
-        if (this.isDestroyed || this.isSessionReplaced) return;
-
-        // resetUserIdleTimer clears isIdleDisconnected and triggers a
-        // reconnect when we were idle, so it covers that path.
-        const wasIdleDisconnected = this.isIdleDisconnected;
-        this.resetUserIdleTimer();
-        if (wasIdleDisconnected) return;
-
-        if (!this.wsconnected) {
-            console.log(`[WS] Reconnecting after wake (${source})...`);
-            this.reconnectAttempts = 0;
-            this.reconnect().catch(() => this.scheduleReconnect());
+        this.stopHiddenTimer();
+        if (this.isPaused || this.isSessionReplaced) {
+            void this.resume();
+        } else if (!this.wsconnected && !this.isResuming) {
+            this.reconnect();
         }
     }
 
-    /**
-     * Remove activity listeners
-     */
-    private cleanupIdleListeners(): void {
+    /** The network is back. Not a sign of the user: a pause or replacement stands. */
+    private handleOnline(): void {
+        if (!this.wsconnected && !this.isResuming) this.reconnect();
+    }
+
+    /** The user acts here again: take over from the device that replaced this one. */
+    private handleUserInput(event: Event): void {
+        if (!this.isSessionReplaced) return;
+        // A modifier alone is usually on its way to another window
+        if (["Meta", "Control", "Alt", "Shift"].includes((event as KeyboardEvent).key)) return;
+        void this.resume();
+    }
+
+    private cleanupPresenceListeners(): void {
         if (typeof window === "undefined") return;
 
-        this.ACTIVITY_EVENTS.forEach((event) => {
-            window.removeEventListener(event, this.boundResetIdleTimer);
-        });
-
+        window.removeEventListener("pointerdown", this.boundHandleUserInput, { capture: true });
+        window.removeEventListener("keydown", this.boundHandleUserInput, { capture: true });
         document.removeEventListener("visibilitychange", this.boundHandleVisibility);
         window.removeEventListener("online", this.boundHandleOnline);
-
-        if (this.userIdleTimer) {
-            clearTimeout(this.userIdleTimer);
-            this.userIdleTimer = null;
-        }
+        this.stopHiddenTimer();
     }
 
     /**
@@ -758,6 +653,10 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
         // Skip the queue entirely to save bandwidth and keep the WS quiet.
         const ydoc = this.doc as { isReadOnly?: boolean };
         if (ydoc.isReadOnly) return;
+
+        // An edit the cloud lacks must get there, even if another device of the
+        // user is connected by then: don't yield to it.
+        if (!this.wsconnected) this.setAutomaticReconnect(false);
 
         this.updateQueue.push(update);
         // Cap queue length on long disconnects. The local doc still holds
@@ -915,13 +814,6 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
     }
 
     /**
-     * Check if idle-disconnected (waiting for user activity)
-     */
-    public get isIdle(): boolean {
-        return this.isIdleDisconnected;
-    }
-
-    /**
      * Check if session was replaced by another connection (same user connected elsewhere)
      */
     public get wasSessionReplaced(): boolean {
@@ -941,14 +833,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
             this.flushInterval = null;
         }
 
-        // Cancel pending reconnects
-        if (this.reconnectTimeout) {
-            clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = null;
-        }
-
-        // Clean up idle listeners
-        this.cleanupIdleListeners();
+        this.cleanupPresenceListeners();
 
         // Clean up awareness
         this.cleanupLocalAwareness();
@@ -960,6 +845,7 @@ export class ThrottledWebsocketProvider extends WebsocketProvider {
         this.doc.off("update", this.onThrottledUpdate);
         this.awareness.off("update", this.onThrottledAwareness);
         this.off("status", this.onStatusChange);
+        this.off("connection-error", this.onConnectionError);
 
         // Call parent destroy
         super.destroy();

@@ -45,6 +45,8 @@
     "titlePage": "Strona tytułowa",
     "synced": "Zsynchronizowano",
     "noConnection": "Brak połączenia",
+    "openElsewhere": "Otwarte na innym urządzeniu",
+    "openElsewhereHint": "Kliknij lub zacznij pisać, aby kontynuować tutaj",
     "reconnecting": "Łączenie...",
     "syncToCloud": "Synchronizuj",
     "storageProject": "Ten projekt",

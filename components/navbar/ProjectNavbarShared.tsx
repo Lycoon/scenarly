@@ -9,6 +9,7 @@ import {
     CloudOff,
     CloudUpload,
     FileText,
+    MonitorSmartphone,
     Save,
     Redo2,
     TriangleAlert,
@@ -226,7 +227,7 @@ const SaveTargetsBody = ({
 }) => {
     const t = useTranslations("navbar");
     const format = useFormatter();
-    const { connectionStatus, projectTitle, project, cloudLock } = useContext(ProjectContext);
+    const { connectionStatus, isSessionReplaced, projectTitle, project, cloudLock } = useContext(ProjectContext);
     const { openDashboard } = useContext(DashboardContext);
     const { keepLocalCopy, isCopying } = useKeepLocalCopy();
     const isLocked = hasCloud && !!cloudLock;
@@ -243,7 +244,7 @@ const SaveTargetsBody = ({
 
     const CLOUD_STATUS: Record<ConnectionStatus, string> = {
         connected: t("synced"),
-        disconnected: t("noConnection"),
+        disconnected: isSessionReplaced ? t("openElsewhere") : t("noConnection"),
         connecting: t("reconnecting"),
     };
     const cloudTone: TargetTone = !hasCloud
@@ -428,7 +429,7 @@ interface SaveTargetsProps {
  * own actions.
  */
 export const SaveTargets = ({ hasCloud, canUploadToCloud, onUploadToCloud }: SaveTargetsProps) => {
-    const { connectionStatus, cloudLock } = useContext(ProjectContext);
+    const { connectionStatus, isSessionReplaced, cloudLock } = useContext(ProjectContext);
     const projectId = useProjectIdFromUrl();
     const isTouch = useIsTouch();
     const [open, setOpen] = useState(false);
@@ -527,6 +528,9 @@ export const SaveTargets = ({ hasCloud, canUploadToCloud, onUploadToCloud }: Sav
             // as long as they keep the project open.
             if (cloudLock) {
                 return <Cloud style={{ color: TONE_COLOR.warn }} className={navbar.status_icon} />;
+            }
+            if (isSessionReplaced) {
+                return <MonitorSmartphone style={{ color: "var(--warning)" }} className={navbar.status_icon} />;
             }
             if (connectionStatus === "connecting") {
                 return <WifiSync style={{ color: "var(--warning)" }} className={navbar.status_icon} />;

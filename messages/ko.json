@@ -45,6 +45,8 @@
     "titlePage": "타이틀 페이지",
     "synced": "동기화됨",
     "noConnection": "연결 없음",
+    "openElsewhere": "다른 기기에서 열려 있음",
+    "openElsewhereHint": "클릭하거나 입력하면 여기서 계속합니다",
     "reconnecting": "재연결 중...",
     "syncToCloud": "동기화",
     "storageProject": "이 프로젝트",
