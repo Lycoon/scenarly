@@ -30,6 +30,8 @@ export default defineConfig({
             // mirrors tsconfig "@*": ["./*"] — Next.js webpack handles this automatically
             "@src": path.resolve(__dirname, "./src"),
             "@node_modules": path.resolve(__dirname, "./node_modules"),
+            // only exists in the Workers runtime; lets the cloud room be tested here
+            "cloudflare:workers": path.resolve(__dirname, "./src/tests/helpers/cloudflare-workers.ts"),
         },
     },
 });

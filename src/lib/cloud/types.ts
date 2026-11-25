@@ -39,6 +39,8 @@ export const PURGE_TOMBSTONE_GRACE_MS = CLOUD_TOKEN_TTL_MS + 60 * 60 * 1000;
 export interface SessionInfo {
     clientIds: Set<number>;
     userId: string;
+    /** The client's `clientId` param: tells a device coming back from another device of the same user. */
+    connectionId?: string;
     /** Project role from the JWT — used to gate doc writes (VIEWER is read-only). */
     role: string;
     lastActivity: number;

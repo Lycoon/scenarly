@@ -99,6 +99,8 @@ export interface ProjectYjsState {
      */
     isSynced: boolean;
     connectionStatus: ConnectionStatus;
+    /** The user is connected from another device, which this one gave way to. */
+    isSessionReplaced: boolean;
     users: CollaboratorInfo[];
 }
 
@@ -662,6 +664,10 @@ const initCloudProvider = async (entry: SessionEntry): Promise<void> => {
         const cloudProvider = new ThrottledWebsocketProvider(cloudWsUrl, entry.projectId, entry.state, {
             params: { token, clientId: entry.state.clientID.toString() },
             userInfo: entry.currentUserInfo,
+            fetchToken: async () => {
+                const { token, status } = await getCloudToken(entry.projectId);
+                return { token, forbidden: status === 403 };
+            },
             disableBc: isDesktop,
         });
         entry.cloudProvider = cloudProvider;
@@ -686,32 +692,16 @@ const initCloudProvider = async (entry: SessionEntry): Promise<void> => {
             }
         });
 
-        cloudProvider.on("connection-error", async () => {
-            // Skip terminal states — refreshing after a kick would just hit
-            // cloud-token, get 403, and loop forever.
-            if (cloudProvider.wasSessionReplaced || cloudProvider.wasKicked) return;
-            console.warn("[ProjectYjs] Connection error, attempting to refresh token...");
+        cloudProvider.on("connection-error", () => {
+            // Also fires for a connection closed on purpose while still opening
+            if (!cloudProvider.shouldConnect) return;
             entry.connectionStatus = "connecting";
             notifySubscribers(entry);
-            try {
-                const { token: refreshed, status: refreshStatus } = await getCloudToken(entry.projectId);
-                if (!isLive(entry)) return;
-                if (refreshStatus === 403) {
-                    cloudProvider.shouldConnect = false;
-                    cloudProvider.disconnect();
-                    entry.isProjectUnavailable = true;
-                    entry.connectionStatus = "disconnected";
-                    notifySubscribers(entry);
-                    return;
-                }
-                if (refreshed) await cloudProvider.updateToken(refreshed);
-            } catch (e) {
-                console.warn("[ProjectYjs] Failed to refresh token:", e);
-            }
         });
 
         cloudProvider.on("status", (e: { status: string }) => {
             entry.connectionStatus = e.status as ConnectionStatus;
+            entry.isSessionReplaced = cloudProvider.wasSessionReplaced;
             if (e.status === "connected" && cloudProvider.synced) markCloudSynced(entry);
             notifySubscribers(entry);
         });
@@ -958,9 +948,7 @@ export const useProjectYjs = ({
     userName,
     userColor,
     userId,
-}: UseProjectYjsOptions): ProjectYjsState & {
-    refreshAndReconnect: () => Promise<void>;
-} => {
+}: UseProjectYjsOptions): ProjectYjsState => {
     const [fallback] = useState(() => ({
         name: `User_${Math.floor(Math.random() * 1000)}`,
         color: getRandomColor(),
@@ -1017,25 +1005,6 @@ export const useProjectYjs = ({
         entry.cloudProvider?.setUserInfo(userInfo);
     }, [userInfo]);
 
-    const refreshAndReconnect = useCallback(async () => {
-        const entry = entryRef.current;
-        if (!entry?.cloudProvider || !projectId) return;
-        try {
-            const { token, status } = await getCloudToken(projectId);
-            if (status === 403) {
-                entry.cloudProvider.shouldConnect = false;
-                entry.cloudProvider.disconnect();
-                entry.isProjectUnavailable = true;
-                entry.connectionStatus = "disconnected";
-                notifySubscribers(entry);
-                return;
-            }
-            if (token) await entry.cloudProvider.updateToken(token);
-        } catch (e) {
-            console.warn("[ProjectYjs] Failed to refresh token:", e);
-        }
-    }, [projectId]);
-
     const entry = entryRef.current;
     return {
         ydoc: entry?.state ?? null,
@@ -1043,8 +1012,8 @@ export const useProjectYjs = ({
         status: computeStatus(entry),
         isSynced: !!entry && entry.isLocalReady && entry.isCloudSynced,
         connectionStatus: entry?.connectionStatus ?? "disconnected",
+        isSessionReplaced: entry?.isSessionReplaced ?? false,
         users: entry?.users ?? [],
-        refreshAndReconnect,
     };
 };
 

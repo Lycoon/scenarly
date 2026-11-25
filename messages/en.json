@@ -45,6 +45,8 @@
     "titlePage": "Title Page",
     "synced": "Synced",
     "noConnection": "No connection",
+    "openElsewhere": "Open on another device",
+    "openElsewhereHint": "Click or type to continue here",
     "reconnecting": "Reconnecting...",
     "syncToCloud": "Synchronize",
     "storageProject": "This project",

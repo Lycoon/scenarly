@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { EDITOR_ZOOM_STEP, PanelType, useViewContext } from "@src/context/ViewContext";
 import { ProjectContext } from "@src/context/ProjectContext";
 import { UserContext } from "@src/context/UserContext";
@@ -18,7 +19,7 @@ import EditorFooter from "./EditorFooter";
 import TimelinePanel from "@components/editor/timeline/TimelinePanel";
 import EditorBottomBar from "@components/editor/EditorBottomBar";
 import styles from "./ProjectWorkspace.module.css";
-import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, MonitorSmartphone, Pencil } from "lucide-react";
 
 /**
  * Ceiling on how often the shell's anchoring guard may snap the document back
@@ -45,7 +46,8 @@ const ProjectWorkspace = () => {
         isEndlessScroll,
         setZoomLevel,
     } = useViewContext();
-    const { isReadOnly } = useContext(ProjectContext);
+    const { isReadOnly, isSessionReplaced } = useContext(ProjectContext);
+    const t = useTranslations("navbar");
     const { updateIsZenMode } = useContext(UserContext);
     const isPhone = useIsPhone();
     const activeEditor = useActiveEditor();
@@ -264,6 +266,17 @@ const ProjectWorkspace = () => {
                             className={`${styles.sidebar_backdrop} ${drawersOpen ? "" : styles.sidebar_backdrop_hidden}`}
                             onClick={drawersOpen ? closeSidebars : undefined}
                         />
+                    )}
+
+                    {/* The user opened the project on another device. Any click or
+                        key takes over, so the notice itself isn't a control. */}
+                    {isSessionReplaced && (
+                        <div className={styles.replaced_notice} role="status">
+                            <MonitorSmartphone size={16} />
+                            <span>
+                                {t("openElsewhere")} · {t("openElsewhereHint")}
+                            </span>
+                        </div>
                     )}
 
                     {/* Floating page-count + view-mode bubbles */}

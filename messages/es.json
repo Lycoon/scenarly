@@ -45,6 +45,8 @@
     "titlePage": "Portada",
     "synced": "Sincronizado",
     "noConnection": "Sin conexión",
+    "openElsewhere": "Abierto en otro dispositivo",
+    "openElsewhereHint": "Haz clic o escribe para continuar aquí",
     "reconnecting": "Reconectando...",
     "syncToCloud": "Sincronizar",
     "storageProject": "Este proyecto",

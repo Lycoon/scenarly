@@ -84,6 +84,8 @@ export interface ProjectContextType {
 
     // Connection state
     connectionStatus: ConnectionStatus;
+    /** Open on another of the user's devices, which holds the connection. */
+    isSessionReplaced: boolean;
     users: CollaboratorInfo[];
 
     // Editor (only set when on screenplay page)
@@ -260,6 +262,7 @@ const defaultContextValue: ProjectContextType = {
     cloudLock: null,
 
     connectionStatus: "disconnected",
+    isSessionReplaced: false,
     users: [],
     editor: null,
     updateEditor: () => {},
@@ -421,6 +424,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
         status,
         isSynced: isYjsSynced,
         connectionStatus: yjsConnectionStatus,
+        isSessionReplaced,
         users: yjsUsers,
     } = useProjectYjs({
         projectId,
@@ -602,7 +606,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
                     if (token) {
                         // Update token silently so future reconnects use the new role.
                         // We don't force reconnect because the DO already updated our active session.
-                        await provider.updateToken(token, false);
+                        provider.updateToken(token);
                     }
                 } catch (e) {
                     console.warn("Failed to fetch new token on role change", e);
@@ -1376,6 +1380,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             isReadOnly,
             cloudLock,
             connectionStatus,
+            isSessionReplaced,
             users,
             editor,
             updateEditor,
@@ -1493,6 +1498,7 @@ export const ProjectProvider = ({ children, projectId }: ProjectProviderProps) =
             isReadOnly,
             cloudLock,
             connectionStatus,
+            isSessionReplaced,
             users,
             editor,
             updateEditor,

@@ -70,12 +70,48 @@
     }
 }
 
+/* "Open on another device" pill, over whichever panel is up. Takes no taps: it
+ * must not cover what the user came back to, and any tap takes over anyway. */
+.replaced_notice {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 56;
+    pointer-events: none;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100% - 96px);
+    padding: 8px 16px;
+    border-radius: 12px;
+
+    background-color: var(--main-bg);
+    color: var(--primary-text);
+    font-size: 0.8rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.replaced_notice svg {
+    flex-shrink: 0;
+    color: var(--warning);
+}
+
 /* Phone: the navbar is a fixed overlay (see ProjectNavbar), so panel_area now
  * starts at the very top under the bar. Drop the edge toggle below the bar so it
  * isn't hidden behind it at rest (it still slides off-right as the reader scrolls
  * via --chrome-hide). */
 @media (max-width: 767px) {
     .right_sidebar_toggle {
+        top: calc(var(--navbar-height) + 8px);
+    }
+
+    .replaced_notice {
         top: calc(var(--navbar-height) + 8px);
     }
 
