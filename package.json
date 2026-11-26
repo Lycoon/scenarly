@@ -161,7 +161,8 @@
     "overrides": {
         "@hono/node-server": ">=1.19.13",
         "@prisma/config": {
-            "deepmerge-ts": "^8.0.2"
+            "deepmerge-ts": "^8.0.2",
+            "effect": "^3.22.5"
         },
         "hunspell-asm": {
             "nanoid": "^3.3.18"
