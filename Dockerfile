@@ -7,6 +7,8 @@ RUN apk add --no-cache git
 WORKDIR /usr/app
 COPY ./package*.json ./
 COPY ./patches ./patches
+# Skip onnxruntime-node's CUDA download: its GitHub release asset 404s and the EP is unused.
+ENV ONNXRUNTIME_NODE_INSTALL_CUDA=skip
 RUN npm ci
 COPY ./ ./
 
