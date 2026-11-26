@@ -12,6 +12,12 @@ permissions:
     contents: write
     packages: write
 
+env:
+    # onnxruntime-node (via kokoro-js) downloads CUDA binaries from a GitHub release
+    # on Linux x64 during npm ci. That asset 404s, and nothing here uses the CUDA EP
+    # (the CPU binaries ship inside the npm package).
+    ONNXRUNTIME_NODE_INSTALL_CUDA: skip
+
 jobs:
     # Every release job waits on `prepare`, which waits on this: nothing is
     # built or published while a production dependency has an unaccepted high
