@@ -35,9 +35,11 @@ export function hasExpired(date: Date | string | number, duration: number, unit:
 }
 
 /**
- * Re-encode a user-picked image to a `width`x`height` JPEG, scaled to fit on a
- * white background. Returns the bytes as a Blob so callers can store them in
- * IndexedDB and upload them as-is (no base64 round trip).
+ * Re-encode a user-picked image to a `width`x`height` JPEG, scaled to cover the
+ * whole frame and centre-cropped, so an image of another shape loses its edges
+ * rather than gaining white bands. White still backs any transparency (JPEG has
+ * no alpha). Returns the bytes as a Blob so callers can store them in IndexedDB
+ * and upload them as-is (no base64 round trip).
  */
 export const cropImageToJpegBlob = async (file: File, width: number, height: number): Promise<Blob> => {
     const img = await createImageBitmap(file);
@@ -53,8 +55,10 @@ export const cropImageToJpegBlob = async (file: File, width: number, height: num
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, width, height);
 
-    const ratio = Math.min(width / img.width, height / img.height);
-    ctx.drawImage(img, 0, 0, img.width * ratio, img.height * ratio);
+    const ratio = Math.max(width / img.width, height / img.height);
+    const drawWidth = img.width * ratio;
+    const drawHeight = img.height * ratio;
+    ctx.drawImage(img, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
     img.close();
 
     return new Promise<Blob>((resolve, reject) => {

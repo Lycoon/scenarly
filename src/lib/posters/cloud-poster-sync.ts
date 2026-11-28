@@ -9,7 +9,7 @@
 
 import { apiFetch } from "@src/lib/api-client";
 
-/** Push the poster bytes to R2, flipping the project's `hasPoster` flag. */
+/** Push the poster bytes to R2, replacing whatever the project had there. */
 export async function uploadPosterToCloud(projectId: string, data: ArrayBuffer, mime: string): Promise<void> {
     const res = await apiFetch(`/api/projects/${projectId}/poster`, {
         method: "PUT",

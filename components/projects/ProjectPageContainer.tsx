@@ -160,11 +160,24 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
     // the empty list must not flash before the editor appears.
     if (isLoading || !projects || isQuickstarting) return <Loading />;
 
-    const isEmptyOnPhone = isPhone && projects.length === 0;
-
     const renderMain = () => {
         if (isCreating) {
             return <NewProjectPage setIsCreating={setIsCreating} />;
+        }
+        // No column header over an empty library: the hero takes the whole
+        // main column, centred, on desktop and phone alike.
+        if (projects.length === 0) {
+            return (
+                <div className={page.hero}>
+                    <EmptyLibrary
+                        onCreate={startCreating}
+                        onImport={handleImportClick}
+                        isImporting={isImporting}
+                        // On desktop the sidebar already shows it, in plain sight.
+                        importError={isPhone ? importError : null}
+                    />
+                </div>
+            );
         }
         return (
             <div className={page.list}>
@@ -174,28 +187,17 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
                     <span className={page.col_date}>{t("columns.lastEdited")}</span>
                     <span className={page.col_storage}>{t("columns.storage")}</span>
                 </div>
-                <div className={isEmptyOnPhone ? join(page.list_scroll, page.list_scroll_hero) : page.list_scroll}>
-                    {isEmptyOnPhone ? (
-                        <EmptyLibrary
-                            onCreate={startCreating}
-                            onImport={handleImportClick}
-                            isImporting={isImporting}
-                            importError={importError}
-                        />
-                    ) : projects.length === 0 ? (
-                        <div className={page.empty}>{t("noProjects")}</div>
-                    ) : (
-                        <div ref={parent} className={page.rows}>
-                            {projects.map((membership: ExtendedProjectMembershipPayload) => (
-                                <ProjectItem
-                                    key={membership.project.id}
-                                    project={membership.project}
-                                    isLocalOnly={membership.isLocalOnly}
-                                    filePath={membership.filePath}
-                                />
-                            ))}
-                        </div>
-                    )}
+                <div className={page.list_scroll}>
+                    <div ref={parent} className={page.rows}>
+                        {projects.map((membership: ExtendedProjectMembershipPayload) => (
+                            <ProjectItem
+                                key={membership.project.id}
+                                project={membership.project}
+                                isLocalOnly={membership.isLocalOnly}
+                                filePath={membership.filePath}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         );

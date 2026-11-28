@@ -37,7 +37,6 @@ async function uploadProjectToCloud(req: NextRequest, { routeParams, user }: Aut
         description,
         author,
         userId: user.id,
-        hasPoster: false,
     });
 
     const membership = await ProjectService.getMembership(projectId, user.id);

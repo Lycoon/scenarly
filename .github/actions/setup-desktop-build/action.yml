@@ -20,11 +20,26 @@ runs:
         # a newer Xcode is ever needed, e.g. for an App Store SDK requirement;
         # check available versions in a failing run's log first — runner
         # images only keep the last few Xcode releases installed.
+        #
+        # iOS is on Xcode 27: App Store Connect rejects iOS builds made with an
+        # older SDK than iOS 27 from April 2027 (ITMS-90725). Xcode 27 only
+        # exists on GitHub's dedicated `xcode-27` runner image, which is why
+        # the publish-ios jobs run there instead of macos-latest. The range
+        # takes whichever 27.x release that image carries (that image keeps
+        # one major Xcode and rolls its minor forward). macOS stays on 26.3
+        # until its own jobs are moved to that image.
         - name: Select Xcode
           if: runner.os == 'macOS'
           uses: maxim-lobanov/setup-xcode@v1
           with:
-              xcode-version: "26.3.0"
+              xcode-version: ${{ inputs.platform == 'ios' && '^27.0' || '26.3.0' }}
+
+        - name: Show Xcode and iOS SDK
+          if: inputs.platform == 'ios'
+          shell: bash
+          run: |
+              xcodebuild -version
+              xcrun --sdk iphoneos --show-sdk-version
 
         - name: Setup Node.js
           uses: actions/setup-node@v6

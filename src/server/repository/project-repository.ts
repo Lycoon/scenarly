@@ -10,7 +10,6 @@ const projectMembershipSelect = {
         select: {
             id: true,
             title: true,
-            hasPoster: true,
             description: true,
             author: true,
             createdAt: true,
@@ -52,8 +51,9 @@ type RawProject = Prisma.ProjectGetPayload<{
 
 /**
  * Project metadata as the client sees it. The poster image itself is *not* part
- * of this payload: it is fetched (and cached offline) through
- * `/projects/[projectId]/poster`, so `hasPoster` is only a hint that one exists.
+ * of this payload, nor is whether one exists: it is fetched (and cached
+ * offline) through `/projects/[projectId]/poster`, which answers 404 when R2
+ * holds none.
  */
 export type Project = Omit<RawProject, "_count"> & {
     /**
@@ -149,7 +149,6 @@ export class ProjectRepository {
                     title: project.title,
                     description: project.description,
                     author: project.author,
-                    hasPoster: project.hasPoster,
                     members: {
                         create: {
                             userId: project.userId,
@@ -173,7 +172,6 @@ export class ProjectRepository {
                 title: project.title,
                 description: project.description,
                 author: project.author,
-                hasPoster: project.hasPoster,
             },
         });
     }

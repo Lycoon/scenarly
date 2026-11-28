@@ -119,7 +119,10 @@ jobs:
                   api-private-key: ${{ secrets.APPSTORE_API_KEY_P8 }}
 
     publish-ios:
-        runs-on: macos-latest
+        # App Store Connect requires the iOS 27 SDK (Xcode 27) from April 2027
+        # (ITMS-90725). GitHub ships Xcode 27 on its own image, not on
+        # macos-26/macos-latest — see setup-desktop-build for the Xcode pin.
+        runs-on: xcode-27
         needs: [prepare, deploy-webapp]
         steps:
             - uses: actions/checkout@v6

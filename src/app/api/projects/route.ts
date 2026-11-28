@@ -55,7 +55,6 @@ async function createProject(req: NextRequest, { user }: AuthApiContext) {
         description,
         author,
         userId: user.id,
-        hasPoster: false,
     });
 
     if (!newProject) {
