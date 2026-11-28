@@ -1,3 +1,7 @@
 {
-    "publisherDisplayName": "Arko Logic"
+    "publisherDisplayName": "Arko Logic",
+    "capabilities": {
+        "general": ["internetClient"],
+        "device": ["microphone"]
+    }
 }

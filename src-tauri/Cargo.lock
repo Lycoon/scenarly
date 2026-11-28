@@ -26,6 +26,8 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-store",
  "tokio",
+ "webview2-com",
+ "windows",
 ]
 
 [[package]]

@@ -45,6 +45,12 @@ tauri-plugin-persisted-scope = "2"
 [target.'cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))'.dependencies]
 tauri-plugin-iap = "0.9"
 
+# Answering WebView2's permission request natively (see src/webview_permissions.rs).
+# Both already in the tree through tauri/wry, at these versions.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.38"
+windows = "0.61"
+
 # Sign-in sheets that stay inside the app, which App Review requires on the
 # Apple platforms (see src/apple_auth.rs). Everything but the
 # AuthenticationServices bindings is already in the tree through tauri, at

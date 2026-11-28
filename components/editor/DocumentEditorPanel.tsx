@@ -190,6 +190,9 @@ const DocumentEditorPanel = ({
     // Pending single-tap timer for the phone reader. A tap arms it; a second tap
     // within the window cancels it and counts as a double tap (see handleReaderTap).
     const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Where the current single-finger touch went down, so handleReaderTouchEnd
+    // can tell a tap from a swipe.
+    const readerTouchStart = useRef<{ x: number; y: number } | null>(null);
     // Callback ref stored in state so the effects below re-run when the scroll
     // container actually mounts (it may render after a Loading fallback).
     const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -1108,6 +1111,8 @@ const DocumentEditorPanel = ({
 
             if (tapTimer.current) {
                 // Second tap inside the window → double tap: enter edit mode.
+                // On touch screens handleReaderTouchEnd normally gets here first
+                // and cancels this click; this branch covers the rest.
                 clearTimeout(tapTimer.current);
                 tapTimer.current = null;
                 if (isReadOnly) return;
@@ -1141,6 +1146,54 @@ const DocumentEditorPanel = ({
                 tapTimer.current = null;
                 chromeHide.reveal();
             }, 280);
+        },
+        [isPhone, mobileEditMode, isReadOnly, editor, setMobileEditMode, chromeHide],
+    );
+
+    const handleReaderTouchStart = useCallback(
+        (e: React.TouchEvent) => {
+            chromeHide.beginUserScroll();
+            const touch = e.touches.length === 1 ? e.touches[0] : null;
+            readerTouchStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+        },
+        [chromeHide],
+    );
+
+    // The second tap of a reader double tap, handled at touchend rather than at
+    // its click.
+    //
+    // From iOS 27 the click of a quick second tap no longer counts as user
+    // interaction for the keyboard: the focus() in handleReaderTap still sets the
+    // caret position (the view scrolls to it) but no keyboard comes up and no
+    // caret is drawn, while the very same focus from the pen's single tap does
+    // raise it. WebKit evidently now routes the second tap through its
+    // double-tap path, whose synthesized mouse events don't open an input
+    // session. touchend is a direct touch event, delivered before any of that,
+    // so focusing here is a real user gesture again.
+    //
+    // preventDefault suppresses the synthesized mouse events and click that would
+    // follow: they'd land on the now-editable text as a double click and select
+    // a word, and the click would arm handleReaderTap's single-tap timer again.
+    const handleReaderTouchEnd = useCallback(
+        (e: React.TouchEvent) => {
+            chromeHide.endUserScroll();
+            const start = readerTouchStart.current;
+            readerTouchStart.current = null;
+            if (!isPhone || mobileEditMode || isReadOnly || !tapTimer.current || !start) return;
+            const touch = e.changedTouches[0];
+            if (!touch || e.touches.length > 0) return;
+            // A swipe or drag inside the window isn't a tap.
+            if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 10) return;
+            if (!editor || editor.isDestroyed) return;
+
+            e.preventDefault();
+            clearTimeout(tapTimer.current);
+            tapTimer.current = null;
+            setMobileEditMode(true);
+            // Synchronously, in this gesture — see handleReaderTap.
+            editor.setEditable(true);
+            focusEditorAtCoords(editor, touch.clientX, touch.clientY);
+            centerCaretInView(editor);
         },
         [isPhone, mobileEditMode, isReadOnly, editor, setMobileEditMode, chromeHide],
     );
@@ -1261,8 +1314,8 @@ const DocumentEditorPanel = ({
                     userZoom > 1 ? styles.zoom_pan : "",
                 )}
                 onScroll={onScroll}
-                onTouchStart={chromeHide.beginUserScroll}
-                onTouchEnd={chromeHide.endUserScroll}
+                onTouchStart={handleReaderTouchStart}
+                onTouchEnd={handleReaderTouchEnd}
                 onTouchCancel={chromeHide.endUserScroll}
                 onClick={handleReaderTap}
                 onMouseDown={handleContainerMouseDown}
