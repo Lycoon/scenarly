@@ -21,7 +21,7 @@ tauri-build = { version = "2.6.3", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.11", features = [] }
+tauri = { version = "2.12", features = [] }
 tauri-plugin-log = "2.8.0"
 tauri-plugin-store = "2.4.2"
 tauri-plugin-dialog = "2.6.0"
@@ -48,8 +48,8 @@ tauri-plugin-iap = "0.9"
 # Answering WebView2's permission request natively (see src/webview_permissions.rs).
 # Both already in the tree through tauri/wry, at these versions.
 [target.'cfg(windows)'.dependencies]
-webview2-com = "0.38"
-windows = "0.61"
+webview2-com = "0.39"
+windows = "0.62"
 
 # Sign-in sheets that stay inside the app, which App Review requires on the
 # Apple platforms (see src/apple_auth.rs). Everything but the

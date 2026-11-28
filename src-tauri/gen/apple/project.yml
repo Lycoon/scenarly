@@ -59,6 +59,12 @@ targets:
         NSMicrophoneUsageDescription: Scenarly uses the microphone to record voice notes for your boards and to dictate text into your screenplay.
         NSSpeechRecognitionUsageDescription: Scenarly uses speech recognition to transcribe your dictation into the screenplay editor.
         NSPhotoLibraryUsageDescription: Scenarly accesses your photo library so you can add existing images to your project boards.
+        # Apps built with the iOS 27 SDK must adopt the UIScene lifecycle, or
+        # UIKit traps at launch (_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption).
+        # Declaring the manifest is enough: tao (>= 0.37) answers the scene
+        # configuration request itself and installs its TaoSceneDelegate.
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
     entitlements:
       path: Scenarly_iOS/Scenarly_iOS.entitlements
     scheme:
