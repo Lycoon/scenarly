@@ -5,6 +5,9 @@ use tauri::{Emitter, Manager};
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod apple_auth;
 
+#[cfg(windows)]
+mod webview_permissions;
+
 /// Event carrying a `.scenarly` path the OS asked us to open. The frontend
 /// listens for it and routes the path into the merge-aware open flow.
 const OPEN_FILE_EVENT: &str = "scenarly://open-file";
@@ -241,6 +244,18 @@ pub fn run() {
     // Google Play build (see Cargo.toml).
     #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
     let builder = builder.plugin(tauri_plugin_iap::init());
+
+    // WebView2's own mic prompt names the origin ("tauri.localhost"), not the
+    // app — see webview_permissions.rs. A plugin because `on_webview_ready`
+    // covers every webview, not just the one from tauri.conf.json.
+    #[cfg(windows)]
+    let builder = builder.plugin(
+        tauri::plugin::Builder::<tauri::Wry>::new("webview-permissions")
+            .on_webview_ready(|webview| {
+                let _ = webview.with_webview(webview_permissions::grant_microphone_to_app);
+            })
+            .build(),
+    );
 
     // ORDER IS LOAD-BEARING: this must come after `tauri_plugin_fs`.
     //

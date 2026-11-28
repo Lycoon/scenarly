@@ -21,5 +21,12 @@
 
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
+
+    <!-- Board voice notes (getUserMedia). In a sandboxed app WebKit refuses
+         getUserMedia up front when this is missing: no TCC prompt, the promise
+         just rejects. Dictation (Web Speech API) is unaffected either way — WebKit
+         checks only the TCC grants for it and captures audio out of process. -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
 </dict>
 </plist>
