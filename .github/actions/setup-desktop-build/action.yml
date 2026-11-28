@@ -34,12 +34,17 @@ runs:
           with:
               xcode-version: ${{ inputs.platform == 'ios' && '^27.0' || '26.3.0' }}
 
-        - name: Show Xcode and iOS SDK
-          if: inputs.platform == 'ios'
+        # Exposes the selected Xcode's build number for the Rust cache key below.
+        - name: Show Xcode version
+          id: xcode
+          if: runner.os == 'macOS'
           shell: bash
           run: |
               xcodebuild -version
-              xcrun --sdk iphoneos --show-sdk-version
+              if [[ "${{ inputs.platform }}" == "ios" ]]; then
+                  xcrun --sdk iphoneos --show-sdk-version
+              fi
+              echo "build=$(xcodebuild -version | awk '/Build version/ {print $3}')" >> "$GITHUB_OUTPUT"
 
         - name: Setup Node.js
           uses: actions/setup-node@v6
@@ -74,10 +79,16 @@ runs:
           with:
               targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
 
+        # Key on the Xcode build too: build scripts (tauri/swift-rs, cc) bake
+        # absolute toolchain paths like /Applications/Xcode_<ver>.app/... into
+        # their cached output and don't re-run when only Xcode changes, so a
+        # cache from another Xcode links against paths that no longer exist
+        # ("ld: library 'clang_rt.ios' not found"). Empty off macOS.
         - name: Setup Rust cache
           uses: swatinem/rust-cache@v2
           with:
               workspaces: "src-tauri -> target"
+              key: ${{ steps.xcode.outputs.build }}
 
         - name: Install msixbundle-cli
           if: inputs.platform == 'windows'
