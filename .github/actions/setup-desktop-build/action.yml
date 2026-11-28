@@ -64,11 +64,17 @@ runs:
           with:
               targets: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
 
+        # llvm-tools provides llvm-objcopy, which swift-rs >= 1.0.9 uses on
+        # Xcode 27 to re-export the @_cdecl entry points (Tauri's and each
+        # plugin's init_plugin_*) that Swift Build gives local visibility in
+        # release static products. Without it swift-rs only warns and the
+        # release link fails with undefined symbols.
         - name: Setup Rust (iOS)
           if: inputs.platform == 'ios'
           uses: dtolnay/rust-toolchain@stable
           with:
               targets: aarch64-apple-ios, aarch64-apple-ios-sim, x86_64-apple-ios
+              components: llvm-tools
 
         # i686 is deliberately absent: it is 32-bit x86, which no shipping Android
         # device uses. The three below cover every real phone/tablet (arm64 + the
