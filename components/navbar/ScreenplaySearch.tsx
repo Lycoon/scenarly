@@ -255,7 +255,26 @@ const ScreenplaySearch = ({ onOpen }: ScreenplaySearchProps) => {
 
     // Handle keyboard shortcuts
     useEffect(() => {
+        const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
         const handleKeyDown = (e: KeyboardEvent) => {
+            // ⌘F / Ctrl+F opens the panel in place of the browser's own find bar,
+            // which only sees the rendered page and can't replace. Platform mod
+            // only: Ctrl+F on a Mac is the Emacs-style "forward one character"
+            // in text fields and must keep working. Matched on `code` as well so
+            // it holds on layouts where F isn't where the character "f" is.
+            const isMod = isMac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
+            if (isMod && !e.altKey && !e.shiftKey && (e.code === "KeyF" || e.key.toLowerCase() === "f")) {
+                e.preventDefault();
+                if (isOpen) {
+                    // Already open: bring focus back to the field and select what's
+                    // there, so typing replaces the previous term.
+                    inputRef.current?.focus();
+                    inputRef.current?.select();
+                } else {
+                    handleOpen();
+                }
+                return;
+            }
             if (e.key === "Escape" && isOpen) {
                 handleClose();
             }
@@ -273,7 +292,7 @@ const ScreenplaySearch = ({ onOpen }: ScreenplaySearchProps) => {
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, searchMatches.length, handleClose, goToPreviousMatch, goToNextMatch]);
+    }, [isOpen, searchMatches.length, handleOpen, handleClose, goToPreviousMatch, goToNextMatch]);
 
     return (
         <div className={styles.container} ref={containerRef}>

@@ -57,6 +57,54 @@ export interface DocumentEditorPanelProps {
 // the layout variant.
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+/**
+ * Bring ProseMirror's selection in line with the right-click before the context
+ * menu reads it.
+ *
+ * The browser moves the selection as part of the right-click (WebKit and Chrome
+ * on macOS select the word under the pointer, other platforms move the caret),
+ * but ProseMirror only learns about it from `selectionchange`, which is
+ * dispatched asynchronously, after `contextmenu`. Reading `state.selection` in
+ * the handler therefore returns the selection from BEFORE the click: no range
+ * for a right-clicked word, and the previous block for node-based actions.
+ *
+ * Firefox doesn't move the selection at all, so a click landing outside the
+ * selection also collapses it to the clicked point, as the other browsers do.
+ */
+function syncSelectionForContextMenu(view: EditorView, x: number, y: number) {
+    const { doc, selection } = view.state;
+    let next = selection;
+
+    const domSel = view.dom.ownerDocument.getSelection();
+    if (
+        domSel?.anchorNode &&
+        domSel.focusNode &&
+        view.dom.contains(domSel.anchorNode) &&
+        view.dom.contains(domSel.focusNode)
+    ) {
+        try {
+            const anchor = view.posAtDOM(domSel.anchorNode, domSel.anchorOffset);
+            const head = view.posAtDOM(domSel.focusNode, domSel.focusOffset);
+            // Keep the state's own selection (it may be a NodeSelection) when
+            // the DOM still agrees with it.
+            if (anchor !== selection.anchor || head !== selection.head) {
+                next = TextSelection.between(doc.resolve(anchor), doc.resolve(head));
+            }
+        } catch {
+            // DOM point inside a widget/decoration with no doc position.
+        }
+    }
+
+    const hit = view.posAtCoords({ left: x, top: y });
+    if (hit && (hit.pos < next.from || hit.pos > next.to)) {
+        next = TextSelection.near(doc.resolve(hit.pos));
+    }
+
+    if (!next.eq(selection)) {
+        view.dispatch(view.state.tr.setSelection(next).setMeta("pointer", true));
+    }
+}
+
 const DocumentEditorPanel = ({
     config,
     isVisible,
@@ -881,6 +929,7 @@ const DocumentEditorPanel = ({
 
             e.preventDefault();
 
+            syncSelectionForContextMenu(editor.view, e.clientX, e.clientY);
             const { from, to } = editor.state.selection;
 
             // Check for spellcheck error under cursor. Resolve the FULL word from

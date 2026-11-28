@@ -1,15 +1,21 @@
 // Fails when a production dependency has a high or critical advisory that is
 // not accepted in scripts/audit-allowlist.json. Run by the release and staging
-// workflows before anything is built or published.
+// workflows (app and landing) before anything is built or published.
 //
 // Runs on plain Node (built-in type stripping), with no `npm ci`: npm audit
 // only needs the lockfile, and the gate passes before any install script runs.
 // Keep it to erasable TypeScript: types and interfaces, no enums or namespaces.
 //
-//   node scripts/audit-gate.ts
+//   node scripts/audit-gate.ts            # the app (root lockfile)
+//   node scripts/audit-gate.ts landing    # another package with its own lockfile
+//
+// For a package other than the root, reported paths carry its directory
+// (`landing/node_modules/next`), so allowlist entries never match across
+// packages.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 type Severity = "info" | "low" | "moderate" | "high" | "critical";
 
@@ -54,11 +60,18 @@ const allowlist: AllowlistEntry[] = JSON.parse(
     readFileSync(new URL("./audit-allowlist.json", import.meta.url), "utf8"),
 ).entries;
 
+// Package to audit, relative to the repo root; "" is the root itself.
+const dir = join(process.argv[2] ?? ".").replace(/^\.$/, "");
+
 // `npm audit` exits non-zero whenever it finds anything, so read its output
 // from the error as well.
 let raw: string;
 try {
-    raw = execFileSync("npm", ["audit", "--omit=dev", "--json"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+    raw = execFileSync("npm", ["audit", "--omit=dev", "--json"], {
+        cwd: dir || undefined,
+        encoding: "utf8",
+        maxBuffer: 64 * 1024 * 1024,
+    });
 } catch (err) {
     raw = (err as { stdout?: string }).stdout ?? "";
 }
@@ -87,7 +100,8 @@ for (const vuln of Object.values(report.vulnerabilities ?? {})) {
         if (typeof advisory === "string" || !BLOCKING.has(advisory.severity)) continue;
         const id = advisory.url.split("/").pop() ?? advisory.url;
 
-        for (const path of vuln.nodes) {
+        for (const node of vuln.nodes) {
+            const path = dir ? join(dir, node) : node;
             // npm lists one advisory once per affected version range.
             if (seen.has(`${id} ${path}`)) continue;
             seen.add(`${id} ${path}`);
@@ -110,10 +124,10 @@ if (accepted.length) {
 }
 if (blocking.length) {
     const plural = blocking.length === 1 ? "advisory" : "advisories";
-    console.error(`\nBlocking: ${blocking.length} high/critical ${plural} in production dependencies:`);
+    console.error(`\nBlocking: ${blocking.length} high/critical ${plural} in ${dir || "the root"}'s production dependencies:`);
     blocking.forEach((f) => console.error(line(f)));
     for (const e of expired) console.error(`\nAllowlist entry for ${e.advisories.join(", ")} expired on ${e.expires}.`);
-    console.error("\nUpdate the dependency (npm audit fix), or accept it in scripts/audit-allowlist.json with a reason and an expiry date.");
+    console.error(`\nUpdate the dependency (npm --prefix ${dir || "."} audit fix), or accept it in scripts/audit-allowlist.json with a reason and an expiry date.`);
     process.exit(1);
 }
-console.log("\nNo blocking advisories in production dependencies.");
+console.log(`\nNo blocking advisories in ${dir || "the root"}'s production dependencies.`);

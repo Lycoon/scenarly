@@ -310,6 +310,33 @@ const ProjectNavbarMobile = () => {
                         </div>
                     </div>
                 )}
+                {/* Project title, centred in whatever room the two clusters leave.
+                    The slot always takes that room (flex: 1) so the clusters stay
+                    put; only the field inside hides — while the tools fold is
+                    open, since the revealed tools grow into exactly this space.
+                    No save glyph beside it, unlike the desktop title island: the
+                    burger menu already lists the three save targets as rows. */}
+                {isInProject && projectId && (
+                    <div
+                        className={join(
+                            navbar.mobile_title_slot,
+                            !mobileEditMode && isToolsOpen ? navbar.mobile_title_hidden : "",
+                        )}
+                        aria-hidden={!mobileEditMode && isToolsOpen}
+                    >
+                        <input
+                            type="text"
+                            className={navbar.mobile_title}
+                            size={1}
+                            onChange={(e) => onTitleChange(e.target.value)}
+                            onBlur={onTitleBlur}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") e.currentTarget.blur();
+                            }}
+                            value={projectTitle}
+                        />
+                    </div>
+                )}
                 {/* The element-type selector lives in the format bar above the
                     keyboard (MobileFormatToolbar); the sidebars open via the editor
                     edge chevrons; everything else is in the burger menu below. */}
@@ -346,22 +373,6 @@ const ProjectNavbarMobile = () => {
 
             {isInProject && projectId && (
                 <ProjectNavbarMobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
-                    {/* No save glyph beside the field, unlike the desktop title
-                        island: that glyph is a *summary* of the three targets,
-                        opened for the breakdown — and here the breakdown is
-                        already on screen, three rows below it. The width it took
-                        goes to the title instead, which on a 75vw drawer is the
-                        one thing short of room. */}
-                    <div className={mobileMenu.title_row}>
-                        <input
-                            type="text"
-                            className={mobileMenu.title_input}
-                            onChange={(e) => onTitleChange(e.target.value)}
-                            onBlur={onTitleBlur}
-                            value={projectTitle}
-                        />
-                    </div>
-
                     {/* The bar has no room for the readout and no pointer to hover
                         it with, so the detail lives here as plain rows — the only
                         place the phone states where the project is saved. */}

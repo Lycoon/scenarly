@@ -422,7 +422,7 @@
     "importError": "La importación falló. Comprueba el archivo e inténtalo de nuevo.",
     "createBtn": "Crear",
     "empty": {
-      "title": "Tu Historia Empieza Aquí",
+      "title": "Tu historia empieza aquí",
       "subtitle": "Crea un nuevo guión o importa un script existente",
       "createFirst": "Nuevo proyecto",
       "createDesc": "Empezar desde una página en blanco",

@@ -76,6 +76,48 @@
     opacity: calc(1 - var(--chrome-hide, 0));
 }
 
+/* Takes the room between the clusters and centres the title in it. min-width: 0
+ * lets it give way as the tools fold opens into the same space. */
+.mobile_title_slot {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+    transition:
+        opacity 0.2s ease,
+        visibility 0.2s;
+}
+
+/* A pill matching the clusters either side (48px = a 40px icon + 4px padding).
+ * 1rem keeps iOS from zooming the page when the field takes focus. */
+.mobile_title {
+    width: 100%;
+    max-width: 240px;
+    min-width: 0;
+    height: 48px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 999px;
+    background-color: var(--secondary);
+    box-shadow: var(--panel-shadow);
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    text-overflow: ellipsis;
+    /* Fades with the chrome like the clusters; untransitioned so it tracks the
+     * scroll gesture (the fold's fade lives on the slot, out of its way). */
+    opacity: calc(1 - var(--chrome-hide, 0));
+}
+
+/* Visibility (not just opacity) so the hidden field can't catch a tap. */
+.mobile_title_hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
 /* Always hug the right edge — the only other cluster (edit-mode controls) is on
  * the left, and in reader mode this is the sole cluster, so it can't rely on a
  * sibling to push it over. */

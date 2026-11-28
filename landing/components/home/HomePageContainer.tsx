@@ -43,6 +43,7 @@ const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=com.scena
 const DESKTOP_STORES: StoreLink[] = [
     { href: APP_STORE_URL, name: "App Store", icon: <AppleIcon size={18} /> },
     { href: MICROSOFT_STORE_URL, name: "Microsoft Store", icon: <WindowsIcon size={16} /> },
+    { name: "Linux", icon: <LinuxIcon size={18} />, comingSoon: true },
 ];
 
 const MOBILE_STORES: StoreLink[] = [
@@ -64,25 +65,25 @@ const FEATURES: Feature[] = [
     {
         icon: PenLine,
         title: "First-class Editor",
-        image: "/_site/images/previews/auto-complete.png",
+        image: "/_site/images/previews/editor.png",
         text: "Smart auto-complete, built-in spellchecker, and keyboard shortcuts keep you in flow. Fountain syntax rules automatically format your script as you type. Focus mode fades out the noise so only your words remain.",
     },
     {
         icon: Ruler,
         title: "Professional Formatting",
-        image: "/_site/images/previews/auto-complete.png",
+        image: "/_site/images/previews/professional-formatting.png",
         text: "Dual dialogue, customizable margins, font styling, and spacing — every layout detail is yours to control. Page breaks follow industry standards out of the box. Your script looks camera-ready from page one.",
     },
     {
         icon: FileOutput,
         title: "Portability",
-        image: "/_site/images/previews/formats.png",
+        image: "/_site/images/previews/portability.png",
         text: "Bring your existing scripts over from Final Draft, WriterSolo, FadeIn, or Fountain, and export them with full fidelity. Switch tools without losing a single line of formatting. Your screenplay is never locked into one ecosystem.",
     },
     {
         icon: FileLock,
         title: "Production Ready",
-        image: "/_site/images/previews/auto-complete.png",
+        image: "/_site/images/previews/production-ready.png",
         text: "Take your script from draft to shoot. Track every change in revision mode with industry-standard colored pages and marks. Lock scenes and pages so numbering holds through rewrites, and send out only the pages that changed.",
     },
     {
@@ -94,19 +95,19 @@ const FEATURES: Feature[] = [
     {
         icon: Archive,
         title: "Alternates",
-        image: "/_site/images/previews/search.png",
+        image: "/_site/images/previews/alternates.png",
         text: "Not sure a scene works? Shelve it and try another take without losing the original. Keep alternate versions of any scene, dialogue, or action and rework them side by side with your script.",
     },
     {
         icon: LayoutDashboard,
         title: "Boards",
-        image: "/_site/images/previews/auto-complete.png",
+        image: "/_site/images/previews/boards.png",
         text: "Map out your story on an infinite canvas. Pin text cards, reference images, and voice notes, then link them together to see how ideas connect. Brainstorm freely before a single scene is written.",
     },
     {
         icon: FolderTree,
         title: "File Hierarchy",
-        image: "/_site/images/previews/auto-complete.png",
+        image: "/_site/images/previews/file-hierarchy.png",
         text: "Keep treatments, notes, and boards right next to your screenplay. Organize them into nested folders, reorder with drag and drop, and open any document alongside your script. Everything for your project lives in one place.",
     },
     {
@@ -124,44 +125,44 @@ const FEATURES: Feature[] = [
     {
         icon: Layers,
         title: "Every Angle",
-        image: "/_site/images/previews/scene-navigation.png",
+        image: "/_site/images/previews/every-angle.png",
         text: "Read your screenplay at whatever level the moment calls for. Write page by page or switch to endless scroll, step back to index cards for the big picture, or lay out every page at once to check the rhythm of your script.",
     },
     {
         icon: Users,
         title: "Character Management",
-        image: "/_site/images/previews/character-highlight.png",
+        image: "/_site/images/previews/character-management.png",
         text: "Rename a character across your entire script in one click. Assign traits and descriptions to build rich character profiles. Highlight any character's lines to stay locked in their voice.",
     },
     {
         icon: MessageSquareQuote,
         title: "Dialogue Tuner",
-        image: "/_site/images/previews/character-highlight.png",
+        image: "/_site/images/previews/dialogue-tuner.png",
         text: "Hear each character's voice on its own. Pick a character and the rest of the script fades away, leaving only their lines. Step through every speech they give, from first scene to last, to keep them sounding like themselves.",
     },
     {
         icon: WifiOff,
         title: "Offline First",
-        image: "/_site/images/previews/auto-complete.png",
+        image: "/_site/images/previews/offline-first.png",
         text: "No internet? No problem. Keep writing without any friction or interruption. Your work is saved locally and synced back to the cloud the moment you reconnect. Scenarly works fully offline, no account required.",
     },
     {
         icon: ChartPie,
         title: "Statistics",
-        image: "/_site/images/previews/auto-complete.png",
+        image: "/_site/images/previews/analytics.png",
         text: "Get a clear picture of your screenplay with word count, page count, and scene breakdowns. See how much screen time each character gets and spot pacing gaps at a glance. Data-driven insights to sharpen your story before it hits the screen.",
     },
     {
         icon: Cloud,
         title: "Cloud Sync",
-        image: "/_site/images/previews/auto-complete.png",
+        image: "/_site/images/previews/cloud-sync.png",
         text: "Never hit Save again — your words are synced to the cloud continuously. Switch devices, close tabs, or lose power and pick up exactly where you left off. Manual snapshots let you restore any previous version on demand.",
         cloud: true,
     },
     {
         icon: MessagesSquare,
         title: "Real-time Collaboration",
-        image: "/_site/images/previews/collaboration.png",
+        image: "/_site/images/previews/real-time-collab.png",
         text: "Invite up to 5 collaborators and write the same screenplay simultaneously in real time. See each other's cursors, edits, and comments as they happen. No merging, no conflicts — just seamless creative flow.",
         cloud: true,
     },
@@ -266,8 +267,8 @@ export default function HomePageContainer() {
                                 <Image
                                     src={image}
                                     alt={`${title} preview`}
-                                    width={1280}
-                                    height={720}
+                                    width={800}
+                                    height={450}
                                     className={styles.featureImage}
                                 />
                                 <div>
@@ -354,11 +355,10 @@ export default function HomePageContainer() {
     );
 }
 
-interface StoreLink {
-    href: string;
+type StoreLink = {
     name: string;
     icon: React.ReactNode;
-}
+} & ({ href: string; comingSoon?: false } | { href?: undefined; comingSoon: true });
 
 interface PlatformMenuCtaProps {
     name: string;
@@ -391,18 +391,31 @@ const PlatformMenuCta: React.FC<PlatformMenuCtaProps> = ({ name, icons, stores, 
 
         <div className={styles.ctaDropdown} role="menu" aria-label={`${name} downloads`}>
             <div className={styles.ctaDropdownPanel}>
-                {stores.map((store) => (
-                    <a
-                        key={store.name}
-                        href={store.href}
-                        target="_blank"
-                        role="menuitem"
-                        className={styles.ctaDropdownItem}
-                    >
-                        {store.icon}
-                        <span>{store.name}</span>
-                    </a>
-                ))}
+                {stores.map((store) =>
+                    store.comingSoon ? (
+                        <div
+                            key={store.name}
+                            role="menuitem"
+                            aria-disabled="true"
+                            className={`${styles.ctaDropdownItem} ${styles.ctaDropdownItemDisabled}`}
+                        >
+                            {store.icon}
+                            <span>{store.name}</span>
+                            <span className={styles.ctaComingSoon}>Coming soon</span>
+                        </div>
+                    ) : (
+                        <a
+                            key={store.name}
+                            href={store.href}
+                            target="_blank"
+                            role="menuitem"
+                            className={styles.ctaDropdownItem}
+                        >
+                            {store.icon}
+                            <span>{store.name}</span>
+                        </a>
+                    ),
+                )}
             </div>
         </div>
     </div>
