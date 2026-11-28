@@ -21,7 +21,6 @@ export type ProjectCreation = {
     title: string;
     description?: string;
     author?: string;
-    hasPoster?: boolean;
 };
 
 export type ProjectUpdate = {
@@ -29,7 +28,6 @@ export type ProjectUpdate = {
     title?: string;
     description?: string;
     author?: string;
-    hasPoster?: boolean;
 };
 
 /**

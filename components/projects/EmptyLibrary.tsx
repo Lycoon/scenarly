@@ -15,11 +15,9 @@ interface EmptyLibraryProps {
 }
 
 /**
- * The phone's empty library. On desktop the sidebar is a permanent column with
- * Create/Import in plain sight, so a one-line note is enough there; on phone
- * that sidebar is a closed drawer, and a bare "No projects yet" left a first-
- * time user staring at a blank screen with the only way forward hidden behind
- * the burger. This puts the two ways in front of them instead.
+ * The empty library, on desktop and phone. A bare "No projects yet" left a
+ * first-time user staring at a blank page — on phone with the only way forward
+ * hidden behind the drawer's burger — so this puts the two ways in front of them.
  *
  * The illustration is plain boxes painted with theme tokens, so it follows
  * every theme without per-theme artwork.

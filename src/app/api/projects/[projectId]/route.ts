@@ -74,9 +74,8 @@ async function updateProject(req: NextRequest, { routeParams, user }: AuthApiCon
     }
     await requireProjectCloudPlan(projectId);
 
-    // `hasPoster` is deliberately left alone: the poster is owned by
-    // `PUT /projects/[projectId]/poster`, and folding it in here used to reset
-    // the flag to false on every unrelated edit.
+    // The poster is not project metadata: it is owned by
+    // `PUT /projects/[projectId]/poster`.
     const updated = await ProjectService.update({
         projectId,
         title,

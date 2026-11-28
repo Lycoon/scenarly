@@ -547,7 +547,6 @@ const useCachedProjects = () => {
                     title: p.title,
                     description: p.description,
                     author: p.author,
-                    hasPoster: false,
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt,
                 },

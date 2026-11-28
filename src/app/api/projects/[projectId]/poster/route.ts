@@ -41,8 +41,9 @@ async function getPoster(req: NextRequest, { routeParams, user }: AuthApiContext
 
     const membership = await ProjectService.getMembership(projectId, user.id);
     if (!membership) throw new ProjectNotFoundError();
-    if (!membership.project.hasPoster) throw new NotFoundError("Poster not found");
 
+    // R2 is the only record of whether a poster exists: a missing object is the
+    // "no poster" answer the client caches for the session.
     const bytes = await S3.getObjectBytes(posterKey(projectId));
     if (!bytes) throw new NotFoundError("Poster not found");
 
@@ -84,10 +85,7 @@ async function putPoster(req: NextRequest, { routeParams, user }: AuthApiContext
     const ok = await S3.putObject(posterKey(projectId), bytes, POSTER_MIME);
     if (!ok) throw new InternalServerError();
 
-    const updated = await ProjectService.update({ projectId, hasPoster: true });
-    if (!updated) throw new InternalServerError();
-
-    return Success({ hasPoster: true });
+    return Success({});
 }
 
 export const GET = apiHandler(getPoster);

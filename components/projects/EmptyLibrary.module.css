@@ -1,5 +1,10 @@
-/* Phone empty library — see EmptyLibrary.tsx. Every colour is a theme token so
- * the page art and buttons follow whichever theme is active. */
+/* Empty library — see EmptyLibrary.tsx. Every colour is a theme token so the
+ * page art and buttons follow whichever theme is active.
+ *
+ * globals.css gives every `span` and `svg` an explicit --primary-text colour,
+ * so neither inherits from its parent. Each one here that sits on a coloured
+ * surface sets its colour itself (or `inherit`), or the inverted Create button
+ * reads white on white in dark themes. */
 
 .container {
     display: flex;
@@ -7,7 +12,9 @@
     align-items: center;
     justify-content: center;
     flex: 1 0 auto;
-    padding: 24px 8px calc(24px + var(--safe-bottom));
+    /* Heavier bottom padding lifts it a little above true centre, which reads
+     * as centred on a tall column. */
+    padding: 24px 8px calc(64px + var(--safe-bottom));
     text-align: center;
 }
 
@@ -121,6 +128,10 @@
     animation: blink 1.1s steps(1) infinite;
 }
 
+.badge svg {
+    color: inherit;
+}
+
 .badge {
     position: absolute;
     right: 34px;
@@ -181,15 +192,30 @@
     gap: 14px;
     width: 100%;
     min-height: 64px;
-    padding: 12px 14px 12px 12px;
+    padding: 12px 20px 12px 12px;
     border: 1px solid var(--separator);
-    border-radius: 16px;
+    border-radius: 999px;
     background-color: var(--secondary);
     color: var(--primary-text);
     text-align: left;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 0.12s ease, background-color 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.12s ease, background-color 0.2s ease, border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+@media (hover: hover) {
+    .action:not(:disabled):hover {
+        border-color: var(--tertiary);
+        background-color: var(--secondary-hover);
+    }
+
+    .action_primary:not(:disabled):hover {
+        border-color: transparent;
+        background-color: var(--primary-text);
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px -12px rgba(0, 0, 0, 0.5);
+    }
 }
 
 .action:active {
@@ -208,9 +234,13 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 12px;
+    border-radius: 50%;
     background-color: var(--tertiary);
     color: var(--primary-text);
+}
+
+.action_icon svg {
+    color: inherit;
 }
 
 .action_text {
@@ -221,7 +251,10 @@
     gap: 2px;
 }
 
+/* Explicit, not `inherit`: its parent .action_text is itself a span, so the
+ * global span rule has already reset the colour one level up. */
 .action_label {
+    color: var(--primary-text);
     font-size: 1rem;
     font-weight: 600;
 }
@@ -247,6 +280,10 @@
 
 .action_primary .action_icon {
     background-color: rgba(127, 127, 127, 0.22);
+    color: var(--main-bg);
+}
+
+.action_primary .action_label {
     color: var(--main-bg);
 }
 
