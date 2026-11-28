@@ -27,6 +27,7 @@ import autoAnimate from "@formkit/auto-animate";
 import Loading from "../utils/Loading";
 
 import LibrarySidebar from "./LibrarySidebar";
+import EmptyLibrary from "./EmptyLibrary";
 
 import page from "./ProjectPageContainer.module.css";
 
@@ -159,6 +160,8 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
     // the empty list must not flash before the editor appears.
     if (isLoading || !projects || isQuickstarting) return <Loading />;
 
+    const isEmptyOnPhone = isPhone && projects.length === 0;
+
     const renderMain = () => {
         if (isCreating) {
             return <NewProjectPage setIsCreating={setIsCreating} />;
@@ -171,8 +174,15 @@ const ProjectPageContainer = ({ sidebarOpen, setSidebarOpen }: ProjectPageContai
                     <span className={page.col_date}>{t("columns.lastEdited")}</span>
                     <span className={page.col_storage}>{t("columns.storage")}</span>
                 </div>
-                <div className={page.list_scroll}>
-                    {projects.length === 0 ? (
+                <div className={isEmptyOnPhone ? join(page.list_scroll, page.list_scroll_hero) : page.list_scroll}>
+                    {isEmptyOnPhone ? (
+                        <EmptyLibrary
+                            onCreate={startCreating}
+                            onImport={handleImportClick}
+                            isImporting={isImporting}
+                            importError={importError}
+                        />
+                    ) : projects.length === 0 ? (
                         <div className={page.empty}>{t("noProjects")}</div>
                     ) : (
                         <div ref={parent} className={page.rows}>

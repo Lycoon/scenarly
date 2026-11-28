@@ -102,20 +102,3 @@
  * the desktop's save glyph beside it would only summarise the target rows sitting
  * right below it here — so it takes the full width, on the same 12px inset as the
  * items and group labels under it. */
-.title_row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 6px 12px 12px;
-}
-
-.title_input {
-    flex: 1;
-    min-width: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 8px 10px;
-    border-radius: 8px;
-    background-color: var(--secondary);
-    color: var(--primary-text);
-}

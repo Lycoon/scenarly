@@ -422,7 +422,7 @@
     "importError": "Import nie powiódł się. Sprawdź plik i spróbuj ponownie.",
     "createBtn": "Utwórz",
     "empty": {
-      "title": "Twoja Historia Zaczyna Się Tutaj",
+      "title": "Twoja historia zaczyna się tutaj",
       "subtitle": "Stwórz nowy scenariusz lub zaimportuj istniejący skrypt",
       "createFirst": "Nowy projekt",
       "createDesc": "Zacznij od pustej strony",

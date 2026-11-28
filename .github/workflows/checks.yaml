@@ -11,6 +11,27 @@ env:
     ONNXRUNTIME_NODE_INSTALL_CUDA: skip
 
 jobs:
+    # Same gate the staging/release deploys run (app and landing), so a high or
+    # critical advisory shows up on dev before it blocks a deploy. Independent of
+    # the other jobs: it only needs the lockfiles, no install.
+    audit:
+        name: audit (${{ matrix.package == '.' && 'app' || matrix.package }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                package: [".", landing]
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "25.2.1"
+
+            - name: Block on high/critical advisories
+              run: node scripts/audit-gate.ts ${{ matrix.package }}
+
     test:
         runs-on: ubuntu-24.04
         steps:

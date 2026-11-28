@@ -371,6 +371,24 @@
     color: var(--primary-text);
 }
 
+.ctaDropdownItemDisabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.ctaDropdownItemDisabled:hover {
+    background-color: transparent;
+}
+
+.ctaComingSoon {
+    margin-left: auto;
+    padding-left: 0.6rem;
+    font-size: 0.65rem;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
 .ctaPlatformIcons {
     display: flex;
     align-items: center;

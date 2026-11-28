@@ -284,8 +284,17 @@
     padding-top: 8px;
 }
 
-/* Empty state: a quiet, centred note where the rows would be. Create/Import stay
- * available in the sidebar, so this is just a placeholder, not a call to action. */
+/* Phone with no projects: the scroll area becomes a column so EmptyLibrary can
+ * fill it and centre itself vertically. */
+.list_scroll_hero {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+}
+
+/* Desktop empty state: a quiet, centred note where the rows would be. Create/
+ * Import stay in plain sight in the sidebar, so this is just a placeholder; the
+ * phone, whose sidebar is a closed drawer, gets EmptyLibrary instead. */
 .empty {
     display: flex;
     align-items: center;

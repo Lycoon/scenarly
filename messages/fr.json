@@ -423,7 +423,7 @@
     "importError": "L'importation a échoué. Vérifiez le fichier et réessayez.",
     "createBtn": "Créer",
     "empty": {
-      "title": "Votre Histoire Commence Ici",
+      "title": "Votre histoire commence ici",
       "subtitle": "Créez un nouveau scénario ou importez un script existant",
       "createFirst": "Nouveau projet",
       "createDesc": "Partir d'une page blanche",
